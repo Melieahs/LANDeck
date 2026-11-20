@@ -73,7 +73,12 @@ Future<bool> showDownloadConfirmDialog(
                     ? '未知（下载时确定）'
                     : formatBytes(data.totalBytes!),
               ),
-              const _InfoRow(label: '保存位置', value: '确认后选择保存位置'),
+              const _InfoRow(
+                label: '保存位置',
+                value: defaultTargetPlatform == TargetPlatform.iOS
+                    ? '文件 App / LANDeck / Downloads'
+                    : '确认后选择保存位置',
+              ),
               if (data.risky) ...<Widget>[
                 const SizedBox(height: 12),
                 Container(
