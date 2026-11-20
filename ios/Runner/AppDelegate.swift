@@ -501,6 +501,30 @@ final class LandeckDownloadManager: NSObject, URLSessionDownloadDelegate {
 
   func urlSession(
     _ session: URLSession,
+    didReceive challenge: URLAuthenticationChallenge,
+    completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+  ) {
+    guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+          let trust = challenge.protectionSpace.serverTrust,
+          isPrivateHost(challenge.protectionSpace.host) else {
+      completionHandler(.performDefaultHandling, nil)
+      return
+    }
+    completionHandler(.useCredential, URLCredential(trust: trust))
+  }
+
+  private func isPrivateHost(_ host: String) -> Bool {
+    if host == "localhost" || host.hasSuffix(".local") { return true }
+    let parts = host.split(separator: ".").compactMap { Int($0) }
+    guard parts.count == 4 else { return false }
+    if parts[0] == 10 { return true }
+    if parts[0] == 192 && parts[1] == 168 { return true }
+    if parts[0] == 172 && (16...31).contains(parts[1]) { return true }
+    return false
+  }
+
+  func urlSession(
+    _ session: URLSession,
     downloadTask: URLSessionDownloadTask,
     didWriteData bytesWritten: Int64,
     totalBytesWritten: Int64,
