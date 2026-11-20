@@ -67,15 +67,29 @@ jobs:
           xcrun simctl io "$UDID" screenshot screenshots/ios/ios-home.png
           ls -lh screenshots/ios/ios-home.png
 
-      - name: Commit simulator screenshot
+      - name: Upload simulator screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: LANDeck-ios-home-screenshot
+          path: screenshots/ios/ios-home.png
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Build unsigned device app
+        run: flutter build ios --release --no-codesign
+
+      - name: Package unsigned IPA
         run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add screenshots/ios/ios-home.png
-          if git diff --cached --quiet; then
-            echo "Screenshot unchanged"
-          else
-            git commit -m "chore(ios): update simulator screenshot [skip ci]"
-            git push origin HEAD:${{ github.ref_name }}
-          fi
+          cd build/ios/iphoneos
+          mkdir -p Payload
+          cp -R Runner.app Payload/
+          zip -qry LANDeck-unsigned.ipa Payload
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: LANDeck-unsigned-ipa
+          path: build/ios/iphoneos/LANDeck-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
+
