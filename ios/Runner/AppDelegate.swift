@@ -135,7 +135,7 @@ final class GlassHeaderFactory: NSObject, FlutterPlatformViewFactory {
     )
   }
 
-  func createArgsCodec() -> (FlutterMessageCodec & NSObjectProtocol)? {
+  func createArgsCodec() -> (FlutterMessageCodec & NSObjectProtocol) {
     FlutterStandardMessageCodec.sharedInstance()
   }
 }
@@ -258,7 +258,7 @@ final class GlassTabFactory: NSObject, FlutterPlatformViewFactory {
     )
   }
 
-  func createArgsCodec() -> (FlutterMessageCodec & NSObjectProtocol)? {
+  func createArgsCodec() -> (FlutterMessageCodec & NSObjectProtocol) {
     FlutterStandardMessageCodec.sharedInstance()
   }
 }
