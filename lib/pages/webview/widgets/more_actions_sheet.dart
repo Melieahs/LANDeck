@@ -8,6 +8,8 @@ import '../../../widgets/status_dot.dart';
 enum MoreAction {
   openExternal,
   copyAddress,
+  fillPassword,
+  savePassword,
   shareAddress,
   downloads,
   toggleImmersive,
@@ -155,6 +157,22 @@ class _MoreActionsSheet extends StatelessWidget {
                         subtitle: currentUrl ?? service.url,
                         onTap: () =>
                             Navigator.of(context).pop(MoreAction.copyAddress),
+                      ),
+                      const _ActionDivider(),
+                      _ActionRow(
+                        icon: Icons.key_rounded,
+                        title: '填充登录信息',
+                        subtitle: '使用已保存的账号密码填充当前页面',
+                        onTap: () =>
+                            Navigator.of(context).pop(MoreAction.fillPassword),
+                      ),
+                      const _ActionDivider(),
+                      _ActionRow(
+                        icon: Icons.password_rounded,
+                        title: '保存当前登录信息',
+                        subtitle: '读取当前网页表单并加密保存在本机',
+                        onTap: () =>
+                            Navigator.of(context).pop(MoreAction.savePassword),
                       ),
                       const _ActionDivider(),
                       _ActionRow(

@@ -19,10 +19,12 @@ import '../../services/download_probe.dart';
 import '../../services/download_request_headers.dart';
 import '../../services/download_utils.dart';
 import '../../services/http_credential_store.dart';
+import '../../services/web_password_fill.dart';
 import 'widgets/download_confirm_dialog.dart';
 import 'widgets/http_auth_dialog.dart';
 import 'widgets/more_actions_sheet.dart';
 import 'widgets/service_switcher_sheet.dart';
+import 'widgets/web_password_dialogs.dart';
 import 'widgets/web_error_view.dart';
 import 'widgets/web_view_toolbar.dart';
 import '../downloads/downloads_page.dart';
@@ -1058,6 +1060,135 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     }
   }
 
+  bool _isServiceHost(String? currentUrl, Service service) {
+    final Uri? current = Uri.tryParse(currentUrl ?? '');
+    final Uri? serviceUri = Uri.tryParse(service.url);
+    if (current == null || serviceUri == null) {
+      return false;
+    }
+    final String currentHost = current.host.toLowerCase();
+    final String serviceHost = serviceUri.host.toLowerCase();
+    return currentHost.isNotEmpty && currentHost == serviceHost;
+  }
+
+  Future<Map<String, Object?>?> _runWebJson(String script) async {
+    final WebViewController? controller = _controller;
+    if (controller == null) {
+      return null;
+    }
+    try {
+      final Object raw = await controller.runJavaScriptReturningResult(script);
+      return WebPasswordFill.decodeResult(raw);
+    } on Object {
+      return null;
+    }
+  }
+
+  Future<void> _fillLogin(Service service, String currentUrl) async {
+    final Uri? current = Uri.tryParse(currentUrl);
+    if (current == null || !_isServiceHost(currentUrl, service)) {
+      showAppSnackBar(context, '只能在当前服务的页面中填充登录信息');
+      return;
+    }
+    final String host = current.host.toLowerCase();
+    final List<HttpCredential> all = await HttpCredentialStore.instance
+        .credentialsFor(service.id);
+    final List<HttpCredential> matching = all
+        .where((HttpCredential item) => item.normalizedHost == host)
+        .toList(growable: false);
+    if (!mounted) {
+      return;
+    }
+    if (matching.isEmpty) {
+      showAppSnackBar(context, '没有找到该服务的已保存登录信息');
+      return;
+    }
+    HttpCredential selected = matching.first;
+    if (matching.length > 1) {
+      final HttpCredential? chosen = await showCredentialPicker(
+        context,
+        credentials: matching,
+      );
+      if (chosen == null || !mounted) {
+        return;
+      }
+      selected = chosen;
+    }
+    final Map<String, Object?>? result = await _runWebJson(
+      WebPasswordFill.fillScript(
+        username: selected.username,
+        password: selected.password,
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (result?['ok'] == true) {
+      showAppSnackBar(context, '已填充 ${selected.username} 的登录信息');
+    } else if (result?['reason'] == 'no-password') {
+      showAppSnackBar(context, '当前页面没有找到密码输入框');
+    } else {
+      showAppSnackBar(context, '无法填充当前页面，请手动输入');
+    }
+  }
+
+  Future<void> _saveLogin(Service service, String currentUrl) async {
+    final Uri? current = Uri.tryParse(currentUrl);
+    if (current == null || !_isServiceHost(currentUrl, service)) {
+      showAppSnackBar(context, '只能在当前服务的页面中保存登录信息');
+      return;
+    }
+    final Map<String, Object?>? captured = await _runWebJson(
+      WebPasswordFill.captureScript,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (captured == null || captured['ok'] != true) {
+      showAppSnackBar(context, '当前页面没有找到可保存的登录表单');
+      return;
+    }
+    final String username = (captured['username'] as String? ?? '').trim();
+    final String password = captured['password'] as String? ?? '';
+    final String pageHost = (captured['host'] as String? ?? '').toLowerCase();
+    if (username.isEmpty || password.isEmpty) {
+      showAppSnackBar(context, '请先在网页中填写用户名和密码');
+      return;
+    }
+    if (pageHost != current.host.toLowerCase()) {
+      showAppSnackBar(context, '页面地址已变化，请重试');
+      return;
+    }
+    final bool confirmed = await showSaveWebPasswordDialog(
+      context,
+      serviceName: service.name,
+      host: pageHost,
+      username: username,
+    );
+    if (!confirmed || !mounted) {
+      return;
+    }
+    try {
+      await HttpCredentialStore.instance.save(
+        HttpCredential(
+          serviceId: service.id,
+          host: pageHost,
+          realm: WebPasswordFill.webRealm,
+          username: username,
+          password: password,
+          updatedAt: DateTime.now(),
+        ),
+      );
+      if (mounted) {
+        showAppSnackBar(context, '登录信息已加密保存');
+      }
+    } on Object {
+      if (mounted) {
+        showAppSnackBar(context, '登录信息保存失败');
+      }
+    }
+  }
+
   Future<void> _openMore() async {
     final Service? service = _service;
     if (service == null) {
@@ -1095,6 +1226,12 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         if (mounted) {
           showAppSnackBar(context, '地址已复制到剪贴板');
         }
+        return;
+      case MoreAction.fillPassword:
+        await _fillLogin(service, currentUrl);
+        return;
+      case MoreAction.savePassword:
+        await _saveLogin(service, currentUrl);
         return;
       case MoreAction.shareAddress:
         showAppSnackBar(context, '系统分享将在后续版本开放');

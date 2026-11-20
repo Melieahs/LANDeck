@@ -154,7 +154,7 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
         title: const Text('删除登录凭据？'),
         content: Text(
           '将从本机删除 ${credential.username} 用于 '
-          '${credential.host}（${credential.realm.isEmpty ? '默认认证域' : credential.realm}）'
+          '${credential.host}（${credential.scopeLabel}）'
           ' 的凭据。下次打开服务时需要重新认证。',
         ),
         actions: <Widget>[
@@ -771,8 +771,7 @@ class _SavedCredentialsCard extends StatelessWidget {
                   leading: const Icon(Icons.person_outline_rounded),
                   title: Text(entry.value.username),
                   subtitle: Text(
-                    '${entry.value.host} · '
-                    '${entry.value.realm.isEmpty ? '默认认证域' : entry.value.realm}',
+                    '${entry.value.host} · ${entry.value.scopeLabel}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

@@ -21,6 +21,11 @@ class HttpCredential {
   final String password;
   final DateTime updatedAt;
 
+  String get scopeLabel {
+    if (realm == 'web-form') return '网页登录';
+    return realm.isEmpty ? '默认认证域' : realm;
+  }
+
   String get normalizedHost =>
       host.toLowerCase().replaceAll(RegExp(r'\.$'), '');
 

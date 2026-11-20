@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
 class HttpAuthResult {
@@ -111,6 +112,7 @@ class _HttpAuthDialogState extends State<_HttpAuthDialog>
       setState(() => _localError = '请输入用户名');
       return;
     }
+    TextInput.finishAutofillContext();
     Navigator.of(context).pop(
       HttpAuthResult(
         username: username,
@@ -206,43 +208,61 @@ class _HttpAuthDialogState extends State<_HttpAuthDialog>
                           ],
                         ),
                         const SizedBox(height: 12),
-                        TextField(
-                          key: const ValueKey<String>('http-auth-username'),
-                          controller: _usernameController,
-                          autofocus: false,
-                          textInputAction: TextInputAction.next,
-                          autocorrect: false,
-                          enableSuggestions: false,
-                          decoration: const InputDecoration(
-                            labelText: '用户名',
-                            prefixIcon: Icon(Icons.person_outline_rounded),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        TextField(
-                          key: const ValueKey<String>('http-auth-password'),
-                          controller: _passwordController,
-                          obscureText: _obscure,
-                          autocorrect: false,
-                          enableSuggestions: false,
-                          textInputAction: TextInputAction.done,
-                          onSubmitted: (_) => _submit(),
-                          decoration: InputDecoration(
-                            labelText: '密码',
-                            prefixIcon: const Icon(Icons.key_rounded),
-                            suffixIcon: IconButton(
-                              key: const ValueKey<String>(
-                                'http-auth-toggle-password',
+                        AutofillGroup(
+                          child: Column(
+                            children: <Widget>[
+                              TextField(
+                                key: const ValueKey<String>(
+                                  'http-auth-username',
+                                ),
+                                controller: _usernameController,
+                                autofocus: false,
+                                autofillHints: const <String>[
+                                  AutofillHints.username,
+                                ],
+                                textInputAction: TextInputAction.next,
+                                autocorrect: false,
+                                enableSuggestions: false,
+                                decoration: const InputDecoration(
+                                  labelText: '用户名',
+                                  prefixIcon: Icon(
+                                    Icons.person_outline_rounded,
+                                  ),
+                                ),
                               ),
-                              tooltip: _obscure ? '显示密码' : '隐藏密码',
-                              onPressed: () =>
-                                  setState(() => _obscure = !_obscure),
-                              icon: Icon(
-                                _obscure
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
+                              const SizedBox(height: 10),
+                              TextField(
+                                key: const ValueKey<String>(
+                                  'http-auth-password',
+                                ),
+                                controller: _passwordController,
+                                obscureText: _obscure,
+                                autofillHints: const <String>[
+                                  AutofillHints.password,
+                                ],
+                                autocorrect: false,
+                                enableSuggestions: false,
+                                textInputAction: TextInputAction.done,
+                                onSubmitted: (_) => _submit(),
+                                decoration: InputDecoration(
+                                  labelText: '密码',
+                                  prefixIcon: const Icon(Icons.key_rounded),
+                                  suffixIcon: IconButton(
+                                    key: const ValueKey<String>(
+                                      'http-auth-toggle-password',
+                                    ),
+                                    tooltip: _obscure ? '显示密码' : '隐藏密码',
+                                    onPressed: () =>
+                                        setState(() => _obscure = !_obscure),
+                                    icon: Icon(
+                                      _obscure
+                                          ? Icons.visibility_outlined
+                                          : Icons.visibility_off_outlined,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
+                            ],
                           ),
                         ),
                         if (error.isNotEmpty) ...<Widget>[
