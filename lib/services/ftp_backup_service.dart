@@ -201,12 +201,23 @@ class FtpBackupService {
         final String directory = config.normalizedDirectory;
         final String relative = directory.replaceFirst(RegExp(r'^/+'), '');
         bool changed = false;
+        try {
+          final String current = await client.currentDirectory();
+          if (current == directory || '$current/' == '$directory/') {
+            changed = true;
+          }
+        } on Object {
+          // PWD is optional; continue with CWD attempts.
+        }
         for (final String candidate in <String>{
           directory,
           '$directory/',
           if (relative.isNotEmpty) relative,
           if (relative.isNotEmpty) '$relative/',
         }) {
+          if (changed) {
+            break;
+          }
           if (await client.changeDirectory(candidate)) {
             changed = true;
             break;
