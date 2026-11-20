@@ -446,7 +446,7 @@ final class LandeckDownloadManager: NSObject, URLSessionDownloadDelegate {
     }
     request.setValue("LANDeck/0.7.4 (iOS)", forHTTPHeaderField: "User-Agent")
 
-    let task = session.downloadTask(with: request)
+    let task = session.downloadTask(with: request as URLRequest)
     lock.lock()
     tasks[taskId] = task
     destinations[taskId] = destination
