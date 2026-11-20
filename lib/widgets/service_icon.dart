@@ -1,0 +1,93 @@
+import 'package:material_ui/material_ui.dart';
+
+import '../core/theme/app_colors.dart';
+import '../models/device.dart';
+import '../models/device_category.dart';
+import '../models/service.dart';
+
+IconData iconForDeviceType(DeviceType type) => switch (type) {
+  DeviceType.nas => Icons.storage_rounded,
+  DeviceType.router => Icons.router_rounded,
+  DeviceType.computer => Icons.desktop_windows_rounded,
+  DeviceType.docker => Icons.view_in_ar_rounded,
+  DeviceType.phone => Icons.smartphone_rounded,
+  DeviceType.media => Icons.movie_rounded,
+  DeviceType.other => Icons.more_horiz_rounded,
+};
+
+IconData iconForCategory(DeviceCategory category) => switch (category) {
+  DeviceCategory.all => Icons.grid_view_rounded,
+  DeviceCategory.nas => Icons.storage_rounded,
+  DeviceCategory.router => Icons.router_rounded,
+  DeviceCategory.computer => Icons.desktop_windows_rounded,
+  DeviceCategory.docker => Icons.view_in_ar_rounded,
+  DeviceCategory.phone => Icons.smartphone_rounded,
+  DeviceCategory.media => Icons.movie_rounded,
+  DeviceCategory.other => Icons.more_horiz_rounded,
+};
+
+IconData iconForGlyph(ServiceGlyph? glyph) => switch (glyph) {
+  ServiceGlyph.nas => Icons.storage_rounded,
+  ServiceGlyph.router => Icons.router_rounded,
+  ServiceGlyph.docker => Icons.view_in_ar_rounded,
+  ServiceGlyph.media => Icons.play_circle_fill_rounded,
+  ServiceGlyph.download => Icons.download_rounded,
+  ServiceGlyph.home => Icons.home_rounded,
+  ServiceGlyph.generic || null => Icons.language_rounded,
+};
+
+IconData iconForService(Service service) {
+  if (service.icon != null) {
+    return iconForGlyph(service.icon);
+  }
+  final DeviceCategory? category = service.category;
+  if (category != null) {
+    return switch (category) {
+      DeviceCategory.all => Icons.language_rounded,
+      DeviceCategory.nas => Icons.storage_rounded,
+      DeviceCategory.router => Icons.router_rounded,
+      DeviceCategory.computer => Icons.desktop_windows_rounded,
+      DeviceCategory.docker => Icons.view_in_ar_rounded,
+      DeviceCategory.phone => Icons.smartphone_rounded,
+      DeviceCategory.media => Icons.play_circle_fill_rounded,
+      DeviceCategory.other => Icons.more_horiz_rounded,
+    };
+  }
+  return Icons.language_rounded;
+}
+
+/// Rounded icon tile shared by every service presentation.
+class ServiceIconBadge extends StatelessWidget {
+  const ServiceIconBadge({
+    super.key,
+    required this.icon,
+    this.size = 46,
+    this.emphasized = false,
+  });
+
+  final IconData icon;
+  final double size;
+  final bool emphasized;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: emphasized ? const Color(0xFF1B2B47) : AppColors.surfaceHigh,
+        borderRadius: BorderRadius.circular(size * 0.3),
+        border: Border.all(
+          color: emphasized
+              ? AppColors.accent.withValues(alpha: 0.28)
+              : AppColors.border,
+        ),
+      ),
+      child: Icon(
+        icon,
+        size: size * 0.47,
+        color: emphasized ? AppColors.accent : const Color(0xFF9DB7E4),
+      ),
+    );
+  }
+}

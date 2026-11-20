@@ -1,0 +1,33 @@
+import 'package:material_ui/material_ui.dart';
+
+import '../core/theme/app_colors.dart';
+
+/// Small dot used for online / offline state.
+class StatusDot extends StatelessWidget {
+  const StatusDot({
+    super.key,
+    required this.isOnline,
+    this.size = 6,
+  });
+
+  final bool isOnline;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color color = isOnline ? AppColors.online : AppColors.offline;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        boxShadow: isOnline
+            ? <BoxShadow>[
+                BoxShadow(color: color.withValues(alpha: 0.35), blurRadius: 6),
+              ]
+            : null,
+      ),
+    );
+  }
+}
