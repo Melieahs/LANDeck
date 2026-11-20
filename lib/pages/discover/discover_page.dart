@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:material_ui/material_ui.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -84,6 +86,15 @@ class _DiscoverPageState extends State<DiscoverPage> {
         _networkError = '网页版无法扫描局域网，请安装 Android APK';
       });
       return false;
+    }
+    if (Platform.isIOS) {
+      // iOS has no runtime API to query Local Network permission. The first
+      // NWBrowser/TCP connection triggers the system prompt; permission_handler
+      // would report a false "denied" before that prompt ever appears.
+      if (mounted && _permissionDenied) {
+        setState(() => _permissionDenied = false);
+      }
+      return true;
     }
     try {
       final PermissionStatus current =
@@ -281,13 +292,11 @@ class _DiscoverPageState extends State<DiscoverPage> {
       return;
     }
     setState(() => _selected.remove(discovered.ipAddress));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('已添加设备「${saved.name}」')),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('已添加设备「${saved.name}」')));
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
-        builder: (BuildContext context) =>
-            DeviceDetailPage(deviceId: saved.id),
+        builder: (BuildContext context) => DeviceDetailPage(deviceId: saved.id),
       ),
     );
   }
