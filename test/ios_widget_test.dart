@@ -36,7 +36,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('LANDeck'), findsOneWidget);
-    expect(find.text('还没有收藏的服务'), findsOneWidget);
+    expect(find.text('收藏常用服务后会显示在这里。'), findsOneWidget);
     expect(find.text('添加第一台设备'), findsOneWidget);
     expect(find.text('还没有添加服务'), findsOneWidget);
 
