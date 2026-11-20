@@ -4,7 +4,6 @@ import '../../core/app_scope.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/feedback.dart';
 import '../../models/device.dart';
-import '../../models/device_category.dart';
 import '../../models/service.dart';
 import '../../pages/devices/device_detail_page.dart';
 import '../../pages/devices/device_editor_page.dart';
@@ -13,7 +12,6 @@ import '../../pages/services/service_editor_page.dart';
 import '../../repositories/service_repository.dart';
 import '../../routes/app_router.dart';
 import 'widgets/all_services_section.dart';
-import 'widgets/categories_section.dart';
 import 'widgets/devices_section.dart';
 import 'widgets/favorites_section.dart';
 import 'widgets/home_header.dart';
@@ -56,13 +54,6 @@ class _HomePageState extends State<HomePage> {
     Navigator.of(context).pushNamed<void>(
       AppRoutes.webView,
       arguments: WebViewArguments(serviceId: service.id),
-    );
-  }
-
-  void _openCategory(DeviceCategory category) {
-    Navigator.of(context).pushNamed<void>(
-      AppRoutes.category,
-      arguments: CategoryPageArguments(category: category),
     );
   }
 
@@ -110,7 +101,6 @@ class _HomePageState extends State<HomePage> {
     final LanDeckRepository repository = AppScope.of(context);
     final List<Service> favorites = repository.favorites;
     final List<Service> visible = repository.searchServices(_query);
-    final Map<DeviceCategory, int> counts = repository.categoryCounts;
 
     return Scaffold(
       appBar: AppBar(
@@ -180,8 +170,6 @@ class _HomePageState extends State<HomePage> {
                     onManage: _openDevices,
                     onAddDevice: _handleAddDevice,
                   ),
-                  const SizedBox(height: AppSpacing.sectionGap),
-                  CategoriesSection(counts: counts, onSelect: _openCategory),
                   const SizedBox(height: AppSpacing.sectionGap),
                   AllServicesSection(
                     services: visible,

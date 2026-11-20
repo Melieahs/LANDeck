@@ -23,7 +23,7 @@ void main() {
     expect(find.text('我的网络'), findsOneWidget);
     expect(find.text('还没有添加服务'), findsOneWidget);
     expect(find.text('收藏'), findsOneWidget);
-    expect(find.text('设备分类'), findsOneWidget);
+    expect(find.text('全部设备 0'), findsOneWidget);
     expect(
       find.byKey(const ValueKey<String>('home-add-service')),
       findsOneWidget,

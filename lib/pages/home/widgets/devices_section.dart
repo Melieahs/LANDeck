@@ -4,7 +4,11 @@ import '../../../models/device.dart';
 import '../../../widgets/section_header.dart';
 import '../../../widgets/service_icon.dart';
 
-class DevicesSection extends StatelessWidget {
+/// Device module with its category filter built in.
+///
+/// Categories describe devices, not services. Tapping a category filters the
+/// device cards in place instead of opening a separate service category page.
+class DevicesSection extends StatefulWidget {
   const DevicesSection({
     super.key,
     required this.devices,
@@ -21,27 +25,93 @@ class DevicesSection extends StatelessWidget {
   final VoidCallback onAddDevice;
 
   @override
+  State<DevicesSection> createState() => _DevicesSectionState();
+}
+
+class _DevicesSectionState extends State<DevicesSection> {
+  DeviceType? _selected;
+
+  List<Device> get _visible => _selected == null
+      ? widget.devices
+      : widget.devices
+            .where((Device device) => device.deviceType == _selected)
+            .toList(growable: false);
+
+  int _countFor(DeviceType type) =>
+      widget.devices.where((Device device) => device.deviceType == type).length;
+
+  @override
   Widget build(BuildContext context) {
+    final List<Device> visible = _visible;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         SectionHeader(
           title: '设备',
-          trailing: devices.isEmpty ? null : '${devices.length} 台',
+          trailing: widget.devices.isEmpty
+              ? null
+              : _selected == null
+              ? '${widget.devices.length} 台'
+              : '${visible.length} / ${widget.devices.length} 台',
           action: TextButton(
-            onPressed: devices.isEmpty ? onAddDevice : onManage,
-            child: Text(devices.isEmpty ? '添加设备' : '管理'),
+            onPressed: widget.devices.isEmpty
+                ? widget.onAddDevice
+                : widget.onManage,
+            child: Text(widget.devices.isEmpty ? '添加设备' : '管理'),
           ),
         ),
-        if (devices.isEmpty)
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Row(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  key: const ValueKey<String>('device-filter-all'),
+                  selected: _selected == null,
+                  avatar: const Icon(Icons.grid_view_rounded, size: 18),
+                  label: Text('全部设备 ${widget.devices.length}'),
+                  onSelected: (_) => setState(() => _selected = null),
+                ),
+              ),
+              for (final DeviceType type in DeviceType.values)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    key: ValueKey<String>('device-filter-${type.name}'),
+                    selected: _selected == type,
+                    avatar: Icon(iconForDeviceType(type), size: 18),
+                    label: Text('${type.label} ${_countFor(type)}'),
+                    onSelected: (_) => setState(
+                      () => _selected = _selected == type ? null : type,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        if (widget.devices.isEmpty)
           Card.outlined(
             child: ListTile(
               leading: const Icon(Icons.devices_other_outlined),
               title: const Text('还没有添加设备'),
               subtitle: const Text('添加设备后，只需输入端口即可创建服务。'),
               trailing: FilledButton.tonal(
-                onPressed: onAddDevice,
+                onPressed: widget.onAddDevice,
                 child: const Text('添加'),
+              ),
+            ),
+          )
+        else if (visible.isEmpty)
+          Card.outlined(
+            child: ListTile(
+              leading: const Icon(Icons.filter_alt_off_outlined),
+              title: const Text('该分类下暂无设备'),
+              subtitle: const Text('可以切换分类，或添加一台新的设备。'),
+              trailing: TextButton(
+                onPressed: () => setState(() => _selected = null),
+                child: const Text('查看全部'),
               ),
             ),
           )
@@ -51,17 +121,17 @@ class DevicesSection extends StatelessWidget {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: EdgeInsets.zero,
-              itemCount: devices.length,
+              itemCount: visible.length,
               separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (BuildContext context, int index) {
-                final Device device = devices[index];
+                final Device device = visible[index];
                 return SizedBox(
                   width: 210,
                   child: _DeviceCard(
                     key: ValueKey<String>('home-device-${device.id}'),
                     device: device,
-                    serviceCount: serviceCountForDevice(device),
-                    onTap: () => onOpenDevice(device),
+                    serviceCount: widget.serviceCountForDevice(device),
+                    onTap: () => widget.onOpenDevice(device),
                   ),
                 );
               },
