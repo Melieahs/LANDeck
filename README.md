@@ -62,10 +62,10 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 
 产物：
 
-- `dist/LANDeck-0.7.0.apk`（约 55.8 MB，含 arm64-v8a / armeabi-v7a / x86_64）
+- `dist/LANDeck-0.8.0.apk`（约 56 MB，含 arm64-v8a / armeabi-v7a / x86_64）
 - 构建产物：`build/app/outputs/flutter-apk/app-release.apk`
-- 包名 `com.example.landeck`，版本 `0.7.0+7`
-- SHA-256：`02a4627aea4f7367a89ecb7662731ae007e2a0d951a75202c70264a833c979aa`
+- 包名 `com.example.landeck`，版本 `0.8.0+17`
+- SHA-256：以最终构建产物为准
 - 当前使用 Flutter 默认 debug 签名，可直接安装测试，不适合直接上架
 
 > `permission_handler_android 13.0.2` 要求编译 SDK ≥ 37，因此 `compileSdk = 37`；`targetSdk` 保持 36。target 36 下局域网访问由 INTERNET 隐式允许，不声明/请求 `ACCESS_LOCAL_NETWORK`。
@@ -176,6 +176,15 @@ Service.protocol = http, port = 8096, path = /web
 - 点「取消」只取消本次 challenge，不会自动反复弹出；刷新或重新进入服务可重新认证。
 - 普通 HTML 表单登录页、无 `WWW-Authenticate` 的 401 响应不会触发该弹窗。
 - 不在 URL 中写入凭据；不打印用户名/密码日志。
+
+### 网页登录信息填充
+
+- WebView「更多操作」新增「保存当前登录信息」和「填充登录信息」。
+- 保存时只读取当前页面里可见的用户名/密码输入框，先弹出确认框，明确显示服务、host 和用户名；用户确认后才写入加密存储，不自动保存、不自动提交表单。
+- 填充时按「服务 + host」匹配已保存凭据，支持多个账号时选择；只填充输入框，不点击登录按钮。
+- 网页登录凭据与 HTTP Basic 凭据共用加密存储，但使用独立 scope（`web-form`），在「编辑服务 → 已保存的登录信息」中会显示为「网页登录」，可单独删除。
+- HTTP 认证对话框同时开启了系统密码管理器 Autofill 提示（用户名/密码），可使用系统保存的密码填充。
+- 限制：只处理顶层页面，不处理跨域 iframe 内的登录表单；同一 host 下不同端口的页面共享凭据，适合局域网服务场景。
 
 ## WebView 下载与上传
 

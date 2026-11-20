@@ -107,7 +107,7 @@ class _HomePageState extends State<HomePage> {
         title: const Text('LANDeck'),
         actions: <Widget>[
           IconButton(
-            key: const ValueKey<String>('home-add-service-appbar'),
+            key: const ValueKey<String>('home-add-service'),
             onPressed: _handleAddService,
             tooltip: '添加服务',
             icon: const Icon(Icons.add_rounded),
@@ -121,12 +121,6 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(width: 4),
         ],
       ),
-      floatingActionButton: FloatingActionButton.small(
-        key: const ValueKey<String>('home-add-service'),
-        onPressed: _handleAddService,
-        tooltip: '添加服务',
-        child: const Icon(Icons.add_rounded),
-      ),
       body: SafeArea(
         top: false,
         bottom: false,
@@ -139,7 +133,7 @@ class _HomePageState extends State<HomePage> {
                 AppSpacing.page,
                 8,
                 AppSpacing.page,
-                104,
+                120,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,

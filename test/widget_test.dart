@@ -157,4 +157,39 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('设备管理'), findsOneWidget);
   });
+
+  testWidgets('home and sort menu fit a narrow phone without overflow', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 568));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.runAsync(() async {
+      final Device device = await repository.addDevice(
+        name: '很长的客厅 NAS 设备名称',
+        deviceType: DeviceType.nas,
+        primaryAddress: '192.168.1.10',
+      );
+      await repository.addService(
+        name: 'Jellyfin 影音服务器',
+        deviceId: device.id,
+        port: 8096,
+        path: '/web',
+        isFavorite: true,
+      );
+      await repository.addService(
+        name: 'Home Assistant',
+        deviceId: device.id,
+        port: 8123,
+      );
+    });
+
+    await tester.pumpWidget(LanDeckApp(repository: repository));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.byIcon(Icons.sort_rounded).first);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('按名称'), findsAtLeastNWidgets(1));
+  });
 }
