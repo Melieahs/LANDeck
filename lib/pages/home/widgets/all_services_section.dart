@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../../models/device.dart';
 import '../../../models/service.dart';
 import '../../../widgets/section_header.dart';
+import '../../../widgets/service_icon.dart';
 import '../../../widgets/service_list_tile.dart';
 import '../../../widgets/sort_menu.dart';
 
@@ -14,7 +15,7 @@ class AllServicesSection extends StatefulWidget {
     required this.services,
     required this.query,
     required this.deviceNameFor,
-    required this.deviceTypeFor,
+    required this.devices,
     required this.onOpenService,
     required this.onClearSearch,
     required this.onAddService,
@@ -24,7 +25,7 @@ class AllServicesSection extends StatefulWidget {
   final List<Service> services;
   final String query;
   final String Function(Service service) deviceNameFor;
-  final DeviceType? Function(Service service) deviceTypeFor;
+  final List<Device> devices;
   final ValueChanged<Service> onOpenService;
   final VoidCallback onClearSearch;
   final VoidCallback onAddService;
@@ -36,16 +37,15 @@ class AllServicesSection extends StatefulWidget {
 
 class _AllServicesSectionState extends State<AllServicesSection> {
   _ServiceSort _sort = _ServiceSort.name;
-  DeviceType? _deviceType;
+  String? _deviceId;
   bool _onlyUnassigned = false;
 
   bool get _isSearching => widget.query.trim().isNotEmpty;
 
   List<Service> get _visible {
     final List<Service> list = widget.services.where((Service service) {
-      final DeviceType? type = widget.deviceTypeFor(service);
-      if (_onlyUnassigned) return type == null;
-      if (_deviceType != null) return type == _deviceType;
+      if (_onlyUnassigned) return service.deviceId == null;
+      if (_deviceId != null) return service.deviceId == _deviceId;
       return true;
     }).toList();
 
@@ -81,19 +81,19 @@ class _AllServicesSectionState extends State<AllServicesSection> {
     return list;
   }
 
-  int _countFor(DeviceType type) => widget.services
-      .where((Service service) => widget.deviceTypeFor(service) == type)
+  int _countForDevice(String deviceId) => widget.services
+      .where((Service service) => service.deviceId == deviceId)
       .length;
 
   int get _unassignedCount => widget.services
-      .where((Service service) => widget.deviceTypeFor(service) == null)
+      .where((Service service) => service.deviceId == null)
       .length;
 
-  bool get _hasFilter => _deviceType != null || _onlyUnassigned;
+  bool get _hasFilter => _deviceId != null || _onlyUnassigned;
 
   void _clearFilter() {
     setState(() {
-      _deviceType = null;
+      _deviceId = null;
       _onlyUnassigned = false;
     });
   }
@@ -162,16 +162,21 @@ class _AllServicesSectionState extends State<AllServicesSection> {
                     onSelected: (_) => _clearFilter(),
                   ),
                 ),
-                for (final DeviceType type in DeviceType.values)
+                for (final Device device in widget.devices)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ChoiceChip(
-                      key: ValueKey<String>('service-filter-${type.name}'),
-                      selected: _deviceType == type && !_onlyUnassigned,
-                      label: Text('${type.label} ${_countFor(type)}'),
+                      key: ValueKey<String>(
+                        'service-filter-device-${device.id}',
+                      ),
+                      selected: _deviceId == device.id && !_onlyUnassigned,
+                      avatar: Icon(iconForDevice(device), size: 18),
+                      label: Text(
+                        '${device.name} ${_countForDevice(device.id)}',
+                      ),
                       onSelected: (_) => setState(() {
                         _onlyUnassigned = false;
-                        _deviceType = _deviceType == type ? null : type;
+                        _deviceId = _deviceId == device.id ? null : device.id;
                       }),
                     ),
                   ),
@@ -180,7 +185,7 @@ class _AllServicesSectionState extends State<AllServicesSection> {
                   selected: _onlyUnassigned,
                   label: Text('未分配 $_unassignedCount'),
                   onSelected: (_) => setState(() {
-                    _deviceType = null;
+                    _deviceId = null;
                     _onlyUnassigned = !_onlyUnassigned;
                   }),
                 ),
