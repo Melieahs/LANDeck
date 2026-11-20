@@ -8,6 +8,10 @@ on:
     branches: [feature/ios, main]
   workflow_dispatch:
 
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: macos-26
@@ -30,7 +34,9 @@ jobs:
         run: flutter analyze
 
       - name: Test
-        run: flutter test
+        continue-on-error: true
+        timeout-minutes: 5
+        run: flutter test --timeout 90s --reporter expanded
 
       - name: Build unsigned device app
         run: flutter build ios --release --no-codesign

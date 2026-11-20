@@ -790,9 +790,9 @@ final class LandeckBonjourBrowser: NSObject, FlutterPlugin {
   private func hostString(_ host: NWEndpoint.Host) -> String {
     switch host {
     case let .ipv4(address):
-      return address
+      return "\(address)"
     case let .ipv6(address):
-      return address
+      return "\(address)"
     case let .name(name, _):
       return name
     @unknown default:
