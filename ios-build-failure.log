@@ -1,0 +1,11 @@
+Building com.example.landeck for simulator (ios)...
+Running Xcode build...                                          
+Xcode build done.                                           144.5s
+Failed to build iOS app
+Swift Compiler Error (Xcode): Result of 'createArgsCodec()' has different optionality than required by protocol 'FlutterPlatformViewFactory'
+/Users/runner/work/LANDeck/LANDeck/ios/Runner/AppDelegate.swift:137:7
+
+Swift Compiler Error (Xcode): Result of 'createArgsCodec()' has different optionality than required by protocol 'FlutterPlatformViewFactory'
+/Users/runner/work/LANDeck/LANDeck/ios/Runner/AppDelegate.swift:260:7
+
+Encountered error while building for simulator.
