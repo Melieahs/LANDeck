@@ -16,7 +16,8 @@
 - 设备 CRUD；删除设备只解绑服务，不级联删除
 - 真实 Android 系统 WebView，加载数据库中的 URL；Cookie 由系统 WebView 持久化
 - HTTP Authentication（Basic 及系统 WebView 支持的方案）：应用内凭据弹窗、失败重试、取消不循环、可选 Keystore 加密记住
-- 深色、手机优先的原有视觉风格
+- Material 3 全局视觉体系：浅色 / 深色 / 跟随系统，统一 Color Scheme、Typography、Shape、Surface 层级、Ripple 与组件规范
+- 手机优先的现代 Android 原生观感
 
 ## 技术栈
 
@@ -55,10 +56,10 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 
 产物：
 
-- `dist/LANDeck-0.4.0.apk`（约 53.8 MB，含 arm64-v8a / armeabi-v7a / x86_64）
+- `dist/LANDeck-0.5.0.apk`（约 54.9 MB，含 arm64-v8a / armeabi-v7a / x86_64）
 - 构建产物：`build/app/outputs/flutter-apk/app-release.apk`
-- 包名 `com.example.landeck`，版本 `0.4.0+4`
-- SHA-256：`4a4368bca6c94242f6735f5edb740d83500123b95405bd976c68c42fed9c65b2`
+- 包名 `com.example.landeck`，版本 `0.5.0+5`
+- SHA-256：`1c203c08fcc94efaece1dc9a58b41d5b379f4419307e03336d674e78b396e2db`
 - 当前使用 Flutter 默认 debug 签名，可直接安装测试，不适合直接上架
 
 > `permission_handler_android 13.0.2` 要求编译 SDK ≥ 37，因此 `compileSdk = 37`；`targetSdk` 保持 36。target 36 下局域网访问由 INTERNET 隐式允许，不声明/请求 `ACCESS_LOCAL_NETWORK`。
@@ -71,7 +72,7 @@ lib/
 ├── app.dart                          # MaterialApp / AppScope / 路由
 ├── core/
 │   ├── app_scope.dart                # 仓库的 InheritedNotifier
-│   ├── theme/                        # 色板、M3 暗色主题、间距
+│   ├── theme/                        # M3 浅/深色主题、自适应色板、主题持久化
 │   └── utils/
 │       ├── url_utils.dart            # URL 规范化、去重、CIDR 辅助
 │       ├── html_utils.dart           # <title> 提取
@@ -155,8 +156,8 @@ Service.protocol = http, port = 8096, path = /web
 ## 验证结果
 
 - `flutter analyze`：No issues found
-- `flutter test`：26 tests passed
-- `flutter build apk --release`：成功，53.8 MB（0.4.0+4）
+- `flutter test`：27 tests passed
+- `flutter build apk --release`：成功，54.9 MB（0.5.0+5）
 - Android 模拟器（Android 36 x86_64，1080×2400）实测：
   - 首次安装 0 服务、0 收藏、0 设备，空状态正常
   - 手动添加 → 首页计数/分类/收藏更新 → 强制停止再启动仍存在
@@ -174,6 +175,10 @@ Service.protocol = http, port = 8096, path = /web
   - 不勾选记住：重启后重新要求认证；删除已保存凭据后也会重新要求认证
   - 取消：停留在 401 页面，等待 10 秒无自动重复弹窗
   - 普通 HTML 登录页、无 WWW-Authenticate 的 401 API 均不触发认证弹窗
+  - Material 3：首页、设备列表/详情、服务编辑、扫描、设置、WebView 工具栏/服务切换/更多操作/HTTP 认证弹窗均使用统一 M3 组件
+  - 浅色 / 深色 / 跟随系统切换正常，强制停止重启后主题选择保持
+  - 浅色下 WebView 状态栏图标、返回图标、工具栏与弹窗对比度正常
+  - M3 发现页真实扫描 `10.0.2.16/24`：68 个候选、4 个已确认，来源/HTTP 状态/已添加标记正常，可取消
 
 ## 截图
 
@@ -201,6 +206,28 @@ Service.protocol = http, port = 8096, path = /web
 | `p1-17-custom-url-webview.png` | 迁移后的自定义 URL 服务可打开 |
 | `p1-18-persisted-device-link.png` | 重启后设备关联与数据仍在 |
 | `p1-19-settings.png` | 版本 0.3.0、设备管理计数 |
+
+### Material 3 改版（0.5.0）
+
+| 文件 | 内容 |
+| --- | --- |
+| `m3-01-home-light.png` | 浅色首页：M3 AppBar、SearchBar、统计、收藏、设备、分类、服务列表 |
+| `m3-02-settings-light.png` | 浅色设置页：分组、主题选择器 |
+| `m3-03-settings-dark.png` | 深色设置页 |
+| `m3-04-home-dark.png` | 深色首页 |
+| `m3-05-service-form-dark.png` | M3 服务编辑/完整添加表单 |
+| `m3-06-devices-dark.png` | M3 设备列表 |
+| `m3-07-device-detail-dark.png` | 设备详情与关联服务 |
+| `m3-08-quick-add-dark.png` | 设备内快捷添加：端口 8096 → Jellyfin |
+| `m3-09-home-light.png` / `m3-14-persisted-light.png` | 浅色首页；重启后主题保持 |
+| `m3-15-webview-light-final.png` | 浅色 WebView：状态栏、手柄、真实页面 |
+| `m3-11-webview-toolbar-light.png` | M3 浮动工具栏 |
+| `m3-12-more-sheet-light.png` | M3 更多操作 Bottom Sheet |
+| `m3-13-auth-dialog-light.png` / `m3-17-auth-dialog-dark-final.png` | M3 HTTP 认证弹窗（浅色/深色） |
+| `m3-18-auth-success-dark.png` | 深色下认证成功，加载受保护页面 |
+| `m3-19-discover-dark.png` | M3 发现页：网络信息、扫描范围与权限说明 |
+| `m3-20-scan-progress-dark.png` | M3 扫描进度与取消 |
+| `m3-22-scan-results-dark.png` | M3 真实扫描结果（已确认/来源/HTTP 状态/已添加） |
 
 ### HTTP 身份验证（0.4.0）
 

@@ -1,7 +1,5 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../core/theme/app_colors.dart';
-
 class SectionHeader extends StatelessWidget {
   const SectionHeader({
     super.key,
@@ -18,31 +16,30 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final TextTheme text = Theme.of(context).textTheme;
     return Padding(
       padding: padding,
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
-              color: AppColors.textPrimary,
+            style: text.titleMedium?.copyWith(
+              color: scheme.onSurface,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const Spacer(),
           if (trailing != null)
             Text(
               trailing!,
-              style: const TextStyle(
-                fontSize: 11.5,
-                color: AppColors.textMuted,
+              style: text.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
               ),
             ),
           if (action != null) ...<Widget>[
-            const SizedBox(width: 6),
+            const SizedBox(width: 4),
             action!,
           ],
         ],

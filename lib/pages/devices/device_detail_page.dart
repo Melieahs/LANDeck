@@ -1,7 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/app_scope.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../models/device.dart';
 import '../../models/service.dart';
@@ -29,6 +28,7 @@ class DeviceDetailPage extends StatelessWidget {
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) => AlertDialog(
+        icon: const Icon(Icons.delete_outline_rounded),
         title: const Text('删除设备？'),
         content: const Text('关联服务不会被删除，现有 URL 会保留并移动到「未分配设备」。'),
         actions: <Widget>[
@@ -39,7 +39,8 @@ class DeviceDetailPage extends StatelessWidget {
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF6B2733),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
             ),
             child: const Text('删除'),
           ),
@@ -73,131 +74,107 @@ class DeviceDetailPage extends StatelessWidget {
     final Device? device = repository.deviceById(deviceId);
     if (device == null) {
       return Scaffold(
-        body: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                const Text(
-                  '设备已不存在',
-                  style: TextStyle(color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: () => Navigator.of(context).maybePop(),
-                  child: const Text('返回'),
-                ),
-              ],
-            ),
+        appBar: AppBar(),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const Text('设备已不存在'),
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: () => Navigator.of(context).maybePop(),
+                child: const Text('返回'),
+              ),
+            ],
           ),
         ),
       );
     }
     final List<Service> services = repository.servicesForDevice(device);
     return Scaffold(
+      appBar: AppBar(
+        title: Text(device.name),
+        actions: <Widget>[
+          IconButton(
+            tooltip: '编辑设备',
+            onPressed: () => _edit(context, device),
+            icon: const Icon(Icons.edit_outlined),
+          ),
+          IconButton(
+            tooltip: '删除设备',
+            onPressed: () => _delete(context, repository),
+            icon: const Icon(Icons.delete_outline_rounded),
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        key: const ValueKey<String>('device-add-service'),
+        onPressed: () => _addService(context, device),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('添加服务'),
+      ),
       body: SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
+        top: false,
+        child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: kMaxAppWidth),
             child: ListView(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.page,
-                4,
+                8,
                 AppSpacing.page,
-                28,
+                100,
               ),
               children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    IconButton(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      icon: const Icon(Icons.arrow_back_rounded, size: 20),
-                      style: IconButton.styleFrom(
-                        backgroundColor: AppColors.surface,
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: () => _edit(context, device),
-                      icon: const Icon(Icons.edit_rounded, size: 18),
-                      style: IconButton.styleFrom(
-                        backgroundColor: AppColors.surface,
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      onPressed: () => _delete(context, repository),
-                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                      style: IconButton.styleFrom(
-                        backgroundColor: AppColors.surface,
-                        foregroundColor: const Color(0xFFFF8A96),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Row(
-                    children: <Widget>[
-                      ServiceIconBadge(
-                        icon: iconForDeviceType(device.deviceType),
-                        size: 56,
-                        emphasized: true,
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Text(
-                              device.name,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${device.deviceType.label} · ${device.addressLabel}',
-                              style: const TextStyle(
-                                fontSize: 11.5,
-                                color: AppColors.textMuted,
-                              ),
-                            ),
-                          ],
+                Card.filled(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: <Widget>[
+                        ServiceIconBadge(
+                          icon: iconForDeviceType(device.deviceType),
+                          size: 56,
+                          emphasized: true,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.all(13),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceSoft,
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      _InfoLine(label: '地址', value: device.primaryAddress),
-                      if (device.notes != null) ...<Widget>[
-                        const SizedBox(height: 8),
-                        _InfoLine(label: '备注', value: device.notes!),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                device.deviceType.label,
+                                style: Theme.of(context).textTheme.labelLarge
+                                    ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                device.primaryAddress,
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              if (device.notes != null) ...<Widget>[
+                                const SizedBox(height: 6),
+                                Text(
+                                  device.notes!,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ],
-                    ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 22),
@@ -205,123 +182,65 @@ class DeviceDetailPage extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       '关联服务',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       '${services.length}',
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                    const Spacer(),
-                    FilledButton.icon(
-                      key: const ValueKey<String>('device-add-service'),
-                      onPressed: () => _addService(context, device),
-                      icon: const Icon(Icons.add_rounded, size: 16),
-                      label: const Text('添加服务'),
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 9),
+                const SizedBox(height: 8),
                 if (services.isEmpty)
-                  Container(
-                    padding: const EdgeInsets.all(22),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceSoft,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: const Column(
-                      children: <Widget>[
-                        Icon(
-                          Icons.link_off_rounded,
-                          size: 26,
-                          color: AppColors.textMuted,
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          '这台设备还没有关联服务',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textMuted,
-                          ),
-                        ),
-                      ],
+                  Card.outlined(
+                    child: ListTile(
+                      leading: const Icon(Icons.link_off_rounded),
+                      title: const Text('这台设备还没有关联服务'),
+                      subtitle: const Text('使用右下角按钮，只需输入端口即可添加。'),
                     ),
                   )
                 else
-                  ...services.map(
-                    (Service service) => Padding(
-                      padding: const EdgeInsets.only(bottom: 9),
-                      child: ServiceListTile(
-                        key: ValueKey<String>('device-service-${service.id}'),
-                        service: service,
-                        deviceName: device.name,
-                        onTap: () => Navigator.of(context).push<void>(
-                          MaterialPageRoute<void>(
-                            builder: (BuildContext context) =>
-                                WebViewPage(serviceId: service.id),
+                  Card.outlined(
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      children: <Widget>[
+                        for (int i = 0; i < services.length; i++) ...<Widget>[
+                          ServiceListTile(
+                            key: ValueKey<String>(
+                              'device-service-${services[i].id}',
+                            ),
+                            service: services[i],
+                            deviceName: device.name,
+                            onTap: () => Navigator.of(context).push<void>(
+                              MaterialPageRoute<void>(
+                                builder: (BuildContext context) =>
+                                    WebViewPage(serviceId: services[i].id),
+                              ),
+                            ),
                           ),
-                        ),
+                          if (i != services.length - 1)
+                            const Divider(height: 1, indent: 16, endIndent: 16),
+                        ],
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                Text(
+                  '设备地址修改后，关联服务的 URL 会自动更新。',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
-                    ),
-                  ),
-                const SizedBox(height: 14),
-                Center(
-                  child: Text(
-                    '设备地址修改后，关联服务的 URL 会自动更新。',
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
                 ),
               ],
             ),
           ),
         ),
       ),
-    );
-  }
-}
-
-class _InfoLine extends StatelessWidget {
-  const _InfoLine({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        SizedBox(
-          width: 54,
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textMuted,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-              fontSize: 11.5,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

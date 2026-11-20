@@ -1,7 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/app_scope.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/feedback.dart';
 import '../../core/utils/url_utils.dart';
@@ -94,192 +93,114 @@ class _DeviceEditorPageState extends State<DeviceEditorPage> {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     return Scaffold(
+      appBar: AppBar(title: Text(widget.isEditing ? '编辑设备' : '添加设备')),
       body: SafeArea(
-        child: Align(
-          alignment: Alignment.topCenter,
+        top: false,
+        child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: kMaxAppWidth),
             child: Form(
               key: _formKey,
-              child: SingleChildScrollView(
+              child: ListView(
                 padding: const EdgeInsets.fromLTRB(
                   AppSpacing.page,
-                  4,
+                  8,
                   AppSpacing.page,
-                  28,
+                  32,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Row(
-                      children: <Widget>[
-                        IconButton(
-                          onPressed: () => Navigator.of(context).maybePop(),
-                          icon: const Icon(Icons.arrow_back_rounded, size: 20),
-                          style: IconButton.styleFrom(
-                            backgroundColor: AppColors.surface,
-                            side: const BorderSide(color: AppColors.border),
-                          ),
+                children: <Widget>[
+                  Text(
+                    '设备地址是关联服务 URL 的基础。修改地址后，所有关联服务会自动更新。',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: scheme.onSurfaceVariant,
                         ),
-                        const SizedBox(width: 12),
-                        Text(
-                          widget.isEditing ? '编辑设备' : '添加设备',
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.3,
-                            color: AppColors.textPrimary,
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    key: const ValueKey<String>('device-name-field'),
+                    controller: _nameController,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      labelText: '设备名称',
+                      hintText: '例如：书房 NAS',
+                    ),
+                    validator: (String? value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return '请输入设备名称';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    key: const ValueKey<String>('device-address-field'),
+                    controller: _addressController,
+                    keyboardType: TextInputType.url,
+                    textInputAction: TextInputAction.next,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    decoration: const InputDecoration(
+                      labelText: '设备地址',
+                      hintText: '192.168.1.10 或 nas.local',
+                      helperText: '只填 IP / 主机名，不要包含 http://、端口或路径。',
+                      helperMaxLines: 2,
+                    ),
+                    validator: (String? value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return '请输入设备 IP 或主机名';
+                      }
+                      if (normalizeDeviceAddress(value) == null) {
+                        return '请输入有效的 IP 或主机名';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<DeviceType>(
+                    initialValue: _type,
+                    decoration: const InputDecoration(labelText: '设备类型'),
+                    items: DeviceType.values
+                        .map(
+                          (DeviceType type) => DropdownMenuItem<DeviceType>(
+                            value: type,
+                            child: Text(type.label),
                           ),
-                        ),
-                      ],
+                        )
+                        .toList(),
+                    onChanged: (DeviceType? value) {
+                      if (value != null) {
+                        setState(() => _type = value);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _notesController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: '备注（可选）',
+                      hintText: '例如：二楼弱电箱',
                     ),
-                    const SizedBox(height: 18),
-                    const Text(
-                      '设备地址是关联服务 URL 的基础。修改地址后，所有关联服务会自动更新。',
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        height: 1.5,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    const _Label('设备名称', required: true),
-                    const SizedBox(height: 7),
-                    TextFormField(
-                      key: const ValueKey<String>('device-name-field'),
-                      controller: _nameController,
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        hintText: '例如：书房 NAS',
-                      ),
-                      validator: (String? value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return '请输入设备名称';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    const _Label('设备地址', required: true),
-                    const SizedBox(height: 7),
-                    TextFormField(
-                      key: const ValueKey<String>('device-address-field'),
-                      controller: _addressController,
-                      keyboardType: TextInputType.url,
-                      textInputAction: TextInputAction.next,
-                      autocorrect: false,
-                      enableSuggestions: false,
-                      decoration: const InputDecoration(
-                        hintText: '192.168.1.10 或 nas.local',
-                        helperText: '只填 IP / 主机名，不要包含 http://、端口或路径。',
-                        helperMaxLines: 2,
-                      ),
-                      validator: (String? value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return '请输入设备 IP 或主机名';
-                        }
-                        if (normalizeDeviceAddress(value) == null) {
-                          return '请输入有效的 IP 或主机名';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    const _Label('设备类型'),
-                    const SizedBox(height: 7),
-                    DropdownButtonFormField<DeviceType>(
-                      initialValue: _type,
-                      items: DeviceType.values
-                          .map(
-                            (DeviceType type) => DropdownMenuItem<DeviceType>(
-                              value: type,
-                              child: Text(type.label),
-                            ),
+                  ),
+                  const SizedBox(height: 28),
+                  FilledButton(
+                    key: const ValueKey<String>('device-save-button'),
+                    onPressed: _saving ? null : _save,
+                    child: _saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                          .toList(),
-                      onChanged: (DeviceType? value) {
-                        if (value != null) {
-                          setState(() => _type = value);
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    const _Label('备注'),
-                    const SizedBox(height: 7),
-                    TextFormField(
-                      controller: _notesController,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        hintText: '可选，例如：二楼弱电箱',
-                      ),
-                    ),
-                    const SizedBox(height: 26),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: FilledButton(
-                        key: const ValueKey<String>('device-save-button'),
-                        onPressed: _saving ? null : _save,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.accent,
-                          foregroundColor: const Color(0xFF04101F),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: _saving
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Color(0xFF04101F),
-                                ),
-                              )
-                            : Text(
-                                widget.isEditing ? '保存修改' : '保存设备',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                      ),
-                    ),
-                  ],
-                ),
+                        : Text(widget.isEditing ? '保存修改' : '保存设备'),
+                  ),
+                ],
               ),
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _Label extends StatelessWidget {
-  const _Label(this.text, {this.required = false});
-
-  final String text;
-  final bool required;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text.rich(
-      TextSpan(
-        text: text,
-        style: const TextStyle(
-          fontSize: 12.5,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textSecondary,
-        ),
-        children: <InlineSpan>[
-          if (required)
-            const TextSpan(
-              text: '  *',
-              style: TextStyle(color: AppColors.accent),
-            ),
-        ],
       ),
     );
   }

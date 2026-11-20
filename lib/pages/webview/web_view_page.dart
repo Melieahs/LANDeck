@@ -113,7 +113,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   WebViewController _createController() {
     return WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0xFF0A111D))
+      ..setBackgroundColor(Theme.of(context).colorScheme.surface)
       ..setNavigationDelegate(
         NavigationDelegate(
           onProgress: _onProgress,
@@ -154,7 +154,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       setState(() {
         _loading = false;
         _hasError = true;
-          _error = error.toString();
+        _error = error.toString();
       });
       _markHealth(ServiceStatus.offline);
     }
@@ -261,7 +261,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     }
     return NavigationDecision.prevent;
   }
-
 
   // ---------------------------------------------------------------------------
   // HTTP authentication
@@ -663,7 +662,10 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (uri == null) {
       return;
     }
-    final bool opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final bool opened = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
     if (!opened && mounted) {
       showAppSnackBar(context, '无法打开系统浏览器');
     }
@@ -711,13 +713,15 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final Service? service = _service;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        statusBarBrightness: Brightness.dark,
-        systemNavigationBarColor: AppColors.background,
-        systemNavigationBarIconBrightness: Brightness.light,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        systemNavigationBarColor: Theme.of(context).colorScheme.surface,
+        systemNavigationBarIconBrightness:
+            isDark ? Brightness.light : Brightness.dark,
       ),
       child: PopScope<Object?>(
         canPop: false,
@@ -728,7 +732,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           _handleSystemBack();
         },
         child: Scaffold(
-          backgroundColor: const Color(0xFF0A111D),
+          backgroundColor: Theme.of(context).colorScheme.surface,
           resizeToAvoidBottomInset: false,
           body: SafeArea(
             top: !_immersive,
@@ -783,7 +787,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
                                     onRefresh: _handleRefresh,
                                     onSwitchService: _openServiceSwitcher,
                                     onMore: _openMore,
-                                    canGoForward: _nativeWebView && _canGoForward,
+                                    canGoForward:
+                                        _nativeWebView && _canGoForward,
                                   )
                                 : const SizedBox(width: double.infinity),
                           ),
@@ -814,10 +819,11 @@ class _ProgressPaint extends StatelessWidget {
     return Container(
       height: 2,
       decoration: BoxDecoration(
-        color: AppColors.accent,
+        color: Theme.of(context).colorScheme.primary,
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: AppColors.accent.withValues(alpha: 0.55),
+            color: Theme.of(context).colorScheme.primary
+                .withValues(alpha: 0.55),
             blurRadius: 6,
           ),
         ],
@@ -834,31 +840,34 @@ class _MissingServiceView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: const Color(0xFF0A111D),
+      color: Theme.of(context).colorScheme.surface,
       child: Center(
         child: Padding(
           padding: const EdgeInsets.all(28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              const Icon(
+              Icon(
                 Icons.link_off_rounded,
                 size: 34,
-                color: AppColors.textMuted,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 '服务不存在或已被删除',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 '它可能已在服务列表中被移除。',
-                style: TextStyle(fontSize: 11.5, color: AppColors.textMuted),
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 16),
               OutlinedButton(onPressed: onBack, child: const Text('返回')),
@@ -884,37 +893,45 @@ class _UnsupportedWebView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: const Color(0xFF0A111D),
+      color: Theme.of(context).colorScheme.surface,
       child: SafeArea(
         bottom: false,
         child: Column(
           children: <Widget>[
             Container(
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Color(0x141F2C45))),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                ),
               ),
               child: Row(
                 children: <Widget>[
-                  Icon(Icons.language_rounded, size: 17, color: AppColors.accent),
+                  Icon(
+                    Icons.language_rounded,
+                    size: 17,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       service.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
-                  const Text(
+                  Text(
                     '未启用 WebView',
                     style: TextStyle(
                       fontSize: 9.5,
-                      color: AppColors.textMuted,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -931,35 +948,39 @@ class _UnsupportedWebView extends StatelessWidget {
                         Container(
                           width: 58,
                           height: 58,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: AppColors.surfaceHigh,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.phone_android_rounded,
                             size: 26,
-                            color: AppColors.textMuted,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 15),
-                        const Text(
+                        Text(
                           '当前平台没有系统 WebView',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 7),
-                        const Text(
+                        Text(
                           'Android APK 会使用系统 WebView 打开下面的真实地址。'
                           '这里的网页预览不会渲染模拟内容。',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 11.5,
                             height: 1.6,
-                            color: AppColors.textMuted,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -974,9 +995,9 @@ class _UnsupportedWebView extends StatelessWidget {
                           child: Text(
                             service.url,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: AppColors.accent,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           ),
                         ),

@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'app.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_controller.dart';
 import 'data/database/app_database.dart';
 import 'repositories/service_repository.dart';
 
@@ -12,7 +13,12 @@ Future<void> main() async {
     final AppDatabase database = await AppDatabase.open();
     final LanDeckRepository repository = LanDeckRepository(database);
     await repository.load();
-    runApp(LanDeckApp(repository: repository));
+    final ThemeController themeController =
+        await ThemeController.load(database);
+    runApp(LanDeckApp(
+      repository: repository,
+      themeController: themeController,
+    ));
   } on Object catch (error, stack) {
     debugPrint('LANDeck database startup failed: $error\n$stack');
     runApp(_BootstrapFailureApp(message: error.toString()));
@@ -41,13 +47,13 @@ class _BootstrapFailureApp extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    const Icon(
+                    Icon(
                       Icons.storage_rounded,
                       size: 40,
                       color: AppColors.textMuted,
                     ),
                     const SizedBox(height: 14),
-                    const Text(
+                    Text(
                       '本地数据库无法打开',
                       style: TextStyle(
                         fontSize: 17,
@@ -59,7 +65,7 @@ class _BootstrapFailureApp extends StatelessWidget {
                     Text(
                       message,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         height: 1.6,
                         color: AppColors.textMuted,

@@ -30,13 +30,17 @@ class WebErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: const Color(0xFF0A111D),
+      color: Theme.of(context).colorScheme.surface,
       child: Column(
         children: <Widget>[
           Container(
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Color(0x141F2C45))),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
+              ),
             ),
             child: Row(
               children: <Widget>[
@@ -54,7 +58,7 @@ class WebErrorView extends StatelessWidget {
                         service.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
@@ -65,7 +69,7 @@ class WebErrorView extends StatelessWidget {
                         service.address,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           color: AppColors.textMuted,
                         ),
@@ -90,7 +94,7 @@ class WebErrorView extends StatelessWidget {
                       const SizedBox(width: 5),
                       Text(
                         '连接失败',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 9.5,
                           color: AppColors.textMuted,
                         ),
@@ -121,18 +125,18 @@ class WebErrorView extends StatelessWidget {
                         Container(
                           width: 58,
                           height: 58,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: AppColors.surfaceHigh,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.wifi_off_rounded,
                             size: 26,
                             color: AppColors.textMuted,
                           ),
                         ),
                         const SizedBox(height: 16),
-                        const Text(
+                        Text(
                           '无法访问此服务',
                           textAlign: TextAlign.center,
                           style: TextStyle(
@@ -146,13 +150,13 @@ class WebErrorView extends StatelessWidget {
                         Text(
                           '${service.name} · ${service.address}',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             color: AppColors.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 12),
-                        const Text(
+                        Text(
                           '设备可能已离线，或服务没有在局域网中运行。\n请确认设备电源与网络连接后重试。',
                           textAlign: TextAlign.center,
                           style: TextStyle(
@@ -169,7 +173,7 @@ class WebErrorView extends StatelessWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 9.5,
                               height: 1.4,
                               color: AppColors.textMuted,
@@ -184,7 +188,9 @@ class WebErrorView extends StatelessWidget {
                                 onPressed: onRetry,
                                 style: FilledButton.styleFrom(
                                   backgroundColor: AppColors.accent,
-                                  foregroundColor: const Color(0xFF04101F),
+                                  foregroundColor: Theme.of(context)
+                                      .colorScheme
+                                      .onPrimary,
                                   minimumSize: const Size.fromHeight(42),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -208,9 +214,7 @@ class WebErrorView extends StatelessWidget {
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: AppColors.textSecondary,
                                   minimumSize: const Size.fromHeight(42),
-                                  side: const BorderSide(
-                                    color: AppColors.border,
-                                  ),
+                                  side: BorderSide(color: AppColors.border),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -242,7 +246,7 @@ class WebErrorView extends StatelessWidget {
                                     ? '系统 WebView · 已尝试局域网连接'
                                     : '当前平台未启用系统 WebView',
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 9,
                                   color: AppColors.textMuted,
                                 ),

@@ -1,6 +1,5 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../models/service.dart';
 import '../../../widgets/section_header.dart';
 import '../../../widgets/service_list_tile.dart';
@@ -39,12 +38,7 @@ class AllServicesSection extends StatelessWidget {
             key: const ValueKey<String>('all-services-add'),
             onPressed: onAddService,
             tooltip: '添加服务',
-            icon: const Icon(Icons.add_rounded, size: 17),
-            visualDensity: VisualDensity.compact,
-            style: IconButton.styleFrom(
-              foregroundColor: AppColors.accent,
-              backgroundColor: AppColors.accentSoft,
-            ),
+            icon: const Icon(Icons.add_rounded),
           ),
         ),
         if (services.isEmpty)
@@ -52,15 +46,23 @@ class AllServicesSection extends StatelessWidget {
               ? _EmptySearchState(onClearSearch: onClearSearch)
               : _EmptyServicesState(onAddService: onAddService, onScan: onScan)
         else
-          for (int index = 0; index < services.length; index++) ...<Widget>[
-            ServiceListTile(
-              key: ValueKey<String>('service-${services[index].id}'),
-              service: services[index],
-              deviceName: deviceNameFor(services[index]),
-              onTap: () => onOpenService(services[index]),
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: <Widget>[
+                for (int index = 0; index < services.length; index++) ...<Widget>[
+                  ServiceListTile(
+                    key: ValueKey<String>('service-${services[index].id}'),
+                    service: services[index],
+                    deviceName: deviceNameFor(services[index]),
+                    onTap: () => onOpenService(services[index]),
+                  ),
+                  if (index != services.length - 1)
+                    const Divider(height: 1, indent: 72),
+                ],
+              ],
             ),
-            if (index != services.length - 1) const SizedBox(height: 10),
-          ],
+          ),
       ],
     );
   }
@@ -74,65 +76,48 @@ class _EmptyServicesState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: <Widget>[
-          const Icon(
-            Icons.dns_outlined,
-            size: 32,
-            color: AppColors.textMuted,
-          ),
-          const SizedBox(height: 11),
-          const Text(
-            '还没有添加服务',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final TextTheme text = Theme.of(context).textTheme;
+    return Card.outlined(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
+        child: Column(
+          children: <Widget>[
+            Icon(
+              Icons.dns_outlined,
+              size: 36,
+              color: scheme.onSurfaceVariant,
             ),
-          ),
-          const SizedBox(height: 5),
-          const Text(
-            '扫描当前局域网，或手动填写一个 Web 服务地址。',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 11.5,
-              height: 1.6,
-              color: AppColors.textMuted,
+            const SizedBox(height: 12),
+            Text('还没有添加服务', style: text.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              '扫描当前局域网，或手动填写一个 Web 服务地址。',
+              textAlign: TextAlign.center,
+              style: text.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              FilledButton.icon(
-                onPressed: onScan,
-                icon: const Icon(Icons.radar_rounded, size: 17),
-                label: const Text('扫描局域网'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.accent,
-                  foregroundColor: const Color(0xFF04101F),
-                  visualDensity: VisualDensity.compact,
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: <Widget>[
+                FilledButton.tonalIcon(
+                  onPressed: onScan,
+                  icon: const Icon(Icons.radar_rounded),
+                  label: const Text('扫描局域网'),
                 ),
-              ),
-              const SizedBox(width: 8),
-              OutlinedButton(
-                onPressed: onAddService,
-                style: OutlinedButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
+                OutlinedButton.icon(
+                  onPressed: onAddService,
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('手动添加'),
                 ),
-                child: const Text('手动添加'),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -145,49 +130,30 @@ class _EmptySearchState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: <Widget>[
-          const Icon(
-            Icons.search_off_rounded,
-            size: 28,
-            color: AppColors.textMuted,
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            '没有找到匹配的服务',
-            style: TextStyle(
-              fontSize: 13.5,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return Card.outlined(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 26),
+        child: Column(
+          children: <Widget>[
+            Icon(
+              Icons.search_off_rounded,
+              size: 32,
+              color: scheme.onSurfaceVariant,
             ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            '试试服务名称、设备或 IP 地址',
-            style: TextStyle(fontSize: 11.5, color: AppColors.textMuted),
-          ),
-          const SizedBox(height: 10),
-          TextButton(
-            onPressed: onClearSearch,
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.accent,
-              visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            const SizedBox(height: 10),
+            Text('没有找到匹配的服务', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 4),
+            Text(
+              '试试服务名称、设备或 IP 地址',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
             ),
-            child: const Text(
-              '清除搜索',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            TextButton(onPressed: onClearSearch, child: const Text('清除搜索')),
+          ],
+        ),
       ),
     );
   }

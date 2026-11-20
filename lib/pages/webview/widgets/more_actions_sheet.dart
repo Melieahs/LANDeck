@@ -27,7 +27,7 @@ Future<MoreAction?> showMoreActionsSheet(
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: Colors.transparent,
-    barrierColor: const Color(0xCC02060D),
+    barrierColor: Colors.black54,
     builder: (BuildContext context) {
       return _MoreActionsSheet(
         service: service,
@@ -62,8 +62,8 @@ class _MoreActionsSheet extends StatelessWidget {
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: media.size.height * 0.86),
       child: Material(
-        color: const Color(0xFF0B1422),
-        shape: const RoundedRectangleBorder(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
           side: BorderSide(color: AppColors.border),
         ),
@@ -90,7 +90,7 @@ class _MoreActionsSheet extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          const Text(
+                          Text(
                             '更多操作',
                             style: TextStyle(
                               fontSize: 19,
@@ -104,7 +104,7 @@ class _MoreActionsSheet extends StatelessWidget {
                             '${service.name} · ${service.address}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10.5,
                               color: AppColors.textMuted,
                             ),
@@ -116,7 +116,7 @@ class _MoreActionsSheet extends StatelessWidget {
                       onPressed: () => Navigator.of(context).pop(),
                       tooltip: '关闭',
                       visualDensity: VisualDensity.compact,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.close_rounded,
                         size: 20,
                         color: AppColors.textSecondary,
@@ -185,10 +185,7 @@ class _MoreActionsSheet extends StatelessWidget {
                   nativeWebView
                       ? '页面由系统 WebView 加载；分享功能尚未接入'
                       : '当前平台未启用系统 WebView；分享功能尚未接入',
-                  style: const TextStyle(
-                    fontSize: 9.5,
-                    color: AppColors.textMuted,
-                  ),
+                  style: TextStyle(fontSize: 9.5, color: AppColors.textMuted),
                 ),
               ],
             ),
@@ -229,7 +226,11 @@ class _ActionRow extends StatelessWidget {
                 color: AppColors.surfaceHigh,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, size: 17, color: const Color(0xFF9DB7E4)),
+              child: Icon(
+                icon,
+                size: 17,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
             const SizedBox(width: 11),
             Expanded(
@@ -238,7 +239,7 @@ class _ActionRow extends StatelessWidget {
                 children: <Widget>[
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w500,
                       color: AppColors.textPrimary,
@@ -249,17 +250,14 @@ class _ActionRow extends StatelessWidget {
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.textMuted,
-                    ),
+                    style: TextStyle(fontSize: 10, color: AppColors.textMuted),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
             trailing ??
-                const Icon(
+                Icon(
                   Icons.chevron_right_rounded,
                   size: 17,
                   color: AppColors.textMuted,
@@ -276,11 +274,11 @@ class _ActionDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Divider(
+    return Divider(
       height: 1,
       indent: 57,
       endIndent: 12,
-      color: Color(0x141F2C45),
+      color: Theme.of(context).colorScheme.outlineVariant,
     );
   }
 }
@@ -328,7 +326,7 @@ Future<void> showPageInfoSheet(
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: Colors.transparent,
-    barrierColor: const Color(0xCC02060D),
+    barrierColor: Colors.black54,
     builder: (BuildContext context) => _PageInfoSheet(
       service: service,
       deviceName: deviceName,
@@ -358,8 +356,8 @@ class _PageInfoSheet extends StatelessWidget {
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: media.size.height * 0.82),
       child: Material(
-        color: const Color(0xFF0B1422),
-        shape: const RoundedRectangleBorder(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
           side: BorderSide(color: AppColors.border),
         ),
@@ -392,7 +390,7 @@ class _PageInfoSheet extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          const Text(
+                          Text(
                             '页面信息',
                             style: TextStyle(
                               fontSize: 17,
@@ -403,7 +401,7 @@ class _PageInfoSheet extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             service.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10.5,
                               color: AppColors.textMuted,
                             ),
@@ -415,7 +413,7 @@ class _PageInfoSheet extends StatelessWidget {
                       onPressed: () => Navigator.of(context).pop(),
                       tooltip: '关闭',
                       visualDensity: VisualDensity.compact,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.close_rounded,
                         size: 20,
                         color: AppColors.textSecondary,
@@ -460,9 +458,7 @@ class _PageInfoSheet extends StatelessWidget {
                       const _ActionDivider(),
                       _InfoRow(
                         label: 'Cookie / 登录',
-                        value: nativeWebView
-                            ? '由系统 WebView 持久化'
-                            : '未启用',
+                        value: nativeWebView ? '由系统 WebView 持久化' : '未启用',
                       ),
                       const _ActionDivider(),
                       _InfoRow(
@@ -478,7 +474,7 @@ class _PageInfoSheet extends StatelessWidget {
                       ? '当前页面由系统 WebView 加载，Cookie 与登录状态会随应用数据保留。\n在线状态来自最近一次扫描或页面加载结果，未检测时显示未检测。'
                       : '当前平台没有系统 WebView，未加载任何网页内容。请使用 Android APK 或外部浏览器。\n在线状态来自最近一次扫描或页面加载结果。',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 9.5,
                     height: 1.5,
                     color: AppColors.textMuted,
@@ -517,7 +513,7 @@ class _InfoRow extends StatelessWidget {
             width: 84,
             child: Text(
               label,
-              style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+              style: TextStyle(fontSize: 11, color: AppColors.textMuted),
             ),
           ),
           const SizedBox(width: 8),

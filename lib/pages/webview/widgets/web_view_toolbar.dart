@@ -1,8 +1,4 @@
-import 'dart:ui' as ui;
-
 import 'package:material_ui/material_ui.dart';
-
-import '../../../core/theme/app_colors.dart';
 
 /// Floating five-action toolbar shown above the bottom handle.
 class WebViewToolbar extends StatelessWidget {
@@ -30,23 +26,13 @@ class WebViewToolbar extends StatelessWidget {
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 500),
-          child: Container(
+          child: SizedBox(
             height: 66,
-            decoration: BoxDecoration(
-              color: AppColors.surfaceSoft.withValues(alpha: 0.94),
+            child: Material(
+              elevation: 3,
+              color: Theme.of(context).colorScheme.surfaceContainerHigh,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.border),
-              boxShadow: const <BoxShadow>[
-                BoxShadow(
-                  color: Color(0x66000000),
-                  blurRadius: 20,
-                  offset: Offset(0, 8),
-                ),
-              ],
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              clipBehavior: Clip.antiAlias,
               child: Row(
                 children: <Widget>[
                   _ToolbarAction(
@@ -104,8 +90,10 @@ class _ToolbarAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool enabled = onTap != null;
-    final Color foreground =
-        enabled ? AppColors.textSecondary : AppColors.textMuted;
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final Color foreground = enabled
+        ? scheme.onSurfaceVariant
+        : scheme.onSurfaceVariant;
 
     return Expanded(
       child: Semantics(
@@ -122,7 +110,7 @@ class _ToolbarAction extends StatelessWidget {
                 icon,
                 size: 20,
                 color: enabled
-                    ? AppColors.textPrimary
+                    ? scheme.onSurface
                     : foreground.withValues(alpha: 0.38),
               ),
               const SizedBox(height: 5),
@@ -146,11 +134,7 @@ class _ToolbarAction extends StatelessWidget {
 
 /// Compact always-visible entry point for the toolbar.
 class WebViewHandle extends StatelessWidget {
-  const WebViewHandle({
-    super.key,
-    required this.expanded,
-    required this.onTap,
-  });
+  const WebViewHandle({super.key, required this.expanded, required this.onTap});
 
   final bool expanded;
   final VoidCallback onTap;
@@ -160,12 +144,13 @@ class WebViewHandle extends StatelessWidget {
     return Tooltip(
       message: expanded ? '收起工具栏' : '展开工具栏',
       child: Material(
-        color: AppColors.surfaceSoft.withValues(alpha: 0.92),
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+        elevation: expanded ? 3 : 1,
         shape: StadiumBorder(
           side: BorderSide(
             color: expanded
-                ? AppColors.accent.withValues(alpha: 0.36)
-                : AppColors.border,
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.36)
+                : Theme.of(context).colorScheme.outlineVariant,
           ),
         ),
         clipBehavior: Clip.antiAlias,
@@ -177,18 +162,18 @@ class WebViewHandle extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                const Icon(
+                Icon(
                   Icons.tune_rounded,
                   size: 13,
-                  color: AppColors.accent,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(width: 5),
-                const Text(
+                Text(
                   '工具栏',
                   style: TextStyle(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(width: 3),
@@ -197,7 +182,7 @@ class WebViewHandle extends StatelessWidget {
                       ? Icons.keyboard_arrow_down_rounded
                       : Icons.keyboard_arrow_up_rounded,
                   size: 15,
-                  color: AppColors.textMuted,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ],
             ),

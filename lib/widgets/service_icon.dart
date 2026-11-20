@@ -1,6 +1,5 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../core/theme/app_colors.dart';
 import '../models/device.dart';
 import '../models/device_category.dart';
 import '../models/service.dart';
@@ -56,7 +55,7 @@ IconData iconForService(Service service) {
   return Icons.language_rounded;
 }
 
-/// Rounded icon tile shared by every service presentation.
+/// Material 3 tonal icon tile shared by every service presentation.
 class ServiceIconBadge extends StatelessWidget {
   const ServiceIconBadge({
     super.key,
@@ -71,22 +70,20 @@ class ServiceIconBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: emphasized ? const Color(0xFF1B2B47) : AppColors.surfaceHigh,
+        color: emphasized
+            ? scheme.primaryContainer
+            : scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(size * 0.3),
-        border: Border.all(
-          color: emphasized
-              ? AppColors.accent.withValues(alpha: 0.28)
-              : AppColors.border,
-        ),
       ),
       child: Icon(
         icon,
         size: size * 0.47,
-        color: emphasized ? AppColors.accent : const Color(0xFF9DB7E4),
+        color: emphasized ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
       ),
     );
   }

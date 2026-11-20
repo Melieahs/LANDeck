@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:landeck/app.dart';
+import 'package:landeck/core/theme/theme_controller.dart';
 import 'package:landeck/models/device.dart';
 import 'package:landeck/repositories/service_repository.dart';
-import 'package:landeck/widgets/add_service_button.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'test_helpers.dart';
@@ -21,11 +21,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('我的网络'), findsOneWidget);
-    expect(find.text('0 个本地服务'), findsOneWidget);
     expect(find.text('还没有添加服务'), findsOneWidget);
     expect(find.text('收藏'), findsOneWidget);
     expect(find.text('设备分类'), findsOneWidget);
-    expect(find.byType(AddServiceButton), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('home-add-service')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('manual add writes the service and updates home', (
@@ -34,7 +36,9 @@ void main() {
     await tester.pumpWidget(LanDeckApp(repository: repository));
     await tester.pumpAndSettle();
 
-    final Finder addButton = find.byType(AddServiceButton);
+    final Finder addButton = find.byKey(
+      const ValueKey<String>('home-add-service'),
+    );
     await tester.ensureVisible(addButton);
     await tester.tap(addButton);
     await tester.pumpAndSettle();
@@ -51,7 +55,10 @@ void main() {
     final Finder save = find.byKey(
       const ValueKey<String>('service-save-button'),
     );
-    await tester.ensureVisible(save);
+    await tester.drag(find.byType(ListView).last, const Offset(0, -500));
+    await tester.pump();
+    await tester.drag(find.byType(ListView).last, const Offset(0, -500));
+    await tester.pump();
     await tester.tap(save);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 700));
@@ -60,9 +67,7 @@ void main() {
     expect(repository.services.single.name, '书房 NAS');
     expect(repository.services.single.url, 'http://192.168.1.10:5666');
     expect(find.text('书房 NAS'), findsWidgets);
-    expect(find.text('1 个本地服务'), findsOneWidget);
   });
-
 
   testWidgets('device quick add only needs a port and generates URL', (
     WidgetTester tester,
@@ -97,7 +102,10 @@ void main() {
     final Finder save = find.byKey(
       const ValueKey<String>('service-save-button'),
     );
-    await tester.ensureVisible(save);
+    await tester.drag(find.byType(ListView).last, const Offset(0, -500));
+    await tester.pump();
+    await tester.drag(find.byType(ListView).last, const Offset(0, -500));
+    await tester.pump();
     await tester.tap(save);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 700));
@@ -106,6 +114,32 @@ void main() {
     expect(repository.services.single.name, 'Jellyfin');
     expect(repository.services.single.url, 'http://192.168.1.10:8096');
     expect(find.text('Jellyfin'), findsWidgets);
+  });
+
+  testWidgets('theme selector switches to light and dark', (
+    WidgetTester tester,
+  ) async {
+    final ThemeController controller = ThemeController.inMemory();
+    await tester.pumpWidget(
+      LanDeckApp(repository: repository, themeController: controller),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey<String>('nav-destination-2')));
+    await tester.pumpAndSettle();
+    final Finder selector = find.byKey(
+      const ValueKey<String>('theme-mode-selector'),
+    );
+    await tester.ensureVisible(selector);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('浅色'));
+    await tester.pumpAndSettle();
+    expect(controller.mode, ThemeMode.light);
+
+    await tester.tap(find.text('深色'));
+    await tester.pumpAndSettle();
+    expect(controller.mode, ThemeMode.dark);
   });
 
   testWidgets('bottom navigation switches between tabs', (

@@ -1,11 +1,11 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/app_scope.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/theme_controller.dart';
 import '../../core/utils/feedback.dart';
-import '../devices/devices_page.dart';
 import '../../repositories/service_repository.dart';
+import '../devices/devices_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key, required this.onOpenDiscover});
@@ -15,151 +15,168 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final LanDeckRepository repository = AppScope.of(context);
+    final ThemeController themeController = ThemeScope.of(context);
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     return SafeArea(
       bottom: false,
       child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: kMaxAppWidth),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                const Text(
-                  '设置',
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.6,
-                    height: 1.15,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  '本地优先 · 无账号 · 无云端',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    children: <Widget>[
-                      _SettingsRow(
-                        icon: Icons.devices_other_rounded,
-                        title: '设备管理',
-                        value: '${repository.devices.length} 台',
-                        onTap: () => Navigator.of(context).push<void>(
-                          MaterialPageRoute<void>(
-                            builder: (BuildContext context) =>
-                                const DevicesPage(),
-                          ),
-                        ),
-                      ),
-                      const Divider(height: 1, indent: 52),
-                      _SettingsRow(
-                        icon: Icons.wifi_tethering_rounded,
-                        title: '局域网扫描',
-                        value: '在发现中',
-                        onTap: onOpenDiscover,
-                      ),
-                      const Divider(height: 1, indent: 52),
-                      _SettingsRow(
-                        icon: Icons.dark_mode_rounded,
-                        title: '外观',
-                        value: '深色',
-                        onTap: () => showAppSnackBar(
-                          context,
-                          '当前版本固定为深色主题',
-                        ),
-                      ),
-                      const Divider(height: 1, indent: 52),
-                      _SettingsRow(
-                        icon: Icons.storage_rounded,
-                        title: '数据存储',
-                        value: '本机数据库',
-                        onTap: () => showAppSnackBar(
-                          context,
-                          '${repository.services.length} 个服务、'
-                          '${repository.devices.length} 台设备保存在本机 Sembast 数据库',
-                        ),
-                      ),
-                      const Divider(height: 1, indent: 52),
-                      _SettingsRow(
-                        icon: Icons.info_outline_rounded,
-                        title: '关于 LANDeck',
-                        value: 'v0.4.0',
-                        onTap: () => showAppSnackBar(
-                          context,
-                          'LANDeck v0.4.0 · HTTP 身份验证',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Container(
-                  padding: const EdgeInsets.all(15),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceSoft,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          Icon(
-                            Icons.shield_outlined,
-                            size: 15,
-                            color: AppColors.accent,
-                          ),
-                          SizedBox(width: 7),
-                          Text(
-                            '隐私',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 7),
-                      Text(
-                        '服务、设备与扫描结果只在本机处理。'
-                        '扫描仅访问当前 Wi-Fi 网段，不上传任何数据，也不请求定位权限。',
-                        style: TextStyle(
-                          fontSize: 11,
-                          height: 1.65,
-                          color: AppColors.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Center(
-                  child: Text(
-                    'LANDeck · Local-first',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textMuted,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+            children: <Widget>[
+              Text('设置', style: Theme.of(context).textTheme.headlineMedium),
+              const SizedBox(height: 4),
+              Text(
+                '本地优先 · 无账号 · 无云端',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
                     ),
+              ),
+              const SizedBox(height: 20),
+              const _SectionLabel('外观'),
+              Card.outlined(
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  children: <Widget>[
+                    const ListTile(
+                      leading: Icon(Icons.palette_outlined),
+                      title: Text('主题'),
+                      subtitle: Text('默认跟随系统；选择会保存在本机。'),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: SegmentedButton<ThemeMode>(
+                          key: const ValueKey<String>('theme-mode-selector'),
+                          segments: const <ButtonSegment<ThemeMode>>[
+                            ButtonSegment<ThemeMode>(
+                              value: ThemeMode.system,
+                              label: Text('跟随系统'),
+                              icon: Icon(Icons.brightness_auto_outlined),
+                            ),
+                            ButtonSegment<ThemeMode>(
+                              value: ThemeMode.light,
+                              label: Text('浅色'),
+                              icon: Icon(Icons.light_mode_outlined),
+                            ),
+                            ButtonSegment<ThemeMode>(
+                              value: ThemeMode.dark,
+                              label: Text('深色'),
+                              icon: Icon(Icons.dark_mode_outlined),
+                            ),
+                          ],
+                          selected: <ThemeMode>{themeController.mode},
+                          showSelectedIcon: false,
+                          onSelectionChanged: (Set<ThemeMode> values) {
+                            themeController.setMode(values.first);
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              const _SectionLabel('设备与网络'),
+              Card.outlined(
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  children: <Widget>[
+                    ListTile(
+                      leading: const Icon(Icons.devices_other_outlined),
+                      title: const Text('设备管理'),
+                      subtitle: Text('${repository.devices.length} 台设备'),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => Navigator.of(context).push<void>(
+                        MaterialPageRoute<void>(
+                          builder: (BuildContext context) =>
+                              const DevicesPage(),
+                        ),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.wifi_tethering_rounded),
+                      title: const Text('局域网扫描'),
+                      subtitle: const Text('在「发现」中扫描当前 Wi-Fi 网段'),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: onOpenDiscover,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              const _SectionLabel('数据'),
+              Card.outlined(
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  children: <Widget>[
+                    ListTile(
+                      leading: const Icon(Icons.storage_outlined),
+                      title: const Text('数据存储'),
+                      subtitle: Text(
+                        '${repository.services.length} 个服务 · '
+                        '${repository.devices.length} 台设备',
+                      ),
+                      trailing: const Chip(
+                        label: Text('本机'),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      onTap: () => showAppSnackBar(
+                        context,
+                        '服务、设备与凭据都保存在本机，不使用云端。',
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.shield_outlined),
+                      title: const Text('隐私'),
+                      subtitle: const Text('扫描只访问当前局域网，不读取位置。'),
+                      onTap: () => showAppSnackBar(
+                        context,
+                        '不启用账号，不上传数据，不扫描公网。',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              const _SectionLabel('关于'),
+              Card.outlined(
+                clipBehavior: Clip.antiAlias,
+                child: ListTile(
+                  leading: const Icon(Icons.info_outline_rounded),
+                  title: const Text('LANDeck'),
+                  subtitle: const Text('v0.5.0 · Material 3 · 本地优先'),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => showAboutDialog(
+                    context: context,
+                    applicationName: 'LANDeck',
+                    applicationVersion: '0.5.0',
+                    applicationLegalese: 'Local-first. No account. No cloud.',
+                    children: const <Widget>[
+                      SizedBox(height: 12),
+                      Text(
+                        '集中管理家中的 NAS、路由器、电脑与 Docker 服务。'
+                        '所有数据保存在本机。',
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 20),
+              Center(
+                child: Text(
+                  'LANDeck · Local-first',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -167,53 +184,20 @@ class SettingsPage extends StatelessWidget {
   }
 }
 
-class _SettingsRow extends StatelessWidget {
-  const _SettingsRow({
-    required this.icon,
-    required this.title,
-    required this.value,
-    required this.onTap,
-  });
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel(this.text);
 
-  final IconData icon;
-  final String title;
-  final String value;
-  final VoidCallback onTap;
+  final String text;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 15, 14, 15),
-        child: Row(
-          children: <Widget>[
-            Icon(icon, size: 18, color: AppColors.textSecondary),
-            const SizedBox(width: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
             ),
-            const Spacer(),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textMuted,
-              ),
-            ),
-            const SizedBox(width: 6),
-            const Icon(
-              Icons.chevron_right_rounded,
-              size: 17,
-              color: AppColors.textMuted,
-            ),
-          ],
-        ),
       ),
     );
   }

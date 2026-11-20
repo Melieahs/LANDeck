@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../core/theme/app_colors.dart';
 
-/// Small dot used for online / offline state.
+/// Small dot used for the real online / offline state.
 class StatusDot extends StatelessWidget {
   const StatusDot({
     super.key,
@@ -22,11 +22,6 @@ class StatusDot extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
-        boxShadow: isOnline
-            ? <BoxShadow>[
-                BoxShadow(color: color.withValues(alpha: 0.35), blurRadius: 6),
-              ]
-            : null,
       ),
     );
   }

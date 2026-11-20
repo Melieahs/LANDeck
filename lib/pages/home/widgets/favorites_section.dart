@@ -1,6 +1,5 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../models/service.dart';
 import '../../../widgets/section_header.dart';
 import '../../../widgets/service_icon.dart';
@@ -36,10 +35,10 @@ class FavoritesSection extends StatelessWidget {
             padding: EdgeInsets.zero,
             itemCount: services.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              mainAxisExtent: 128,
+              crossAxisCount: 2,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              mainAxisExtent: 92,
             ),
             itemBuilder: (BuildContext context, int index) {
               final Service service = services[index];
@@ -63,51 +62,54 @@ class _FavoriteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.border),
-      ),
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final TextTheme text = Theme.of(context).textTheme;
+    return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: <Widget>[
-              Row(
-                children: <Widget>[
-                  ServiceIconBadge(
-                    icon: iconForService(service),
-                    size: 38,
-                    emphasized: true,
-                  ),
-                  const Spacer(),
-                  StatusDot(isOnline: service.isOnline, size: 6),
-                ],
+              ServiceIconBadge(
+                icon: iconForService(service),
+                size: 40,
+                emphasized: true,
               ),
-              const Spacer(),
-              Text(
-                service.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  height: 1.25,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                service.categoryLabel,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 10.5,
-                  color: AppColors.textMuted,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      service.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.titleSmall?.copyWith(
+                        color: scheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: <Widget>[
+                        StatusDot(isOnline: service.isOnline, size: 5),
+                        const SizedBox(width: 5),
+                        Expanded(
+                          child: Text(
+                            service.isOnline ? '在线' : service.statusLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: text.labelSmall?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -125,40 +127,15 @@ class _EmptyFavorites extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: <Widget>[
-          const Icon(
-            Icons.star_border_rounded,
-            size: 18,
-            color: AppColors.textMuted,
-          ),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              '还没有收藏的服务。',
-              style: TextStyle(fontSize: 12.5, color: AppColors.textMuted),
-            ),
-          ),
-          TextButton(
-            onPressed: onAddService,
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.accent,
-              visualDensity: VisualDensity.compact,
-            ),
-            child: const Text(
-              '添加',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
+    return Card.outlined(
+      child: ListTile(
+        leading: const Icon(Icons.star_outline_rounded),
+        title: const Text('还没有收藏的服务'),
+        subtitle: const Text('在服务编辑页打开收藏，即可出现在这里。'),
+        trailing: TextButton(
+          onPressed: onAddService,
+          child: const Text('添加'),
+        ),
       ),
     );
   }

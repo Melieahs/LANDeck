@@ -19,6 +19,8 @@ class AppDatabase {
       StoreRef<String, Map<String, Object?>>('services');
   static final StoreRef<String, Map<String, Object?>> deviceStore =
       StoreRef<String, Map<String, Object?>>('devices');
+  static final StoreRef<String, Map<String, Object?>> metaStore =
+      StoreRef<String, Map<String, Object?>>('meta');
 
   static Future<AppDatabase> open() async {
     final Database db = await openPlatformDatabase(version: schemaVersion);
@@ -37,6 +39,15 @@ class AppDatabase {
     );
     await migrateDatabase(db);
     return AppDatabase._(db);
+  }
+
+  Future<String?> readSetting(String key) async {
+    final Map<String, Object?>? record = await metaStore.record(key).get(db);
+    return record?['value'] as String?;
+  }
+
+  Future<void> writeSetting(String key, String value) async {
+    await metaStore.record(key).put(db, <String, Object?>{'value': value});
   }
 
   Future<void> close() => db.close();

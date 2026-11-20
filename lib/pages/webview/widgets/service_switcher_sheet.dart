@@ -19,7 +19,7 @@ Future<Service?> showServiceSwitcherSheet(
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: Colors.transparent,
-    barrierColor: const Color(0xCC02060D),
+    barrierColor: Colors.black54,
     builder: (BuildContext context) {
       return ServiceSwitcherSheet(
         services: services,
@@ -66,24 +66,25 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
     if (query.isEmpty) {
       return widget.services;
     }
-    return widget.services.where((Service service) {
-      final String haystack = <String>[
-        service.name,
-        service.url,
-        service.address,
-        service.categoryLabel,
-        widget.deviceNameFor(service),
-      ].join(' ').toLowerCase();
-      return haystack.contains(query);
-    }).toList(growable: false);
+    return widget.services
+        .where((Service service) {
+          final String haystack = <String>[
+            service.name,
+            service.url,
+            service.address,
+            service.categoryLabel,
+            widget.deviceNameFor(service),
+          ].join(' ').toLowerCase();
+          return haystack.contains(query);
+        })
+        .toList(growable: false);
   }
 
   @override
   Widget build(BuildContext context) {
     final MediaQueryData media = MediaQuery.of(context);
     final double inset = media.viewInsets.bottom;
-    final double available =
-        media.size.height - media.padding.top - inset - 12;
+    final double available = media.size.height - media.padding.top - inset - 12;
     final double height = math.min(640.0, available * 0.94);
     final List<Service> filtered = _filtered;
 
@@ -99,8 +100,8 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
       child: SizedBox(
         height: height,
         child: Material(
-          color: const Color(0xFF0B1422),
-          shape: const RoundedRectangleBorder(
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
             side: BorderSide(color: AppColors.border),
           ),
@@ -127,7 +128,7 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            const Text(
+                            Text(
                               '切换服务',
                               style: TextStyle(
                                 fontSize: 19,
@@ -139,7 +140,7 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                             const SizedBox(height: 4),
                             Text(
                               '同一局域网 · ${widget.services.length} 个服务',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10.5,
                                 color: AppColors.textMuted,
                               ),
@@ -151,7 +152,7 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                         onPressed: () => Navigator.of(context).pop(),
                         tooltip: '关闭',
                         visualDensity: VisualDensity.compact,
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.close_rounded,
                           size: 20,
                           color: AppColors.textSecondary,
@@ -172,7 +173,7 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                     ),
                     child: Row(
                       children: <Widget>[
-                        const Icon(
+                        Icon(
                           Icons.search_rounded,
                           size: 18,
                           color: AppColors.textMuted,
@@ -185,11 +186,11 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                                 setState(() => _query = value),
                             textInputAction: TextInputAction.search,
                             cursorColor: AppColors.accent,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12.5,
                               color: AppColors.textPrimary,
                             ),
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               isDense: true,
                               hintText: '搜索名称、设备或 IP',
                               hintStyle: TextStyle(
@@ -197,32 +198,34 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                                 color: AppColors.textMuted,
                               ),
                               border: InputBorder.none,
-                              contentPadding:
-                                  EdgeInsets.symmetric(vertical: 12),
+                              contentPadding: EdgeInsets.symmetric(
+                                vertical: 12,
+                              ),
                             ),
                           ),
                         ),
                         ValueListenableBuilder<TextEditingValue>(
                           valueListenable: _controller,
-                          builder: (
-                            BuildContext context,
-                            TextEditingValue value,
-                            Widget? child,
-                          ) {
-                            if (value.text.isEmpty) {
-                              return const SizedBox(width: 4);
-                            }
-                            return IconButton(
-                              onPressed: _clearSearch,
-                              tooltip: '清除搜索',
-                              visualDensity: VisualDensity.compact,
-                              icon: const Icon(
-                                Icons.close_rounded,
-                                size: 16,
-                                color: AppColors.textMuted,
-                              ),
-                            );
-                          },
+                          builder:
+                              (
+                                BuildContext context,
+                                TextEditingValue value,
+                                Widget? child,
+                              ) {
+                                if (value.text.isEmpty) {
+                                  return const SizedBox(width: 4);
+                                }
+                                return IconButton(
+                                  onPressed: _clearSearch,
+                                  tooltip: '清除搜索',
+                                  visualDensity: VisualDensity.compact,
+                                  icon: Icon(
+                                    Icons.close_rounded,
+                                    size: 16,
+                                    color: AppColors.textMuted,
+                                  ),
+                                );
+                              },
                         ),
                       ],
                     ),
@@ -232,7 +235,7 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                   padding: const EdgeInsets.fromLTRB(20, 13, 20, 4),
                   child: Row(
                     children: <Widget>[
-                      const Text(
+                      Text(
                         '按设备分组',
                         style: TextStyle(
                           fontSize: 10,
@@ -244,7 +247,7 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                       const Spacer(),
                       Text(
                         '${filtered.length} 个',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           color: AppColors.textMuted,
                         ),
@@ -267,8 +270,7 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                               for (final Service service in group.value)
                                 _ServiceRow(
                                   service: service,
-                                  selected:
-                                      service.id == widget.current.id,
+                                  selected: service.id == widget.current.id,
                                   onTap: () =>
                                       Navigator.of(context).pop(service),
                                 ),
@@ -297,18 +299,14 @@ class _GroupHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(2, 12, 2, 6),
       child: Row(
         children: <Widget>[
-          const Icon(
-            Icons.devices_rounded,
-            size: 12,
-            color: AppColors.textMuted,
-          ),
+          Icon(Icons.devices_rounded, size: 12, color: AppColors.textMuted),
           const SizedBox(width: 5),
           Expanded(
             child: Text(
               deviceName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w500,
                 color: AppColors.textMuted,
@@ -317,10 +315,7 @@ class _GroupHeader extends StatelessWidget {
           ),
           Text(
             '$count',
-            style: const TextStyle(
-              fontSize: 9.5,
-              color: AppColors.textMuted,
-            ),
+            style: TextStyle(fontSize: 9.5, color: AppColors.textMuted),
           ),
         ],
       ),
@@ -375,7 +370,7 @@ class _ServiceRow extends StatelessWidget {
                         service.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
@@ -386,7 +381,7 @@ class _ServiceRow extends StatelessWidget {
                         service.address,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           color: AppColors.textMuted,
                         ),
@@ -396,7 +391,7 @@ class _ServiceRow extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 if (selected)
-                  const Icon(
+                  Icon(
                     Icons.check_circle_rounded,
                     size: 18,
                     color: AppColors.accent,
@@ -432,7 +427,7 @@ class _EmptyResult extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[

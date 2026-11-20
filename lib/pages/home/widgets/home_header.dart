@@ -1,65 +1,120 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../widgets/status_dot.dart';
-
+/// Home overview: a restrained Material 3 summary instead of a dashboard.
 class HomeHeader extends StatelessWidget {
   const HomeHeader({
     super.key,
     required this.serviceCount,
+    required this.deviceCount,
     required this.onlineCount,
-    required this.onOpenSettings,
   });
 
   final int serviceCount;
+  final int deviceCount;
   final int onlineCount;
-  final VoidCallback onOpenSettings;
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final TextTheme text = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        const Text(
+        Text(
           '我的网络',
-          style: TextStyle(
-            fontSize: 30,
+          style: text.headlineSmall?.copyWith(
             fontWeight: FontWeight.w700,
-            letterSpacing: -0.6,
-            height: 1.15,
-            color: AppColors.textPrimary,
+            color: scheme.onSurface,
           ),
         ),
-        const SizedBox(height: 10),
-        Row(
+        const SizedBox(height: 4),
+        Text(
+          '本地优先，不经过云端',
+          style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 14),
+        Card(
+          color: scheme.surfaceContainer,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: _Stat(
+                    value: '$serviceCount',
+                    label: '服务',
+                    icon: Icons.dns_outlined,
+                  ),
+                ),
+                _Divider(color: scheme.outlineVariant),
+                Expanded(
+                  child: _Stat(
+                    value: '$deviceCount',
+                    label: '设备',
+                    icon: Icons.devices_other_outlined,
+                  ),
+                ),
+                _Divider(color: scheme.outlineVariant),
+                Expanded(
+                  child: _Stat(
+                    value: '$onlineCount',
+                    label: '在线',
+                    icon: Icons.wifi_tethering_rounded,
+                    highlight: onlineCount > 0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Stat extends StatelessWidget {
+  const _Stat({
+    required this.value,
+    required this.label,
+    required this.icon,
+    this.highlight = false,
+  });
+
+  final String value;
+  final String label;
+  final IconData icon;
+  final bool highlight;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final TextTheme text = Theme.of(context).textTheme;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        Icon(
+          icon,
+          size: 18,
+          color: highlight ? scheme.primary : scheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 7),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            StatusDot(isOnline: onlineCount > 0, size: 6),
-            const SizedBox(width: 8),
             Text(
-              '$serviceCount 个本地服务',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 7),
-              child: Text(
-                '·',
-                style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+              value,
+              style: text.titleLarge?.copyWith(
+                color: highlight ? scheme.primary : scheme.onSurface,
+                fontWeight: FontWeight.w700,
               ),
             ),
             Text(
-              '$onlineCount 在线',
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w500,
-                color: onlineCount > 0 ? AppColors.online : AppColors.textMuted,
+              label,
+              style: text.labelSmall?.copyWith(
+                color: scheme.onSurfaceVariant,
               ),
             ),
-            const Spacer(),
-            _SettingsPill(onTap: onOpenSettings),
           ],
         ),
       ],
@@ -67,42 +122,13 @@ class HomeHeader extends StatelessWidget {
   }
 }
 
-class _SettingsPill extends StatelessWidget {
-  const _SettingsPill({required this.onTap});
+class _Divider extends StatelessWidget {
+  const _Divider({required this.color});
 
-  final VoidCallback onTap;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surface,
-      shape: StadiumBorder(side: BorderSide(color: AppColors.border)),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              const Icon(
-                Icons.settings_rounded,
-                size: 14,
-                color: AppColors.textSecondary,
-              ),
-              const SizedBox(width: 5),
-              const Text(
-                '设置',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    return Container(width: 1, height: 34, color: color);
   }
 }

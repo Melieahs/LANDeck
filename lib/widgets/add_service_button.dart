@@ -13,7 +13,7 @@ class AddServiceButton extends StatelessWidget {
       color: AppColors.surfaceSoft,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: AppColors.border),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -23,7 +23,7 @@ class AddServiceButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              const Icon(
+              Icon(
                 Icons.add_rounded,
                 size: 19,
                 color: AppColors.accent,
@@ -31,7 +31,7 @@ class AddServiceButton extends StatelessWidget {
               const SizedBox(width: 7),
               Text(
                 '添加服务',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: AppColors.accent,

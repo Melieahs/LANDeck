@@ -3,7 +3,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/app_scope.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/url_utils.dart';
 import '../../models/scan_candidate.dart';
@@ -275,99 +274,207 @@ class _DiscoverPageState extends State<DiscoverPage> {
   @override
   Widget build(BuildContext context) {
     final LanDeckRepository repository = AppScope.of(context);
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     return SafeArea(
       bottom: false,
       child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: kMaxAppWidth),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                const Text(
-                  '发现',
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.6,
-                    height: 1.15,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  '扫描当前 Wi-Fi 网段，发现真实的局域网 Web 服务',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 22),
-                _NetworkCard(
-                  network: _network,
-                  error: _networkError,
-                  loading: _loadingNetwork,
-                  permissionDenied: _permissionDenied,
-                  onReload: () => _loadNetwork(requestPermission: true),
-                  onOpenSettings: openAppSettings,
-                ),
-                if (_permissionDenied) ...<Widget>[
-                  const SizedBox(height: 12),
-                  _PermissionDeniedBanner(
-                    onOpenSettings: openAppSettings,
-                    onRetry: _retryPermission,
-                  ),
-                ],
-                const SizedBox(height: 14),
-                _ScanControlCard(
-                  scanning: _scanning,
-                  cancelRequested: _cancelRequested,
-                  progress: _progress,
-                  canScan: _network != null &&
-                      !_loadingNetwork &&
-                      !_permissionDenied,
-                  onScan: _startScan,
-                  onCancel: _cancelScan,
-                  result: _result,
-                  error: _scanError,
-                ),
-                if (_result != null && !_result!.cancelled) ...<Widget>[
-                  const SizedBox(height: 22),
-                  _ResultsHeader(result: _result!),
-                  const SizedBox(height: 10),
-                  if (_result!.candidates.isEmpty)
-                    _NoResults(onRescan: _startScan)
-                  else
-                    ..._result!.candidates.map(
-                      (ScanCandidate candidate) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _CandidateCard(
-                          candidate: candidate,
-                          added: _isAdded(repository, candidate),
-                          onAdd: () => _addCandidate(candidate),
-                        ),
-                      ),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+            children: <Widget>[
+              Text(
+                '发现',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '扫描当前 Wi-Fi 网段，发现真实的局域网 Web 服务',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
                     ),
-                ],
-                if (_result?.cancelled == true) ...<Widget>[
-                  const SizedBox(height: 22),
-                  const _InfoNotice(
-                    icon: Icons.stop_circle_outlined,
-                    text: '扫描已取消，未保留部分结果。你可以随时重新扫描。',
-                  ),
-                ],
-                const SizedBox(height: 20),
-                const _InfoNotice(
-                  icon: Icons.privacy_tip_outlined,
-                  text: '扫描只访问当前 Wi-Fi 网段，不访问公网。'
-                      '发现结果不会自动保存，只有你确认添加后才会写入本机数据库。',
+              ),
+              const SizedBox(height: 20),
+              _NetworkCard(
+                network: _network,
+                error: _networkError,
+                loading: _loadingNetwork,
+                onReload: () => _loadNetwork(requestPermission: true),
+              ),
+              if (_permissionDenied) ...<Widget>[
+                const SizedBox(height: 12),
+                _PermissionDeniedBanner(
+                  onOpenSettings: openAppSettings,
+                  onRetry: _retryPermission,
                 ),
               ],
-            ),
+              const SizedBox(height: 12),
+              _ScanControlCard(
+                scanning: _scanning,
+                cancelRequested: _cancelRequested,
+                progress: _progress,
+                canScan:
+                    _network != null && !_loadingNetwork && !_permissionDenied,
+                onScan: _startScan,
+                onCancel: _cancelScan,
+                result: _result,
+                error: _scanError,
+              ),
+              if (_result != null && !_result!.cancelled) ...<Widget>[
+                const SizedBox(height: 20),
+                _ResultsHeader(result: _result!),
+                const SizedBox(height: 8),
+                if (_result!.candidates.isEmpty)
+                  _NoResults(onRescan: _startScan)
+                else
+                  ..._result!.candidates.map(
+                    (ScanCandidate candidate) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _CandidateCard(
+                        candidate: candidate,
+                        added: _isAdded(repository, candidate),
+                        onAdd: () => _addCandidate(candidate),
+                      ),
+                    ),
+                  ),
+              ],
+              if (_result?.cancelled == true) ...<Widget>[
+                const SizedBox(height: 16),
+                const _InfoNotice(
+                  icon: Icons.stop_circle_outlined,
+                  text: '扫描已取消，未保留部分结果。你可以随时重新扫描。',
+                ),
+              ],
+              if (_result?.errors.isNotEmpty == true) ...<Widget>[
+                const SizedBox(height: 12),
+                _ScanErrors(errors: _result!.errors),
+              ],
+              const SizedBox(height: 12),
+              const _InfoNotice(
+                icon: Icons.shield_outlined,
+                text: '仅扫描当前局域网，不访问公网。扫描结果只是候选，'
+                    '确认后才会写入服务列表。',
+              ),
+            ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _NetworkCard extends StatelessWidget {
+  const _NetworkCard({
+    required this.network,
+    required this.error,
+    required this.loading,
+    required this.onReload,
+  });
+
+  final LanNetworkInfo? network;
+  final String? error;
+  final bool loading;
+  final VoidCallback onReload;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return Card.outlined(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                const Icon(Icons.wifi_rounded),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '当前网络',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                if (loading)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  IconButton(
+                    tooltip: '重新获取',
+                    onPressed: onReload,
+                    icon: const Icon(Icons.refresh_rounded),
+                  ),
+              ],
+            ),
+            if (loading) ...<Widget>[
+              const SizedBox(height: 8),
+              const LinearProgressIndicator(minHeight: 2),
+            ] else if (error != null) ...<Widget>[
+              const SizedBox(height: 6),
+              Text(
+                error!,
+                style: TextStyle(color: scheme.error),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: onReload,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('重新获取'),
+              ),
+            ] else if (network != null) ...<Widget>[
+              const SizedBox(height: 6),
+              _InfoRow(label: '接口', value: network!.interfaceName),
+              _InfoRow(label: 'IPv4', value: network!.ipAddress),
+              _InfoRow(label: '子网掩码', value: network!.subnetMask),
+              _InfoRow(label: 'CIDR', value: network!.cidr),
+              _InfoRow(label: '扫描范围', value: network!.rangeLabel),
+              _InfoRow(label: '可用主机', value: '${network!.usableHostCount} 台'),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(
+            width: 78,
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontFeatures: const <FontFeature>[
+                      FontFeature.tabularFigures(),
+                    ],
+                  ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -379,244 +486,56 @@ class _PermissionDeniedBanner extends StatelessWidget {
     required this.onRetry,
   });
 
-  final Future<bool> Function() onOpenSettings;
+  final VoidCallback onOpenSettings;
   final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 8, 10),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.offline.withValues(alpha: 0.45)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              const Icon(
-                Icons.lock_outline_rounded,
-                size: 18,
-                color: AppColors.textSecondary,
-              ),
-              const SizedBox(width: 9),
-              const Expanded(
-                child: Text(
-                  '未授予「附近设备」权限',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: () => onOpenSettings(),
-                child: const Text('系统设置'),
-              ),
-              TextButton(
-                onPressed: onRetry,
-                child: const Text('重试'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            '系统阻止了 Wi-Fi 信息与局域网扫描权限。请在系统设置中允许 LANDeck 访问附近设备后重试。',
-            style: TextStyle(
-              fontSize: 11.5,
-              height: 1.55,
-              color: AppColors.textMuted,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NetworkCard extends StatelessWidget {
-  const _NetworkCard({
-    required this.network,
-    required this.error,
-    required this.loading,
-    required this.permissionDenied,
-    required this.onReload,
-    required this.onOpenSettings,
-  });
-
-  final LanNetworkInfo? network;
-  final String? error;
-  final bool loading;
-  final bool permissionDenied;
-  final VoidCallback onReload;
-  final Future<bool> Function() onOpenSettings;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.accentSoft,
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                child: const Icon(
-                  Icons.wifi_rounded,
-                  size: 18,
-                  color: AppColors.accent,
-                ),
-              ),
-              const SizedBox(width: 11),
-              const Expanded(
-                child: Text(
-                  '当前网络',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              if (loading)
-                const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 1.6),
-                )
-              else if (network != null)
-                Row(
-                  children: <Widget>[
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: const BoxDecoration(
-                        color: AppColors.online,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    const Text(
-                      '已连接',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.online,
-                      ),
-                    ),
-                  ],
-                )
-              else
-                const Text(
-                  '不可用',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textMuted,
-                  ),
-                ),
-            ],
-          ),
-          if (network != null) ...<Widget>[
-            const SizedBox(height: 14),
-            _NetworkRow(label: '网络接口', value: network!.interfaceName),
-            _NetworkRow(label: 'IPv4 地址', value: network!.ipAddress),
-            _NetworkRow(
-              label: '子网掩码',
-              value: '${network!.subnetMask}  ·  /${network!.prefixLength}',
-            ),
-            _NetworkRow(label: '扫描范围', value: network!.rangeLabel),
-            _NetworkRow(
-              label: '可探测主机',
-              value: '${network!.usableHostCount} 台',
-              last: true,
-            ),
-          ] else if (!loading) ...<Widget>[
-            const SizedBox(height: 10),
-            Text(
-              error ?? '无法获取网络信息',
-              style: const TextStyle(
-                fontSize: 12,
-                height: 1.6,
-                color: AppColors.textMuted,
-              ),
-            ),
-            const SizedBox(height: 10),
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return Card(
+      color: scheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
             Row(
               children: <Widget>[
-                OutlinedButton.icon(
-                  onPressed: onReload,
-                  icon: const Icon(Icons.refresh_rounded, size: 15),
-                  label: const Text('重新获取'),
-                ),
-                if (permissionDenied) ...<Widget>[
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: onOpenSettings,
-                    child: const Text('打开系统设置'),
+                Icon(Icons.lock_outline_rounded, color: scheme.onErrorContainer),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '未授予「附近设备」权限',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: scheme.onErrorContainer,
+                        ),
                   ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '扫描和读取 Wi-Fi 网段需要该权限。可以在系统设置中授权，或重试。',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.onErrorContainer,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 8,
+              children: <Widget>[
+                TextButton(
+                  onPressed: onOpenSettings,
+                  child: const Text('系统设置'),
+                ),
+                TextButton(
+                  onPressed: onRetry,
+                  child: const Text('重试'),
+                ),
               ],
             ),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-class _NetworkRow extends StatelessWidget {
-  const _NetworkRow({
-    required this.label,
-    required this.value,
-    this.last = false,
-  });
-
-  final String label;
-  final String value;
-  final bool last;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: last ? 0 : 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          SizedBox(
-            width: 78,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11.5,
-                color: AppColors.textMuted,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              style: const TextStyle(
-                fontSize: 11.5,
-                color: AppColors.textSecondary,
-                fontFeatures: <FontFeature>[FontFeature.tabularFigures()],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -643,183 +562,85 @@ class _ScanControlCard extends StatelessWidget {
   final LanScanResult? result;
   final String? error;
 
-  String get _phaseLabel {
-    return switch (progress?.phase) {
-      'mdns' => 'mDNS 发现',
-      'ssdp' => 'SSDP 发现',
-      'tcp' => '端口探测',
-      'verify' => 'Web 服务验证',
-      'done' => '扫描完成',
-      _ => '局域网扫描',
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              const Expanded(
-                child: Text(
-                  '真实扫描',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              if (!scanning)
-                FilledButton.icon(
-                  onPressed: canScan ? onScan : null,
-                  icon: const Icon(Icons.radar_rounded, size: 16),
-                  label: Text(result == null ? '开始扫描' : '重新扫描'),
-                ),
-            ],
-          ),
-          if (scanning) ...<Widget>[
-            const SizedBox(height: 14),
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return Card.filled(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
             Row(
               children: <Widget>[
+                Icon(
+                  scanning ? Icons.radar_rounded : Icons.travel_explore_rounded,
+                  color: scheme.primary,
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    cancelRequested ? '正在取消…' : _phaseLabel,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
+                    scanning ? '正在扫描' : '局域网扫描',
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
-                TextButton.icon(
-                  onPressed: cancelRequested ? null : onCancel,
-                  icon: const Icon(Icons.stop_rounded, size: 15),
-                  label: const Text('取消'),
-                ),
+                if (result != null && !scanning)
+                  Text(
+                    '${result!.candidates.length} 个结果',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                  ),
               ],
             ),
-            const SizedBox(height: 7),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(3),
-              child: LinearProgressIndicator(
+            if (scanning) ...<Widget>[
+              const SizedBox(height: 12),
+              LinearProgressIndicator(
+                value: progress?.ratio == 0 ? null : progress?.ratio,
                 minHeight: 4,
-                value: (progress?.total ?? 0) > 0 ? progress!.ratio : null,
-                backgroundColor: AppColors.surfaceHigh,
-                color: AppColors.accent,
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              progress?.message ?? '正在准备扫描…',
-              style: const TextStyle(
-                fontSize: 11,
-                height: 1.5,
-                color: AppColors.textMuted,
+              const SizedBox(height: 8),
+              Text(
+                progress?.message ?? '正在准备扫描…',
+                style: Theme.of(context).textTheme.bodySmall,
               ),
-            ),
-            if ((progress?.total ?? 0) > 0) ...<Widget>[
+              if (progress != null && progress!.total > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '${progress!.completed} / ${progress!.total}',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                  ),
+                ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: cancelRequested ? null : onCancel,
+                icon: const Icon(Icons.stop_circle_outlined),
+                label: Text(cancelRequested ? '正在取消…' : '取消扫描'),
+              ),
+            ] else ...<Widget>[
               const SizedBox(height: 4),
               Text(
-                '${progress!.completed} / ${progress!.total}',
-                style: const TextStyle(
-                  fontSize: 10.5,
-                  color: AppColors.textMuted,
-                  fontFeatures: <FontFeature>[FontFeature.tabularFigures()],
-                ),
+                '扫描 mDNS、SSDP，并探测当前网段的常见 Web 端口。'
+                '只使用当前网络，不会扫描公网。',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: canScan ? onScan : null,
+                icon: const Icon(Icons.search_rounded),
+                label: const Text('开始扫描'),
               ),
             ],
-          ] else if (result == null && error == null) ...<Widget>[
-            const SizedBox(height: 10),
-            const Text(
-              '使用 mDNS、SSDP 与常见 Web 端口探测，并对开放端口发送 HTTP / HTTPS 请求确认页面。'
-              '只有检测到真实响应的地址才会成为结果。',
-              style: TextStyle(
-                fontSize: 11.5,
-                height: 1.65,
-                color: AppColors.textMuted,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const _InfoNotice(
-              icon: Icons.speed_rounded,
-              text: '扫描不会访问公网，也不会自动添加任何服务。',
-            ),
-          ],
-          if (error != null && !scanning) ...<Widget>[
-            const SizedBox(height: 10),
-            Text(
-              error!,
-              style: const TextStyle(
-                fontSize: 11.5,
-                height: 1.5,
-                color: AppColors.offline,
-              ),
-            ),
-          ],
-          if (result != null && !scanning) ...<Widget>[
-            const SizedBox(height: 12),
-            Row(
-              children: <Widget>[
-                _CountPill(label: '结果', value: '${result!.candidates.length}'),
-                const SizedBox(width: 7),
-                _CountPill(label: 'mDNS', value: '${result!.mdnsCount}'),
-                const SizedBox(width: 7),
-                _CountPill(label: 'SSDP', value: '${result!.ssdpCount}'),
-                const Spacer(),
-                Text(
-                  '${result!.duration.inSeconds}s',
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    color: AppColors.textMuted,
-                  ),
-                ),
-              ],
-            ),
-            if (result!.errors.isNotEmpty) ...<Widget>[
-              const SizedBox(height: 9),
-              Text(
-                result!.errors.take(2).join('\n'),
-                style: const TextStyle(
-                  fontSize: 10.5,
-                  height: 1.5,
-                  color: AppColors.textMuted,
-                ),
-              ),
+            if (error != null) ...<Widget>[
+              const SizedBox(height: 10),
+              Text(error!, style: TextStyle(color: scheme.error)),
             ],
           ],
-        ],
-      ),
-    );
-  }
-}
-
-class _CountPill extends StatelessWidget {
-  const _CountPill({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceSoft,
-        borderRadius: BorderRadius.circular(7),
-      ),
-      child: Text(
-        '$label $value',
-        style: const TextStyle(
-          fontSize: 10,
-          color: AppColors.textMuted,
         ),
       ),
     );
@@ -836,23 +657,18 @@ class _ResultsHeader extends StatelessWidget {
     final int confirmed =
         result.candidates.where((ScanCandidate c) => c.isConfirmed).length;
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
       children: <Widget>[
-        const Text(
-          '扫描结果',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+        Expanded(
+          child: Text(
+            '扫描结果',
+            style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
-        const SizedBox(width: 8),
         Text(
-          '$confirmed 个已确认 · ${result.candidates.length} 条结果',
-          style: const TextStyle(
-            fontSize: 11,
-            color: AppColors.textMuted,
-          ),
+          '$confirmed 已确认 · mDNS ${result.mdnsCount} · SSDP ${result.ssdpCount}',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
         ),
       ],
     );
@@ -872,153 +688,97 @@ class _CandidateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool confirmed = candidate.isConfirmed;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 13, 12, 13),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: confirmed
-                  ? AppColors.accentSoft
-                  : AppColors.surfaceSoft,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              confirmed ? Icons.public_rounded : Icons.help_outline_rounded,
-              size: 19,
-              color: confirmed ? AppColors.accent : AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return Card.outlined(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: added ? null : onAdd,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Icon(
+                candidate.isConfirmed
+                    ? Icons.verified_rounded
+                    : Icons.help_outline_rounded,
+                color: candidate.isConfirmed
+                    ? scheme.primary
+                    : scheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Flexible(
-                      child: Text(
-                        candidate.displayTitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
+                    Text(
+                      candidate.displayTitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall,
                     ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: confirmed
-                            ? AppColors.surfaceSoft
-                            : AppColors.surfaceSoft,
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                      child: Text(
-                        candidate.confidenceLabel,
-                        style: TextStyle(
-                          fontSize: 9.5,
-                          color: confirmed
-                              ? AppColors.online
-                              : AppColors.textSecondary,
-                        ),
-                      ),
+                    const SizedBox(height: 2),
+                    Text(
+                      candidate.url,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: <Widget>[
+                        _MiniChip(text: candidate.confidenceLabel),
+                        _MiniChip(text: candidate.sourceLabel),
+                        if (candidate.detailLabel.isNotEmpty)
+                          _MiniChip(text: candidate.detailLabel),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  candidate.url,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    color: AppColors.accent,
-                    fontFeatures: <FontFeature>[FontFeature.tabularFigures()],
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  <String>[
-                    candidate.sourceLabel,
-                    if (candidate.detailLabel.isNotEmpty) candidate.detailLabel,
-                  ].join(' · '),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: AppColors.textMuted,
-                  ),
-                ),
-                if (!confirmed) ...<Widget>[
-                  const SizedBox(height: 2),
-                  const Text(
-                    '端口开放，但未确认 HTTP 响应',
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      color: AppColors.textMuted,
+              ),
+              const SizedBox(width: 8),
+              added
+                  ? const Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: Text('已添加'),
+                    )
+                  : FilledButton.tonal(
+                      onPressed: onAdd,
+                      child: const Text('添加'),
                     ),
-                  ),
-                ],
-              ],
-            ),
+            ],
           ),
-          const SizedBox(width: 8),
-          if (added)
-            const Padding(
-              padding: EdgeInsets.only(right: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Icon(
-                    Icons.check_circle_rounded,
-                    size: 14,
-                    color: AppColors.online,
-                  ),
-                  SizedBox(width: 3),
-                  Text(
-                    '已添加',
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      color: AppColors.online,
-                    ),
-                  ),
-                ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniChip extends StatelessWidget {
+  const _MiniChip({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        child: Text(
+          text,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: scheme.onSurfaceVariant,
               ),
-            )
-          else
-            TextButton(
-              key: ValueKey<String>('scan-add-${candidate.id}'),
-              onPressed: onAdd,
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                minimumSize: const Size(0, 32),
-                backgroundColor: AppColors.accentSoft,
-                foregroundColor: AppColors.accent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(9),
-                ),
-              ),
-              child: const Text(
-                '添加',
-                style: TextStyle(fontSize: 11.5),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
@@ -1031,47 +791,40 @@ class _NoResults extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
+    return Card.outlined(
+      child: ListTile(
+        leading: const Icon(Icons.search_off_rounded),
+        title: const Text('没有发现服务'),
+        subtitle: const Text('确认设备在线，或稍后重新扫描。'),
+        trailing: TextButton(
+          onPressed: onRescan,
+          child: const Text('重新扫描'),
+        ),
       ),
-      child: Column(
-        children: <Widget>[
-          const Icon(
-            Icons.search_off_rounded,
-            size: 30,
-            color: AppColors.textMuted,
-          ),
-          const SizedBox(height: 9),
-          const Text(
-            '未发现可访问的 Web 服务',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            '确认设备与手机在同一 Wi-Fi、目标服务已启动，然后重试。',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 11,
-              height: 1.5,
-              color: AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(height: 10),
-          OutlinedButton.icon(
-            onPressed: onRescan,
-            icon: const Icon(Icons.refresh_rounded, size: 15),
-            label: const Text('重新扫描'),
-          ),
-        ],
+    );
+  }
+}
+
+class _ScanErrors extends StatelessWidget {
+  const _ScanErrors({required this.errors});
+
+  final List<String> errors;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return Card.outlined(
+      child: ExpansionTile(
+        leading: Icon(Icons.info_outline_rounded, color: scheme.error),
+        title: Text('部分发现方式未完成（${errors.length}）'),
+        children: errors
+            .map(
+              (String error) => ListTile(
+                dense: true,
+                title: Text(error),
+              ),
+            )
+            .toList(),
       ),
     );
   }
@@ -1085,19 +838,18 @@ class _InfoNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Icon(icon, size: 14, color: AppColors.textMuted),
-        const SizedBox(width: 7),
+        Icon(icon, size: 16, color: scheme.onSurfaceVariant),
+        const SizedBox(width: 6),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-              fontSize: 10.5,
-              height: 1.6,
-              color: AppColors.textMuted,
-            ),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
           ),
         ),
       ],
