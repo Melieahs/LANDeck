@@ -97,6 +97,12 @@ class DeviceDiscoveryService {
             .browse();
         mdnsCount = found.length;
         for (final IosBonjourResult item in found) {
+          // The rest of the phase-one UI and CIDR math is IPv4-only. Bonjour
+          // often resolves link-local IPv6 first (fe80::…%en0), which is not a
+          // usable replacement for the discovered device's LAN IPv4 address.
+          if (item.ipAddress.contains(':')) {
+            continue;
+          }
           final _DeviceBuilder builder = builders.putIfAbsent(
             item.ipAddress,
             () => _DeviceBuilder(item.ipAddress),
@@ -290,14 +296,33 @@ class DeviceDiscoveryService {
   }
 
   int _ipCompare(String a, String b) {
-    final List<int> left = a.split('.').map(int.parse).toList();
-    final List<int> right = b.split('.').map(int.parse).toList();
+    final List<int>? left = _ipv4Parts(a);
+    final List<int>? right = _ipv4Parts(b);
+    if (left == null || right == null) {
+      return a.compareTo(b);
+    }
     for (int i = 0; i < 4; i++) {
       if (left[i] != right[i]) {
         return left[i].compareTo(right[i]);
       }
     }
     return 0;
+  }
+
+  List<int>? _ipv4Parts(String value) {
+    final List<String> parts = value.split('.');
+    if (parts.length != 4) {
+      return null;
+    }
+    final List<int> result = <int>[];
+    for (final String part in parts) {
+      final int? number = int.tryParse(part);
+      if (number == null || number < 0 || number > 255) {
+        return null;
+      }
+      result.add(number);
+    }
+    return result;
   }
 
   Future<List<_MdnsDevice>> _discoverMdns(

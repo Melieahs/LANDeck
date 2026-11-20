@@ -198,11 +198,39 @@ class FtpBackupService {
         throw const FtpBackupException('无法连接 FTP 服务器');
       }
       if (config.normalizedDirectory != '/') {
-        final bool changed = await client.changeDirectory(
-          config.normalizedDirectory,
-        );
+        final String directory = config.normalizedDirectory;
+        final String relative = directory.replaceFirst(RegExp(r'^/+'), '');
+        bool changed = false;
+        for (final String candidate in <String>{
+          directory,
+          '$directory/',
+          if (relative.isNotEmpty) relative,
+          if (relative.isNotEmpty) '$relative/',
+        }) {
+          if (await client.changeDirectory(candidate)) {
+            changed = true;
+            break;
+          }
+        }
         if (!changed) {
-          throw FtpBackupException('FTP 目录不存在：${config.normalizedDirectory}');
+          String current = '/';
+          String rootEntries = '';
+          try {
+            current = await client.currentDirectory();
+            final List<FTPEntry> entries = await client.listDirectoryContent();
+            rootEntries = entries
+                .take(10)
+                .map((FTPEntry entry) => entry.name)
+                .where((String name) => name.isNotEmpty)
+                .join('、');
+          } on Object {
+            // The diagnostic is best effort; the directory error is primary.
+          }
+          throw FtpBackupException(
+            'FTP 拒绝进入 $directory（当前目录：$current）'
+            '${rootEntries.isEmpty ? '' : '；根目录包含：$rootEntries'}。'
+            '如果登录后根目录就是目标目录，请把远程目录填 /。',
+          );
         }
       }
       return await action(client);
