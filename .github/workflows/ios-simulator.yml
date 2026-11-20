@@ -25,11 +25,8 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Flutter and Xcode version
-        run: |
-          flutter --version
-          xcodebuild -version
-          xcrun simctl list runtimes
+      - name: Flutter version
+        run: flutter --version
 
       - name: Install dependencies
         run: flutter pub get
