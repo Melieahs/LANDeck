@@ -87,6 +87,16 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+      - name: Commit screenshot to repository
+        run: |
+          mkdir -p docs/screenshots
+          cp screenshots/ios/ios-home.png docs/screenshots/ios-home.png
+          git config user.name "LANDeck CI"
+          git config user.email "ci@users.noreply.github.com"
+          git add docs/screenshots/ios-home.png
+          git commit -m "docs(ios): update Liquid Glass home screenshot [skip ci]" || true
+          git push || true
+
       - name: Build unsigned device app
         run: flutter build ios --release --no-codesign
 
