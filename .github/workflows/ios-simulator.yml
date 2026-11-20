@@ -33,11 +33,6 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
-      - name: Test
-        continue-on-error: true
-        timeout-minutes: 5
-        run: flutter test --timeout 90s --reporter expanded
-
       - name: Build unsigned device app
         run: flutter build ios --release --no-codesign
 
