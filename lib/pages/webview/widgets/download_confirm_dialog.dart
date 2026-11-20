@@ -78,7 +78,7 @@ Future<bool> showDownloadConfirmDialog(
                 label: '保存位置',
                 value: defaultTargetPlatform == TargetPlatform.iOS
                     ? '文件 App / LANDeck / Downloads'
-                    : '确认后选择保存位置',
+                    : 'LANDeck 内部下载目录',
               ),
               if (data.risky) ...<Widget>[
                 const SizedBox(height: 12),

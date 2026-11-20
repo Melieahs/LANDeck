@@ -95,6 +95,22 @@ class NativeDownloadBridge {
   }
 }
 
+class InternalFile {
+  const InternalFile({
+    required this.name,
+    required this.path,
+    required this.uri,
+    required this.size,
+    required this.modified,
+  });
+
+  final String name;
+  final String path;
+  final String uri;
+  final int size;
+  final DateTime modified;
+}
+
 class NativeFileBridge {
   const NativeFileBridge();
 
@@ -142,6 +158,34 @@ class NativeFileBridge {
       return <String>[];
     } on MissingPluginException {
       return <String>[];
+    }
+  }
+
+  Future<List<InternalFile>> listInternalFiles() async {
+    try {
+      final List<Object?>? result = await _channel.invokeListMethod<Object?>(
+        'listInternalFiles',
+      );
+      return result
+              ?.whereType<Map<Object?, Object?>>()
+              .map((Map<Object?, Object?> raw) {
+                return InternalFile(
+                  name: raw['name'] as String? ?? '',
+                  path: raw['path'] as String? ?? '',
+                  uri: raw['uri'] as String? ?? '',
+                  size: (raw['size'] as num?)?.toInt() ?? 0,
+                  modified: DateTime.fromMillisecondsSinceEpoch(
+                    (raw['modified'] as num?)?.toInt() ?? 0,
+                  ),
+                );
+              })
+              .where((InternalFile file) => file.uri.isNotEmpty)
+              .toList() ??
+          <InternalFile>[];
+    } on PlatformException {
+      return <InternalFile>[];
+    } on MissingPluginException {
+      return <InternalFile>[];
     }
   }
 

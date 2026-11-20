@@ -15,8 +15,11 @@ import android.os.IBinder
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.content.FileProvider
 import org.json.JSONObject
+import java.io.File
 import java.io.FileNotFoundException
+import java.io.FileOutputStream
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.SocketTimeoutException
@@ -208,8 +211,11 @@ class DownloadService : Service() {
                 )
             }
             val uri = Uri.parse(destination)
-            val output = contentResolver.openOutputStream(uri)
-                ?: throw DownloadStorageException("保存位置不可用")
+            val output = if (uri.scheme == "file") {
+                FileOutputStream(File(uri.path ?: throw DownloadStorageException("保存位置不可用")))
+            } else {
+                contentResolver.openOutputStream(uri)
+            } ?: throw DownloadStorageException("保存位置不可用")
             output.use { stream ->
                 connection.inputStream.use { input ->
                     val buffer = ByteArray(64 * 1024)
@@ -240,10 +246,10 @@ class DownloadService : Service() {
             }
 
             if (displayName != fileName) {
-                outputDestination = renameDocument(
+                outputDestination = renameOutput(
                     Uri.parse(outputDestination),
                     displayName,
-                )?.toString() ?: outputDestination
+                ) ?: outputDestination
             }
             writeStatus(
                 this,
@@ -345,9 +351,28 @@ class DownloadService : Service() {
         return cleaned.take(120).ifBlank { "下载文件" }
     }
 
-    private fun renameDocument(uri: Uri, name: String): Uri? {
+    private fun renameOutput(uri: Uri, name: String): String? {
+        if (uri.scheme == "file") {
+            val source = uri.path?.let { File(it) } ?: return null
+            val parent = source.parentFile ?: return null
+            var target = File(parent, sanitizeFileName(name))
+            if (target.absolutePath == source.absolutePath) return uri.toString()
+            val dot = target.name.lastIndexOf('.')
+            val stem = if (dot > 0) target.name.substring(0, dot) else target.name
+            val ext = if (dot > 0) target.name.substring(dot) else ""
+            var index = 1
+            while (target.exists()) {
+                target = File(parent, "$stem ($index)$ext")
+                index += 1
+            }
+            return if (source.renameTo(target)) {
+                Uri.fromFile(target).toString()
+            } else {
+                uri.toString()
+            }
+        }
         return try {
-            DocumentsContract.renameDocument(contentResolver, uri, name)
+            DocumentsContract.renameDocument(contentResolver, uri, name)?.toString()
         } catch (_: Exception) {
             // The provider may not support rename; the file is still intact.
             null
@@ -405,8 +430,17 @@ class DownloadService : Service() {
         mimeType: String?,
     ) {
         val uri = Uri.parse(destination)
+        val openUri = if (uri.scheme == "file") {
+            FileProvider.getUriForFile(
+                this,
+                "$packageName.fileprovider",
+                File(uri.path ?: ""),
+            )
+        } else {
+            uri
+        }
         val openIntent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, mimeType ?: "application/octet-stream")
+            setDataAndType(openUri, mimeType ?: "application/octet-stream")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         val pending = PendingIntent.getActivity(

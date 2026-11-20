@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -26,6 +27,7 @@ import 'widgets/service_switcher_sheet.dart';
 import 'widgets/web_error_view.dart';
 import 'widgets/web_view_toolbar.dart';
 import '../downloads/downloads_page.dart';
+import '../files/internal_file_picker_page.dart';
 
 /// Immersive viewer for a user-added service URL.
 ///
@@ -698,6 +700,23 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
                 : params.acceptTypes.first,
           );
       return destination == null ? <String>[] : <String>[destination];
+    }
+    if (defaultTargetPlatform == TargetPlatform.android && mounted) {
+      // Android experiment: the app owns the file UI instead of handing the
+      // user to DocumentsUI. Downloads are saved and uploaded from LANDeck's
+      // internal Downloads directory.
+      final List<String>? selected = await Navigator.of(context)
+          .push<List<String>>(
+            MaterialPageRoute<List<String>>(
+              builder: (BuildContext context) => InternalFilePickerPage(
+                multiple:
+                    params.mode != FileSelectorMode.open &&
+                    params.mode != FileSelectorMode.save,
+                title: params.isCaptureEnabled ? '选择图片或视频' : '选择要上传的文件',
+              ),
+            ),
+          );
+      return selected ?? <String>[];
     }
     bool wantsFolder = false;
     try {

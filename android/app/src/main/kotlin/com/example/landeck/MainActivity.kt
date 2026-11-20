@@ -7,6 +7,8 @@ import android.net.Uri
 import android.net.wifi.WifiManager
 import android.provider.DocumentsContract
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import java.io.File
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -114,28 +116,18 @@ class MainActivity : FlutterActivity() {
                     }
                 }
                 "pickSaveFile" -> {
-                    if (saveFileResult != null) {
-                        result.error("picker_busy", "已有保存选择器正在打开", null)
-                        return@setMethodCallHandler
-                    }
                     val fileName = call.argument<String>("fileName") ?: "download"
-                    val mimeType = call.argument<String>("mimeType")
-                        ?: "application/octet-stream"
-                    val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                        addCategory(Intent.CATEGORY_OPENABLE)
-                        type = mimeType
-                        putExtra(Intent.EXTRA_TITLE, fileName)
-                        addFlags(
-                            Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
-                                Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                        )
-                    }
-                    saveFileResult = result
                     try {
-                        startActivityForResult(intent, REQUEST_SAVE_FILE)
+                        result.success(createInternalDownloadFile(fileName).toString())
                     } catch (error: Exception) {
-                        saveFileResult = null
-                        result.error("picker_unavailable", "无法打开保存位置选择器", null)
+                        result.error("storage_unavailable", "无法创建下载文件", error.message)
+                    }
+                }
+                "listInternalFiles" -> {
+                    try {
+                        result.success(listInternalFiles())
+                    } catch (error: Exception) {
+                        result.error("storage_unavailable", "无法读取下载目录", error.message)
                     }
                 }
                 else -> result.notImplemented()
@@ -421,11 +413,68 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    private fun internalDownloadsDir(): File {
+        val dir = File(getExternalFilesDir(null), "Downloads")
+        if (!dir.exists()) dir.mkdirs()
+        return dir
+    }
+
+    private fun createInternalDownloadFile(fileName: String): Uri {
+        val dir = internalDownloadsDir()
+        val cleaned = fileName.map { char ->
+            if (char.code < 32 || char in "\\/:*?\"<>|") '_' else char
+        }.joinToString("").trim().trimStart('.').take(120)
+        val safe = cleaned.ifBlank { "下载文件" }
+        val dot = safe.lastIndexOf('.')
+        val stem = if (dot > 0) safe.substring(0, dot) else safe
+        val ext = if (dot > 0) safe.substring(dot) else ""
+        var file = File(dir, safe)
+        var index = 1
+        while (file.exists()) {
+            file = File(dir, "$stem ($index)$ext")
+            index += 1
+        }
+        file.createNewFile()
+        return Uri.fromFile(file)
+    }
+
+    private fun listInternalFiles(): List<Map<String, Any>> {
+        val dir = internalDownloadsDir()
+        return dir.listFiles()
+            ?.filter { it.isFile }
+            ?.sortedByDescending { it.lastModified() }
+            ?.map { file ->
+                mapOf(
+                    "name" to file.name,
+                    "path" to file.absolutePath,
+                    "uri" to FileProvider.getUriForFile(
+                        this,
+                        "$packageName.fileprovider",
+                        file,
+                    ).toString(),
+                    "size" to file.length(),
+                    "modified" to file.lastModified(),
+                )
+            } ?: emptyList()
+    }
+
+    private fun shareableUri(raw: String): Uri {
+        if (raw.startsWith("file:")) {
+            val path = Uri.parse(raw).path ?: raw.removePrefix("file://")
+            return FileProvider.getUriForFile(
+                this,
+                "$packageName.fileprovider",
+                File(path),
+            )
+        }
+        return Uri.parse(raw)
+    }
+
     private fun openFile(uriString: String?, mime: String): Boolean {
         if (uriString.isNullOrBlank()) return false
         return try {
             val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(Uri.parse(uriString), mime)
+                setDataAndType(shareableUri(uriString), mime)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             startActivity(intent)
@@ -440,7 +489,7 @@ class MainActivity : FlutterActivity() {
         return try {
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = mime
-                putExtra(Intent.EXTRA_STREAM, Uri.parse(uriString))
+                putExtra(Intent.EXTRA_STREAM, shareableUri(uriString))
                 putExtra(Intent.EXTRA_TITLE, fileName)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }

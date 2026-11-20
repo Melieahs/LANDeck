@@ -18,9 +18,9 @@
 - HTTP Authentication（Basic 及系统 WebView 支持的方案）：应用内凭据弹窗、失败重试、取消不循环、可选 Keystore 加密记住
 - Material 3 全局视觉体系：浅色 / 深色 / 跟随系统，支持 Material You 动态取色与品牌色回退
 - 沉浸式 WebView 工具栏含独立「退出」按钮，与网页后退语义分离
-- 真实 WebView 下载：拦截下载链接 / Content-Disposition，M3 确认后经 SAF 选择保存位置，前台服务流式写入
+- 真实 WebView 下载：拦截下载链接 / Content-Disposition，M3 确认后保存到应用内下载目录，前台服务流式写入
 - 下载继承当前网页 Cookie、会话和可用的 HTTP Basic 凭据；下载管理支持进度、取消、重试、打开、分享、删除记录
-- 真实网页上传：系统文件选择器支持单文件/多文件、MIME/扩展名与取消，URI 直接回传 WebView
+- 真实网页上传：应用内文件选择器支持单文件/多文件，下载目录中的文件可直接回传 WebView
 - 手机优先的现代 Android 原生观感
 
 ## 技术栈
@@ -32,7 +32,7 @@
 - `flutter_secure_storage` 11.2.0（Android Keystore + AES-GCM）
 - `sembast` 3.10.1 + `sembast_web` 2.4.7
 - `network_info_plus` / `multicast_dns` / `permission_handler`
-- Android 原生 `DownloadService`（前台 `dataSync`）+ SAF `ACTION_OPEN_DOCUMENT` / `ACTION_CREATE_DOCUMENT`
+- Android 原生 `DownloadService`（前台 `dataSync`）+ FileProvider + 应用内文件目录/选择器（`feature/android-internal-files` 实验分支）
 - Android compileSdk 37、targetSdk 36、minSdk 24
 
 ## 运行
@@ -183,15 +183,27 @@ Service.protocol = http, port = 8096, path = /web
 
 - **识别**：普通页面导航继续在 WebView 打开；明确的文件扩展名、`/download` 路径、`Content-Disposition: attachment` 才进入下载流程。扩展名不明确的路径会先做 HEAD/短 GET 探测，避免把普通页面误判为文件。
 - **确认**：M3 对话框显示文件名、来源服务、host、MIME、大小和保存位置说明；APK/可执行/固件等风险类型给出明确提示，但不宣称病毒扫描，也不自动打开或安装。
-- **保存**：`ACTION_CREATE_DOCUMENT` 让用户选择位置，不申请宽泛存储权限；文件名经过路径分隔符、控制字符和超长截断清理；同名文件由 SAF/系统处理，App 不覆盖已有文件。
+- **保存**：不再调用 `ACTION_CREATE_DOCUMENT`；文件写入应用专属 `Android/data/com.example.landeck/files/Downloads`，通过 FileProvider 打开/分享。文件名经过路径分隔符、控制字符和超长截断清理，同名文件自动加序号，不覆盖已有文件。
 - **传输**：Android 前台服务 `DownloadService`（`dataSync`）用 `HttpURLConnection` 64KB 流式写入，不上传整个文件到内存；通知显示真实进度，完成后可点击打开；离开 WebView 或切到后台时任务由前台服务继续。
 - **认证与 Cookie**：下载请求由 `DownloadRequestHeaders` 注入 WebView Cookie、UA、Referer；需要 Basic Auth 时，若探测到 401 + `WWW-Authenticate: Basic`，弹出 M3 认证框，成功后只用内存中的会话凭据重试，勾选记住才写入 Android Keystore。凭据严格按 service + host + realm 绑定，不写入 URL，不打印日志。
 - **状态**：任务持久化在 Sembast，状态为 Pending / Downloading / Completed / Failed / Cancelled；支持进度、取消、失败重试、打开、分享、复制链接和删除记录。应用异常退出后，遗留的进行中任务会标记失败并允许重试。
 
+### 内建文件实验（Android 分支 `feature/android-internal-files`）
+
+这一分支验证“不再经过系统文件管理器”的 Android 文件方案：
+
+- 下载确认后直接写入应用专属目录 `Android/data/com.example.landeck/files/Downloads`，不再弹出 SAF 保存位置选择器。
+- 下载完成、打开、分享都通过 `FileProvider` 转换为 `content://` URI；通知点击也已适配文件 URI。
+- 网页上传改为应用内“选择文件”页面，列出上述目录中的文件，支持单选/多选后回传 WebView。
+- 目录里的文件不会自动出现在系统“下载”应用；卸载 App 会一并删除。部分文件管理器也无法直接浏览 `Android/data`。
+- 当前没有“从系统导入文件”的入口，也没有目录树上传；`webkitdirectory` 会被扁平化为多文件选择，相对路径仍然丢失。
+
+这是实验方案，不代表稳定版行为；正式版仍应回到系统文件选择或提供导入/导出能力。
+
 ### 上传
 
 - 通过 `AndroidWebViewController.setOnShowFileSelector` 接管网页 `input[type=file]`。
-- `ACTION_OPEN_DOCUMENT` 支持单文件/多文件、`accept` MIME 与常见扩展名映射；返回 content URI 并保留读权限。
+- 上传改为应用内文件选择页，只列出 LANDeck 下载目录中的文件，支持单文件/多文件；通过 FileProvider content URI 回传 WebView。
 - `ACTION_CREATE_DOCUMENT` 支持网页的 save 模式；用户取消时回传空列表，WebView 不会悬挂回调，可连续再次选择。
 - 文件不复制到 App 私有目录，不整文件读入内存；大文件由系统文件提供程序流式读取。`capture` 当前退化为普通文件/媒体选择，不额外申请相机权限。
 
