@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../models/download_task.dart';
@@ -73,7 +74,7 @@ Future<bool> showDownloadConfirmDialog(
                     ? '未知（下载时确定）'
                     : formatBytes(data.totalBytes!),
               ),
-              const _InfoRow(
+              _InfoRow(
                 label: '保存位置',
                 value: defaultTargetPlatform == TargetPlatform.iOS
                     ? '文件 App / LANDeck / Downloads'
