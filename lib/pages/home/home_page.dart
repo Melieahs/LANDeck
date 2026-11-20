@@ -158,6 +158,7 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 24),
                   FavoritesSection(
                     services: favorites,
+                    deviceNameFor: repository.deviceNameFor,
                     onOpenService: _openService,
                     onAddService: _handleAddService,
                   ),
@@ -175,6 +176,8 @@ class _HomePageState extends State<HomePage> {
                     services: visible,
                     query: _query,
                     deviceNameFor: repository.deviceNameFor,
+                    deviceTypeFor: (Service service) =>
+                        repository.deviceById(service.deviceId)?.deviceType,
                     onOpenService: _openService,
                     onClearSearch: _clearSearch,
                     onAddService: _handleAddService,

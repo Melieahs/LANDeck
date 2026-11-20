@@ -3,31 +3,92 @@ import 'package:material_ui/material_ui.dart';
 import '../../../models/service.dart';
 import '../../../widgets/section_header.dart';
 import '../../../widgets/service_icon.dart';
+import '../../../widgets/sort_menu.dart';
 import '../../../widgets/status_dot.dart';
 
-class FavoritesSection extends StatelessWidget {
+enum _FavoriteSort { name, status, device }
+
+class FavoritesSection extends StatefulWidget {
   const FavoritesSection({
     super.key,
     required this.services,
+    required this.deviceNameFor,
     required this.onOpenService,
     required this.onAddService,
   });
 
   final List<Service> services;
+  final String Function(Service service) deviceNameFor;
   final ValueChanged<Service> onOpenService;
   final VoidCallback onAddService;
 
   @override
+  State<FavoritesSection> createState() => _FavoritesSectionState();
+}
+
+class _FavoritesSectionState extends State<FavoritesSection> {
+  _FavoriteSort _sort = _FavoriteSort.name;
+
+  List<Service> get _sorted {
+    final List<Service> list = List<Service>.of(widget.services);
+    switch (_sort) {
+      case _FavoriteSort.name:
+        list.sort(
+          (Service a, Service b) =>
+              a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        );
+      case _FavoriteSort.status:
+        list.sort((Service a, Service b) {
+          if (a.isOnline != b.isOnline) return a.isOnline ? -1 : 1;
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
+      case _FavoriteSort.device:
+        list.sort((Service a, Service b) {
+          final int byDevice = widget
+              .deviceNameFor(a)
+              .toLowerCase()
+              .compareTo(widget.deviceNameFor(b).toLowerCase());
+          return byDevice != 0
+              ? byDevice
+              : a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
+    }
+    return list;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final List<Service> services = _sorted;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         SectionHeader(
           title: '收藏',
           trailing: services.isEmpty ? null : '${services.length} 个常用服务',
+          action: services.isEmpty
+              ? null
+              : SortMenu<_FavoriteSort>(
+                  current: _sort,
+                  onSelected: (_FavoriteSort value) =>
+                      setState(() => _sort = value),
+                  choices: const <SortChoice<_FavoriteSort>>[
+                    SortChoice<_FavoriteSort>(
+                      value: _FavoriteSort.name,
+                      label: '按名称',
+                    ),
+                    SortChoice<_FavoriteSort>(
+                      value: _FavoriteSort.status,
+                      label: '按在线状态',
+                    ),
+                    SortChoice<_FavoriteSort>(
+                      value: _FavoriteSort.device,
+                      label: '按设备',
+                    ),
+                  ],
+                ),
         ),
         if (services.isEmpty)
-          _EmptyFavorites(onAddService: onAddService)
+          _EmptyFavorites(onAddService: widget.onAddService)
         else
           GridView.builder(
             shrinkWrap: true,
@@ -45,7 +106,7 @@ class FavoritesSection extends StatelessWidget {
               return _FavoriteCard(
                 key: ValueKey<String>('favorite-${service.id}'),
                 service: service,
-                onTap: () => onOpenService(service),
+                onTap: () => widget.onOpenService(service),
               );
             },
           ),
