@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
@@ -73,6 +74,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   bool _downloadPromptOpen = false;
   bool _downloadAuthPromptOpen = false;
   final Set<String> _attachmentProbes = <String>{};
+  final Set<String> _downloadsInFlight = <String>{};
+  final Map<String, DateTime> _recentDownloadPrompts = <String, DateTime>{};
+  final Set<String> _handledDownloadUrls = <String>{};
   bool _immersive = false;
 
   @override
@@ -134,6 +138,10 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           onNavigationRequest: _onNavigationRequest,
           onHttpAuthRequest: _onHttpAuthRequest,
         ),
+      )
+      ..addJavaScriptChannel(
+        'LANDeckDownloads',
+        onMessageReceived: _onDownloadBridgeMessage,
       );
   }
 
@@ -148,6 +156,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       return;
     }
     _resetAuthState();
+    _handledDownloadUrls.clear();
     setState(() {
       _loading = true;
       _progress = 0.03;
@@ -226,9 +235,119 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       _error = null;
     });
     _authAttempts = 0;
-    _markHealth(ServiceStatus.online);
     await _syncNavigationState();
+    await _installDownloadIframeHook();
+    _markHealth(ServiceStatus.online);
   }
+
+  /// PS5-like appliances start downloads by assigning a one-shot URL to a
+  /// hidden iframe. If the WebView cancels that navigation, the appliance sees
+  /// a disconnected client and fails the task. Intercept the assignment before
+  /// it reaches the network, then let the native downloader perform the only GET.
+  Future<void> _installDownloadIframeHook() async {
+    final WebViewController? controller = _controller;
+    if (controller == null || !_nativeWebView) {
+      return;
+    }
+    try {
+      await controller.runJavaScript(_downloadIframeHook);
+    } on Object {
+      // Pages without iframe downloads simply keep the normal path.
+    }
+  }
+
+  void _onDownloadBridgeMessage(JavaScriptMessage message) {
+    try {
+      final Object? decoded = jsonDecode(message.message);
+      if (decoded is! Map) {
+        return;
+      }
+      final String? url = decoded['url'] as String?;
+      final String? name = decoded['name'] as String?;
+      final Uri? uri = url == null ? null : Uri.tryParse(url);
+      if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
+        unawaited(_handleDownload(uri, suggestedName: name));
+      }
+    } on Object {
+      // Ignore malformed messages from page scripts.
+    }
+  }
+
+  static const String _downloadIframeHook = r'''
+(function () {
+  if (window.__landeckIframeDownloadHook) return;
+  window.__landeckIframeDownloadHook = true;
+  var downloadPath = /\/api\/download(?:\?|$)/;
+  function report(url) {
+    try {
+      var absolute = new URL(url, location.href);
+      if (!downloadPath.test(absolute.pathname + absolute.search)) return false;
+      var namePromise = Promise.resolve('');
+      try {
+        namePromise = fetch('/api/tasks', { credentials: 'include' })
+          .then(function (response) { return response.ok ? response.json() : null; })
+          .then(function (data) {
+            var id = absolute.searchParams.get('id');
+            var tasks = (data && data.tasks) || [];
+            for (var i = 0; i < tasks.length; i++) {
+              var task = tasks[i];
+              if (String(task.id || task.task_id) === String(id)) {
+                var src = String(task.src || '');
+                return src.split('/').filter(Boolean).pop() || '';
+              }
+            }
+            return '';
+          })
+          .catch(function () { return ''; });
+      } catch (e) {}
+      namePromise.then(function (name) {
+        window.LANDeckDownloads.postMessage(JSON.stringify({ url: absolute.href, name: name }));
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  var descriptor = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, 'src');
+  if (descriptor && descriptor.set && descriptor.get) {
+    Object.defineProperty(HTMLIFrameElement.prototype, 'src', {
+      configurable: true,
+      get: function () { return descriptor.get.call(this); },
+      set: function (value) {
+        if (typeof value === 'string' && report(value)) {
+          descriptor.set.call(this, 'about:blank');
+          return;
+        }
+        descriptor.set.call(this, value);
+      }
+    });
+  }
+  var originalSetAttribute = HTMLIFrameElement.prototype.setAttribute;
+  HTMLIFrameElement.prototype.setAttribute = function (name, value) {
+    if (String(name).toLowerCase() === 'src' && typeof value === 'string' && report(value)) {
+      originalSetAttribute.call(this, 'src', 'about:blank');
+      return;
+    }
+    return originalSetAttribute.call(this, name, value);
+  };
+  function rememberFolderInput(input) {
+    if (input && input.tagName === 'INPUT' && input.type === 'file' && input.webkitdirectory) {
+      window.__landeckFolderPicker = true;
+    }
+  }
+  document.addEventListener('click', function (event) {
+    rememberFolderInput(event.target);
+  }, true);
+  document.addEventListener('change', function (event) {
+    rememberFolderInput(event.target);
+  }, true);
+  var originalInputClick = HTMLInputElement.prototype.click;
+  HTMLInputElement.prototype.click = function () {
+    rememberFolderInput(this);
+    return originalInputClick.apply(this, arguments);
+  };
+})();
+''';
 
   void _onResourceError(WebResourceError error) {
     if (!mounted || error.isForMainFrame == false) {
@@ -300,10 +419,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     return null;
   }
 
-  Future<Map<String, String>> _downloadHeaders(
-    Service service,
-    Uri uri,
-  ) async {
+  Future<Map<String, String>> _downloadHeaders(Service service, Uri uri) async {
     return DownloadRequestHeaders.build(
       service: service,
       url: uri.toString(),
@@ -311,11 +427,18 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     );
   }
 
-  Future<void> _handleDownload(Uri uri) async {
+  Future<void> _handleDownload(Uri uri, {String? suggestedName}) async {
     final Service? service = _service;
-    if (!mounted || service == null || _downloadPromptOpen) {
+    final String requestKey = uri.toString();
+    if (!mounted ||
+        service == null ||
+        _downloadPromptOpen ||
+        _handledDownloadUrls.contains(requestKey) ||
+        _isRecentDownloadPrompt(requestKey) ||
+        !_downloadsInFlight.add(requestKey)) {
       return;
     }
+    _recentDownloadPrompts[requestKey] = DateTime.now();
     try {
       final ({DownloadProbeResult probe, Map<String, String> headers})? result =
           await _probeDownloadWithAuth(service, uri);
@@ -327,11 +450,14 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         uri,
         result.probe,
         result.headers,
+        suggestedName: suggestedName,
       );
     } on Object {
       if (mounted) {
         showAppSnackBar(context, '无法读取下载信息，请重试');
       }
+    } finally {
+      _downloadsInFlight.remove(requestKey);
     }
   }
 
@@ -342,7 +468,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   Future<({DownloadProbeResult probe, Map<String, String> headers})?>
   _probeDownloadWithAuth(Service service, Uri uri) async {
     Map<String, String> headers = await _downloadHeaders(service, uri);
-    DownloadProbeResult probe = await DownloadProbe(headers: headers).probe(uri);
+    DownloadProbeResult probe = await DownloadProbe(headers: headers)
+        .probe(uri);
     if (probe.statusCode != 401 ||
         probe.authChallenge == null ||
         _downloadAuthPromptOpen) {
@@ -427,21 +554,40 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     return match?.group(1) ?? '';
   }
 
+  /// A page can retry a canceled/blocked download on its own. Suppress the
+  /// duplicate confirmation sheet for a few seconds instead of stacking
+  /// dialogs that appear impossible to close.
+  bool _isRecentDownloadPrompt(String key) {
+    final DateTime? last = _recentDownloadPrompts[key];
+    if (last == null) {
+      return false;
+    }
+    if (DateTime.now().difference(last) < const Duration(seconds: 8)) {
+      return true;
+    }
+    _recentDownloadPrompts.remove(key);
+    return false;
+  }
+
   Future<void> _probeForAttachment(Uri uri) async {
     final String key = uri.toString();
-    if (_attachmentProbes.contains(key) || _downloadPromptOpen) {
+    if (_attachmentProbes.contains(key) ||
+        _downloadPromptOpen ||
+        _downloadsInFlight.contains(key) ||
+        _handledDownloadUrls.contains(key) ||
+        _isRecentDownloadPrompt(key)) {
       return;
     }
     _attachmentProbes.add(key);
+    _recentDownloadPrompts[key] = DateTime.now();
     try {
       final Service? service = _service;
       if (service == null || !mounted) {
         return;
       }
       final Map<String, String> headers = await _downloadHeaders(service, uri);
-      final DownloadProbeResult probe = await DownloadProbe(
-        headers: headers,
-      ).probe(uri);
+      final DownloadProbeResult probe = await DownloadProbe(headers: headers)
+          .probe(uri);
       if (!mounted || !probe.attachment) {
         return;
       }
@@ -457,12 +603,20 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     Service service,
     Uri uri,
     DownloadProbeResult probe,
-    Map<String, String> headers,
-  ) async {
+    Map<String, String> headers, {
+    String? suggestedName,
+  }) async {
     if (!mounted || _downloadPromptOpen) {
       return;
     }
-    final String fileName = safeFileName(probe.fileName);
+    final List<String> hintedParts = suggestedName == null
+        ? const <String>[]
+        : suggestedName
+              .split(RegExp(r'[/\\]'))
+              .where((s) => s.isNotEmpty)
+              .toList();
+    final String? hintedName = hintedParts.isEmpty ? null : hintedParts.last;
+    final String fileName = safeFileName(hintedName ?? probe.fileName);
     _downloadPromptOpen = true;
     try {
       final bool confirmed = await showDownloadConfirmDialog(
@@ -474,6 +628,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           mimeType: probe.mimeType,
           totalBytes: probe.totalBytes,
           risky: isRiskyFileName(fileName),
+          namePending: hintedName == null && !probe.nameKnown,
         ),
       );
       if (!mounted || !confirmed) {
@@ -504,10 +659,12 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       if (!mounted) {
         return;
       }
-      showAppSnackBar(
-        context,
-        task == null ? '无法开始下载' : '已开始下载：$fileName',
-      );
+      if (task != null) {
+        // Some pages poll/retry the same download URL after the native task
+        // starts. Keep one confirmation per page load; a refresh clears this.
+        _handledDownloadUrls.add(uri.toString());
+      }
+      showAppSnackBar(context, task == null ? '无法开始下载' : '已开始下载：$fileName');
     } finally {
       _downloadPromptOpen = false;
     }
@@ -541,6 +698,21 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
                 : params.acceptTypes.first,
           );
       return destination == null ? <String>[] : <String>[destination];
+    }
+    bool wantsFolder = false;
+    try {
+      final Object? flag = await _controller?.runJavaScriptReturningResult(
+        'window.__landeckFolderPicker === true',
+      );
+      wantsFolder = flag == true || flag.toString() == 'true';
+      await _controller?.runJavaScript('window.__landeckFolderPicker = false;');
+    } on Object {
+      // Pages without the hook fall back to file selection.
+    }
+    if (wantsFolder) {
+      // Canceled folder selection cancels the page's request; do not open a
+      // second (file) picker immediately after it.
+      return DownloadCenter.instance.fileBridge.pickFolderFiles();
     }
     final List<String> files = await DownloadCenter.instance.fileBridge
         .pickFiles(
@@ -928,9 +1100,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         showAppSnackBar(context, '系统分享将在后续版本开放');
         return;
       case MoreAction.downloads:
-        await Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => const DownloadsPage()),
-        );
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute<void>(builder: (_) => const DownloadsPage()));
         return;
       case MoreAction.toggleImmersive:
         _setImmersive(!_immersive);
@@ -1255,7 +1427,9 @@ class _UnsupportedWebView extends StatelessWidget {
                           width: 58,
                           height: 58,
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHigh,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -1296,7 +1470,11 @@ class _UnsupportedWebView extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                            border: Border.all(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .outlineVariant,
+                            ),
                           ),
                           child: Text(
                             service.url,

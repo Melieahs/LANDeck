@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.net.Uri
+import android.provider.DocumentsContract
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
@@ -20,7 +21,9 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.SocketTimeoutException
 import java.net.URL
+import java.net.URLDecoder
 import java.net.UnknownHostException
+import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import java.util.concurrent.atomic.AtomicBoolean
@@ -58,6 +61,8 @@ class DownloadService : Service() {
                 "downloaded" to prefs.getLong("$taskId.downloaded", 0L),
                 "total" to prefs.getLong("$taskId.total", -1L),
                 "error" to prefs.getString("$taskId.error", null),
+                "fileName" to prefs.getString("$taskId.fileName", null),
+                "destination" to prefs.getString("$taskId.destination", null),
             )
         }
 
@@ -68,14 +73,20 @@ class DownloadService : Service() {
             downloaded: Long = 0,
             total: Long = -1,
             error: String? = null,
+            fileName: String? = null,
+            destination: String? = null,
         ) {
-            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val editor = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .edit()
                 .putString("$taskId.status", status)
                 .putLong("$taskId.downloaded", downloaded)
                 .putLong("$taskId.total", total)
                 .putString("$taskId.error", error)
-                .apply()
+            if (fileName != null) editor.putString("$taskId.fileName", fileName)
+            if (destination != null) {
+                editor.putString("$taskId.destination", destination)
+            }
+            editor.apply()
         }
     }
 
@@ -111,14 +122,20 @@ class DownloadService : Service() {
                 val url = intent.getStringExtra(EXTRA_URL) ?: return START_NOT_STICKY
                 val destination = intent.getStringExtra(EXTRA_DESTINATION)
                     ?: return START_NOT_STICKY
-                val fileName = intent.getStringExtra(EXTRA_FILE_NAME) ?: "download"
+                val fileName = intent.getStringExtra(EXTRA_FILE_NAME) ?: "下载文件"
                 val mimeType = intent.getStringExtra(EXTRA_MIME)
                 val headers = parseHeaders(intent.getStringExtra(EXTRA_HEADERS))
 
                 activeTaskId = taskId
                 cancelled.set(false)
                 startForegroundForTask(taskId, fileName, 0, -1, true)
-                writeStatus(this, taskId, "downloading")
+                writeStatus(
+                    this,
+                    taskId,
+                    "downloading",
+                    fileName = fileName,
+                    destination = destination,
+                )
                 acquireWakeLock()
                 Thread {
                     runDownload(taskId, url, destination, fileName, mimeType, headers)
@@ -140,6 +157,8 @@ class DownloadService : Service() {
         var connection: HttpURLConnection? = null
         var downloaded = 0L
         var total = -1L
+        var displayName = fileName
+        var outputDestination = destination
         try {
             connection = URL(url).openConnection() as HttpURLConnection
             activeConnection = connection
@@ -169,6 +188,25 @@ class DownloadService : Service() {
             }
 
             total = connection.contentLengthLong
+            // Appliance file managers often expose an opaque /download?id=...
+            // URL. The real name is only available on the GET response, so
+            // keep the in-progress task and notifications in sync with it and
+            // rename the SAF document after the stream finishes.
+            val headerName = parseDispositionFileName(
+                connection.getHeaderField("Content-Disposition"),
+            )
+            if (!headerName.isNullOrBlank()) {
+                displayName = sanitizeFileName(headerName)
+                writeStatus(
+                    this,
+                    taskId,
+                    "downloading",
+                    downloaded,
+                    total,
+                    fileName = displayName,
+                    destination = outputDestination,
+                )
+            }
             val uri = Uri.parse(destination)
             val output = contentResolver.openOutputStream(uri)
                 ?: throw DownloadStorageException("保存位置不可用")
@@ -188,33 +226,64 @@ class DownloadService : Service() {
                         if (now - lastUpdate > 500) {
                             lastUpdate = now
                             writeStatus(this, taskId, "downloading", downloaded, total)
-                            startForegroundForTask(taskId, fileName, downloaded, total, true)
+                            startForegroundForTask(
+                                taskId,
+                                displayName,
+                                downloaded,
+                                total,
+                                true,
+                            )
                         }
                     }
                     stream.flush()
                 }
             }
 
-            writeStatus(this, taskId, "completed", downloaded, total)
-            startForegroundForTask(taskId, fileName, downloaded, total, false)
-            showCompletedNotification(taskId, fileName, destination, mimeType)
+            if (displayName != fileName) {
+                outputDestination = renameDocument(
+                    Uri.parse(outputDestination),
+                    displayName,
+                )?.toString() ?: outputDestination
+            }
+            writeStatus(
+                this,
+                taskId,
+                "completed",
+                downloaded,
+                total,
+                fileName = displayName,
+                destination = outputDestination,
+            )
+            startForegroundForTask(
+                taskId,
+                displayName,
+                downloaded,
+                total,
+                false,
+            )
+            showCompletedNotification(
+                taskId,
+                displayName,
+                outputDestination,
+                mimeType,
+            )
         } catch (_: DownloadCancelledException) {
             writeStatus(this, taskId, "cancelled", downloaded, total, "已取消")
         } catch (error: DownloadHttpException) {
             writeStatus(this, taskId, "failed", downloaded, total, error.message)
-            showFailedNotification(fileName, error.message ?: "下载失败")
+            showFailedNotification(displayName, error.message ?: "下载失败")
         } catch (error: SocketTimeoutException) {
             writeStatus(this, taskId, "failed", downloaded, total, "连接超时")
-            showFailedNotification(fileName, "连接超时")
+            showFailedNotification(displayName, "连接超时")
         } catch (error: UnknownHostException) {
             writeStatus(this, taskId, "failed", downloaded, total, "无法解析下载地址")
-            showFailedNotification(fileName, "无法解析下载地址")
+            showFailedNotification(displayName, "无法解析下载地址")
         } catch (error: DownloadStorageException) {
             writeStatus(this, taskId, "failed", downloaded, total, error.message)
-            showFailedNotification(fileName, error.message ?: "保存失败")
+            showFailedNotification(displayName, error.message ?: "保存失败")
         } catch (error: FileNotFoundException) {
             writeStatus(this, taskId, "failed", downloaded, total, "保存位置不可用")
-            showFailedNotification(fileName, "保存位置不可用")
+            showFailedNotification(displayName, "保存位置不可用")
         } catch (error: IOException) {
             val message = if (cancelled.get()) "已取消" else "网络连接失败"
             writeStatus(
@@ -225,10 +294,10 @@ class DownloadService : Service() {
                 total,
                 message,
             )
-            if (!cancelled.get()) showFailedNotification(fileName, message)
+            if (!cancelled.get()) showFailedNotification(displayName, message)
         } catch (error: Exception) {
             writeStatus(this, taskId, "failed", downloaded, total, "下载失败")
-            showFailedNotification(fileName, "下载失败")
+            showFailedNotification(displayName, "下载失败")
         } finally {
             activeConnection = null
             try {
@@ -240,6 +309,48 @@ class DownloadService : Service() {
             activeTaskId = null
             ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
             stopSelf()
+        }
+    }
+
+    private fun parseDispositionFileName(header: String?): String? {
+        if (header.isNullOrBlank()) return null
+        val star = Regex(
+            """filename\*\s*=\s*([^;]+)""",
+            RegexOption.IGNORE_CASE,
+        ).find(header)?.groupValues?.get(1)?.trim()?.trim('"')
+        if (!star.isNullOrBlank()) {
+            val marker = star.indexOf("''")
+            val encoded = if (marker >= 0) star.substring(marker + 2) else star
+            return try {
+                URLDecoder.decode(encoded, StandardCharsets.UTF_8.name())
+            } catch (_: Exception) {
+                encoded
+            }
+        }
+        val quoted = Regex(
+            """filename\s*=\s*"([^"]*)"""",
+            RegexOption.IGNORE_CASE,
+        ).find(header)?.groupValues?.get(1)
+        if (!quoted.isNullOrBlank()) return quoted
+        return Regex(
+            """filename\s*=\s*([^;]+)""",
+            RegexOption.IGNORE_CASE,
+        ).find(header)?.groupValues?.get(1)?.trim()?.trim('"')
+    }
+
+    private fun sanitizeFileName(name: String): String {
+        val cleaned = name.map { char ->
+            if (char.code < 32 || char in "\\/:*?\"<>|") '_' else char
+        }.joinToString("").trim().trimStart('.')
+        return cleaned.take(120).ifBlank { "下载文件" }
+    }
+
+    private fun renameDocument(uri: Uri, name: String): Uri? {
+        return try {
+            DocumentsContract.renameDocument(contentResolver, uri, name)
+        } catch (_: Exception) {
+            // The provider may not support rename; the file is still intact.
+            null
         }
     }
 

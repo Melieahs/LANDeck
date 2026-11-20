@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.net.wifi.WifiManager
+import android.provider.DocumentsContract
 import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -14,10 +15,12 @@ class MainActivity : FlutterActivity() {
     private var multicastLock: WifiManager.MulticastLock? = null
     private var filePickerResult: MethodChannel.Result? = null
     private var saveFileResult: MethodChannel.Result? = null
+    private var folderPickerResult: MethodChannel.Result? = null
 
     companion object {
         private const val REQUEST_PICK_FILES = 4101
         private const val REQUEST_SAVE_FILE = 4102
+        private const val REQUEST_PICK_FOLDER = 4103
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -89,6 +92,25 @@ class MainActivity : FlutterActivity() {
                     } catch (error: Exception) {
                         filePickerResult = null
                         result.error("picker_unavailable", "无法打开系统文件选择器", null)
+                    }
+                }
+                "pickFolderFiles" -> {
+                    if (filePickerResult != null || folderPickerResult != null) {
+                        result.error("picker_busy", "已有文件选择器正在打开", null)
+                        return@setMethodCallHandler
+                    }
+                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+                        addFlags(
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                                Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION,
+                        )
+                    }
+                    folderPickerResult = result
+                    try {
+                        startActivityForResult(intent, REQUEST_PICK_FOLDER)
+                    } catch (error: Exception) {
+                        folderPickerResult = null
+                        result.error("picker_unavailable", "无法打开文件夹选择器", null)
                     }
                 }
                 "pickSaveFile" -> {
@@ -209,15 +231,23 @@ class MainActivity : FlutterActivity() {
             .map { it.trim() }
             .filter { it.isNotEmpty() }
         val resolved = mimeTypes.mapNotNull { resolveMime(it) }.distinct()
-        val type = when {
-            resolved.isEmpty() -> "*/*"
-            resolved.any { it == "*/*" } -> "*/*"
-            else -> resolved.first()
+        // A web page with no accept attribute sends an empty list. Passing an
+        // empty EXTRA_MIME_TYPES makes some DocumentsUI builds show "no files".
+        // An unknown extension (e.g. firmware .bin) must also degrade to */*
+        // instead of silently filtering out every file.
+        val unknownExtension = mimeTypes.any {
+            it.startsWith(".") && resolveMime(it) == null
         }
+        val wildcard = resolved.isEmpty() ||
+            resolved.any { it == "*/*" } ||
+            unknownExtension
+        val type = if (wildcard) "*/*" else resolved.first()
         return Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             this.type = type
-            putExtra(Intent.EXTRA_MIME_TYPES, resolved.toTypedArray())
+            if (!wildcard) {
+                putExtra(Intent.EXTRA_MIME_TYPES, resolved.toTypedArray())
+            }
             putExtra(Intent.EXTRA_ALLOW_MULTIPLE, multiple)
             addFlags(
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or
@@ -288,6 +318,28 @@ class MainActivity : FlutterActivity() {
                 }
                 pending.success(uris.map { it.toString() })
             }
+            REQUEST_PICK_FOLDER -> {
+                val pending = folderPickerResult
+                folderPickerResult = null
+                if (pending == null) return
+                if (resultCode != Activity.RESULT_OK || data?.data == null) {
+                    pending.success(emptyList<String>())
+                    return
+                }
+                val treeUri = data.data!!
+                try {
+                    contentResolver.takePersistableUriPermission(
+                        treeUri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                    )
+                } catch (_: SecurityException) {
+                    // The temporary tree grant still allows this upload.
+                }
+                Thread {
+                    val files = collectTreeFiles(treeUri)
+                    runOnUiThread { pending.success(files) }
+                }.start()
+            }
             REQUEST_SAVE_FILE -> {
                 val pending = saveFileResult
                 saveFileResult = null
@@ -307,6 +359,64 @@ class MainActivity : FlutterActivity() {
                     // The write grant is still valid for this session.
                 }
                 pending.success(uri.toString())
+            }
+        }
+    }
+
+    /**
+     * WebView cannot consume a directory URI, so expand the chosen tree into
+     * the individual document URIs the page's file input can accept. The tree
+     * grant itself is kept for the lifetime of the selection.
+     */
+    private fun collectTreeFiles(treeUri: Uri): List<String> {
+        val files = mutableListOf<String>()
+        try {
+            val rootId = DocumentsContract.getTreeDocumentId(treeUri)
+            collectTreeChildren(treeUri, rootId, files, 0)
+        } catch (_: Exception) {
+            // Unsupported provider: return whatever was collected.
+        }
+        return files
+    }
+
+    private fun collectTreeChildren(
+        treeUri: Uri,
+        parentId: String,
+        files: MutableList<String>,
+        depth: Int,
+    ) {
+        if (depth > 32 || files.size >= 500) return
+        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(
+            treeUri,
+            parentId,
+        )
+        val projection = arrayOf(
+            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+            DocumentsContract.Document.COLUMN_MIME_TYPE,
+        )
+        val cursor = contentResolver.query(childrenUri, projection, null, null, null)
+            ?: return
+        cursor.use { rows ->
+            while (rows.moveToNext() && files.size < 500) {
+                val documentId = rows.getString(0) ?: continue
+                val mimeType = rows.getString(1) ?: ""
+                if (mimeType == DocumentsContract.Document.MIME_TYPE_DIR) {
+                    collectTreeChildren(treeUri, documentId, files, depth + 1)
+                } else {
+                    val documentUri = DocumentsContract.buildDocumentUriUsingTree(
+                        treeUri,
+                        documentId,
+                    )
+                    try {
+                        contentResolver.takePersistableUriPermission(
+                            documentUri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                        )
+                    } catch (_: SecurityException) {
+                        // The tree grant covers descendants on most providers.
+                    }
+                    files.add(documentUri.toString())
+                }
             }
         }
     }
