@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
-/// Floating five-action toolbar shown above the bottom handle.
+/// Floating six-action toolbar shown above the bottom circular handle.
 class WebViewToolbar extends StatelessWidget {
   const WebViewToolbar({
     super.key,
@@ -38,28 +38,10 @@ class WebViewToolbar extends StatelessWidget {
               child: Row(
                 children: <Widget>[
                   _ToolbarAction(
-                    key: const Key('webview-back'),
-                    icon: Icons.arrow_back_rounded,
-                    label: '后退',
-                    onTap: onBack,
-                  ),
-                  _ToolbarAction(
-                    key: const Key('webview-forward'),
-                    icon: Icons.arrow_forward_rounded,
-                    label: '前进',
-                    onTap: canGoForward ? onForward : null,
-                  ),
-                  _ToolbarAction(
-                    key: const Key('webview-refresh'),
-                    icon: Icons.refresh_rounded,
-                    label: '刷新',
-                    onTap: onRefresh,
-                  ),
-                  _ToolbarAction(
-                    key: const Key('webview-service-switch'),
-                    icon: Icons.dashboard_customize_rounded,
-                    label: '服务',
-                    onTap: onSwitchService,
+                    key: const Key('webview-exit'),
+                    icon: Icons.close_rounded,
+                    label: '退出',
+                    onTap: onExit,
                   ),
                   _ToolbarAction(
                     key: const Key('webview-more'),
@@ -68,10 +50,28 @@ class WebViewToolbar extends StatelessWidget {
                     onTap: onMore,
                   ),
                   _ToolbarAction(
-                    key: const Key('webview-exit'),
-                    icon: Icons.close_rounded,
-                    label: '退出',
-                    onTap: onExit,
+                    key: const Key('webview-service-switch'),
+                    icon: Icons.dashboard_customize_rounded,
+                    label: '服务',
+                    onTap: onSwitchService,
+                  ),
+                  _ToolbarAction(
+                    key: const Key('webview-refresh'),
+                    icon: Icons.refresh_rounded,
+                    label: '刷新',
+                    onTap: onRefresh,
+                  ),
+                  _ToolbarAction(
+                    key: const Key('webview-forward'),
+                    icon: Icons.arrow_forward_rounded,
+                    label: '前进',
+                    onTap: canGoForward ? onForward : null,
+                  ),
+                  _ToolbarAction(
+                    key: const Key('webview-back'),
+                    icon: Icons.arrow_back_rounded,
+                    label: '后退',
+                    onTap: onBack,
                   ),
                 ],
               ),
@@ -152,47 +152,30 @@ class WebViewHandle extends StatelessWidget {
     return Tooltip(
       message: expanded ? '收起工具栏' : '展开工具栏',
       child: Material(
-        color: Theme.of(context).colorScheme.surfaceContainerHigh,
         elevation: expanded ? 3 : 1,
-        shape: StadiumBorder(
+        shape: CircleBorder(
           side: BorderSide(
             color: expanded
                 ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.36)
                 : Theme.of(context).colorScheme.outlineVariant,
           ),
         ),
+        color: expanded
+            ? Theme.of(context).colorScheme.primaryContainer
+            : Theme.of(context).colorScheme.surfaceContainerHigh,
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
+          customBorder: const CircleBorder(),
           child: SizedBox(
-            width: 104,
-            height: 32,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Icon(
-                  Icons.tune_rounded,
-                  size: 13,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  '工具栏',
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w500,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(width: 3),
-                Icon(
-                  expanded
-                      ? Icons.keyboard_arrow_down_rounded
-                      : Icons.keyboard_arrow_up_rounded,
-                  size: 15,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ],
+            width: 44,
+            height: 44,
+            child: Icon(
+              Icons.tune_rounded,
+              size: 20,
+              color: expanded
+                  ? Theme.of(context).colorScheme.onPrimaryContainer
+                  : Theme.of(context).colorScheme.primary,
             ),
           ),
         ),
