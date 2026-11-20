@@ -193,7 +193,7 @@ class SettingsPage extends StatelessWidget {
                 child: ListTile(
                   leading: const Icon(Icons.info_outline_rounded),
                   title: const Text('LANDeck'),
-                  subtitle: const Text('v0.7.1 · 下载与上传 · 本地优先'),
+                  subtitle: const Text('v0.7.5 · 下载与上传 · 本地优先'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => showAboutDialog(
                     context: context,

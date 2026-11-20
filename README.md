@@ -397,5 +397,6 @@ iOS 端当前直接复用与 Android 相同的 Material 3 页面、主题和业�
 - 共享：数据模型、Sembast 数据库、URL 生成、仓库逻辑、Material 3 主题。
 - `ios/Runner/Info.plist` 已包含本地网络权限描述与 Bonjour 服务类型。
 - 构建：Linux 只能执行 `flutter analyze` / `flutter test`，不能编译 iOS；`.github/workflows/ios-simulator.yml` 在 GitHub Actions macOS Runner 上构建模拟器 `.app` 并提交首页截图到 `docs/screenshots/ios-home.png`。
-- 当前可用：基础 WKWebView 网页浏览、导航、服务切换、Cookie/Session；HTTP Basic Auth 的 WebView challenge 走 `NavigationDelegate`，可继续验证。
-- 当前限制：下载/上传仍依赖 Android 原生通道和 SAF，iOS 尚未实现对应 Swift 桥接；Bonjour 发现和端口扫描未接入。原生 Liquid Glass 代码仍保留但未启用。
+- 当前可用：WKWebView 网页浏览、导航、服务切换、Cookie/Session、HTTP Basic Auth、文件上传。
+- iOS 下载：新增 Swift `URLSession` 下载桥接，文件保存到「文件 App / LANDeck / Downloads」，支持取消、打开和分享；Basic Auth、Cookie 和私有网段自签名证书沿用 WebView 会话。
+- 当前限制：Bonjour 发现和端口扫描尚未接入 iOS；原生 Liquid Glass 代码仍保留但未启用。
