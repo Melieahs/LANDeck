@@ -7,6 +7,7 @@ import '../../core/theme/theme_controller.dart';
 import '../../core/utils/feedback.dart';
 import '../../repositories/service_repository.dart';
 import '../devices/devices_page.dart';
+import '../downloads/downloads_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key, required this.onOpenDiscover});
@@ -159,6 +160,23 @@ class SettingsPage extends StatelessWidget {
                     ),
                     const Divider(height: 1),
                     ListTile(
+                      leading: const Icon(Icons.download_rounded),
+                      title: const Text('下载管理'),
+                      subtitle: Text(
+                        repository.activeDownloadCount > 0
+                            ? '${repository.activeDownloadCount} 个任务进行中'
+                            : '查看下载任务与已保存文件',
+                      ),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => Navigator.of(context).push<void>(
+                        MaterialPageRoute<void>(
+                          builder: (BuildContext context) =>
+                              const DownloadsPage(),
+                        ),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
                       leading: const Icon(Icons.shield_outlined),
                       title: const Text('隐私'),
                       subtitle: const Text('扫描只访问当前局域网，不读取位置。'),
@@ -175,12 +193,12 @@ class SettingsPage extends StatelessWidget {
                 child: ListTile(
                   leading: const Icon(Icons.info_outline_rounded),
                   title: const Text('LANDeck'),
-                  subtitle: const Text('v0.6.0 · Material 3 · 本地优先'),
+                  subtitle: const Text('v0.7.0 · 下载与上传 · 本地优先'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => showAboutDialog(
                     context: context,
                     applicationName: 'LANDeck',
-                    applicationVersion: '0.6.0',
+                    applicationVersion: '0.7.0',
                     applicationLegalese: 'Local-first. No account. No cloud.',
                     children: const <Widget>[
                       SizedBox(height: 12),

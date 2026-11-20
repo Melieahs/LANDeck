@@ -6,6 +6,7 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'data/database/app_database.dart';
 import 'repositories/service_repository.dart';
+import 'services/download_center.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +17,7 @@ Future<void> main() async {
     final ThemeController themeController = await ThemeController.load(
       database,
     );
+    await DownloadCenter.instance.attach(repository);
     runApp(
       LanDeckApp(repository: repository, themeController: themeController),
     );

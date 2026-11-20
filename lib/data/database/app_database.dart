@@ -19,6 +19,8 @@ class AppDatabase {
       StoreRef<String, Map<String, Object?>>('services');
   static final StoreRef<String, Map<String, Object?>> deviceStore =
       StoreRef<String, Map<String, Object?>>('devices');
+  static final StoreRef<String, Map<String, Object?>> downloadStore =
+      StoreRef<String, Map<String, Object?>>('downloads');
   static final StoreRef<String, Map<String, Object?>> metaStore =
       StoreRef<String, Map<String, Object?>>('meta');
 

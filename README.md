@@ -18,6 +18,9 @@
 - HTTP Authentication（Basic 及系统 WebView 支持的方案）：应用内凭据弹窗、失败重试、取消不循环、可选 Keystore 加密记住
 - Material 3 全局视觉体系：浅色 / 深色 / 跟随系统，支持 Material You 动态取色与品牌色回退
 - 沉浸式 WebView 工具栏含独立「退出」按钮，与网页后退语义分离
+- 真实 WebView 下载：拦截下载链接 / Content-Disposition，M3 确认后经 SAF 选择保存位置，前台服务流式写入
+- 下载继承当前网页 Cookie、会话和可用的 HTTP Basic 凭据；下载管理支持进度、取消、重试、打开、分享、删除记录
+- 真实网页上传：系统文件选择器支持单文件/多文件、MIME/扩展名与取消，URI 直接回传 WebView
 - 手机优先的现代 Android 原生观感
 
 ## 技术栈
@@ -29,6 +32,7 @@
 - `flutter_secure_storage` 11.2.0（Android Keystore + AES-GCM）
 - `sembast` 3.10.1 + `sembast_web` 2.4.7
 - `network_info_plus` / `multicast_dns` / `permission_handler`
+- Android 原生 `DownloadService`（前台 `dataSync`）+ SAF `ACTION_OPEN_DOCUMENT` / `ACTION_CREATE_DOCUMENT`
 - Android compileSdk 37、targetSdk 36、minSdk 24
 
 ## 运行
@@ -58,10 +62,10 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 
 产物：
 
-- `dist/LANDeck-0.6.0.apk`（约 55.5 MB，含 arm64-v8a / armeabi-v7a / x86_64）
+- `dist/LANDeck-0.7.0.apk`（约 55.8 MB，含 arm64-v8a / armeabi-v7a / x86_64）
 - 构建产物：`build/app/outputs/flutter-apk/app-release.apk`
-- 包名 `com.example.landeck`，版本 `0.6.0+6`
-- SHA-256：`28a92f42ba788c11ddd908ed6c21eaee9e6335e445f755c809f92a75c6a16597`
+- 包名 `com.example.landeck`，版本 `0.7.0+7`
+- SHA-256：`02a4627aea4f7367a89ecb7662731ae007e2a0d951a75202c70264a833c979aa`
 - 当前使用 Flutter 默认 debug 签名，可直接安装测试，不适合直接上架
 
 > `permission_handler_android 13.0.2` 要求编译 SDK ≥ 37，因此 `compileSdk = 37`；`targetSdk` 保持 36。target 36 下局域网访问由 INTERNET 隐式允许，不声明/请求 `ACCESS_LOCAL_NETWORK`。
@@ -99,6 +103,11 @@ lib/
 │   ├── network_inspector.dart        # Wi-Fi IP / 掩码 / CIDR
 │   ├── device_discovery.dart         # 阶段 1：mDNS + SSDP + 子网活跃主机
 │   ├── device_port_scanner.dart      # 阶段 2：单设备端口 + HTTP/HTTPS 验证
+│   ├── download_center.dart          # 下载任务队列 / 状态恢复 / 系统桥接
+│   ├── download_probe.dart           # HEAD/GET 探测、附件与认证 challenge
+│   ├── download_request_headers.dart # Cookie / Basic Auth / Referer
+│   ├── download_utils.dart           # 文件名、MIME、风险类型、下载判定
+│   ├── native_download_bridge.dart   # 下载与 SAF 文件选择 MethodChannel
 │   └── multicast_lock.dart           # Android MulticastLock 通道
 ├── pages/
 │   ├── main_shell.dart               # 底部导航 + IndexedStack
@@ -108,6 +117,7 @@ lib/
 │   ├── services/service_editor_page.dart
 │   ├── devices/                      # 设备列表/详情/编辑、单设备端口扫描
 │   ├── webview/                      # 沉浸 WebView、工具栏、服务切换
+│   ├── downloads/downloads_page.dart # 下载任务管理
 │   └── settings/
 └── widgets/                          # 服务行、图标、状态点、底部导航
 ```
@@ -167,11 +177,29 @@ Service.protocol = http, port = 8096, path = /web
 - 普通 HTML 表单登录页、无 `WWW-Authenticate` 的 401 响应不会触发该弹窗。
 - 不在 URL 中写入凭据；不打印用户名/密码日志。
 
+## WebView 下载与上传
+
+### 下载
+
+- **识别**：普通页面导航继续在 WebView 打开；明确的文件扩展名、`/download` 路径、`Content-Disposition: attachment` 才进入下载流程。扩展名不明确的路径会先做 HEAD/短 GET 探测，避免把普通页面误判为文件。
+- **确认**：M3 对话框显示文件名、来源服务、host、MIME、大小和保存位置说明；APK/可执行/固件等风险类型给出明确提示，但不宣称病毒扫描，也不自动打开或安装。
+- **保存**：`ACTION_CREATE_DOCUMENT` 让用户选择位置，不申请宽泛存储权限；文件名经过路径分隔符、控制字符和超长截断清理；同名文件由 SAF/系统处理，App 不覆盖已有文件。
+- **传输**：Android 前台服务 `DownloadService`（`dataSync`）用 `HttpURLConnection` 64KB 流式写入，不上传整个文件到内存；通知显示真实进度，完成后可点击打开；离开 WebView 或切到后台时任务由前台服务继续。
+- **认证与 Cookie**：下载请求由 `DownloadRequestHeaders` 注入 WebView Cookie、UA、Referer；需要 Basic Auth 时，若探测到 401 + `WWW-Authenticate: Basic`，弹出 M3 认证框，成功后只用内存中的会话凭据重试，勾选记住才写入 Android Keystore。凭据严格按 service + host + realm 绑定，不写入 URL，不打印日志。
+- **状态**：任务持久化在 Sembast，状态为 Pending / Downloading / Completed / Failed / Cancelled；支持进度、取消、失败重试、打开、分享、复制链接和删除记录。应用异常退出后，遗留的进行中任务会标记失败并允许重试。
+
+### 上传
+
+- 通过 `AndroidWebViewController.setOnShowFileSelector` 接管网页 `input[type=file]`。
+- `ACTION_OPEN_DOCUMENT` 支持单文件/多文件、`accept` MIME 与常见扩展名映射；返回 content URI 并保留读权限。
+- `ACTION_CREATE_DOCUMENT` 支持网页的 save 模式；用户取消时回传空列表，WebView 不会悬挂回调，可连续再次选择。
+- 文件不复制到 App 私有目录，不整文件读入内存；大文件由系统文件提供程序流式读取。`capture` 当前退化为普通文件/媒体选择，不额外申请相机权限。
+
 ## 验证结果
 
 - `flutter analyze`：No issues found
-- `flutter test`：28 tests passed
-- `flutter build apk --release`：成功，55.5 MB（0.6.0+6）
+- `flutter test`：38 tests passed
+- `flutter build apk --release`：成功，约 55.8 MB（0.7.0+7）
 - Android 模拟器（Android 36 x86_64，1080×2400）实测：
   - 首次安装 0 服务、0 收藏、0 设备，空状态正常
   - 手动添加 → 首页计数/分类/收藏更新 → 强制停止再启动仍存在
@@ -198,6 +226,10 @@ Service.protocol = http, port = 8096, path = /web
   - 快捷添加：只填端口 8080，自动生成 `http://10.0.2.3:8080`
   - Material You 动态取色开关可即时切换；关闭后回到 LANDeck 品牌蓝色
   - WebView 工具栏第六个「退出」按钮直接退回首页，不执行网页后退
+  - 真实下载 `sample.txt`（440 B）、`中文报告.txt`（660 B，UTF-8 Content-Disposition）、`large.bin`（20 MB）均完成并写入系统 Downloads
+  - Basic Auth 保护的 `auth.txt`：下载前弹出 M3 认证框，登录后保存为 `secure-report.txt`（460 B）
+  - 网页上传：单文件 1 个、多文件 2 个均被测试服务器实际接收
+  - 下载管理页显示真实任务、真实大小/状态；删除记录、复制链接、重试入口可用
 
 ## 截图
 
@@ -291,6 +323,17 @@ Service.protocol = http, port = 8096, path = /web
 | `p2-15-api401-no-auth-dialog.png` | 普通 401 API 不弹认证框 |
 | `p2-16-not-remembered-reprompt.png` | 未勾选记住，重启后重新认证 |
 
+### 下载与上传（0.7.0）
+
+| 文件 | 内容 |
+| --- | --- |
+| `t2-12-download-manager.png` | 下载管理：认证下载成功与历史任务 |
+| `t2-49-slow-download-dialog.png` | M3 下载确认：文件名/来源/MIME/大小/风险提示 |
+| `t2-42-upload-success.png` | 网页上传单文件成功（服务器实际回执） |
+| `t2-46-upload-multi-success.png` | 网页上传多文件成功（2 个） |
+| `t2-45-upload-two-form.png` | 系统文件选择器选中 2 个文件后的网页表单 |
+| `t3-01-home-0.7.0.png` | 0.7.0 最终版本首页（真实数据） |
+
 ### P0 历史截图
 
 | 文件 | 内容 |
@@ -339,3 +382,8 @@ Service.protocol = http, port = 8096, path = /web
 - 认证依赖系统 WebView 支持的方案，当前实测 Basic；Digest/NTLM 等未逐项验证。
 - 不提供生物识别解锁或主密码；凭据由 Android Keystore 保护，确认凭据是否被系统锁屏保护取决于设备。
 - 认证失败时不校验服务端身份（局域网自签证书），仅按 host 严格匹配。
+- 下载/上传只在 Android 模拟器验证；未在物理手机、真实 NAS 的厂商下载接口上测试。
+- 下载认证目前实测 Basic；Digest/NTLM 等依赖系统 WebView 的方案未逐项验证。
+- 后台下载使用前台 Service；已验证系统下载服务与通知权限，但未做进程被系统杀死、长时间断网重连的压力测试。
+- 不提供暂停/断点续传；取消后需重新下载。
+- 网页 `capture` 不直接调用相机，统一走系统文件/媒体选择器。

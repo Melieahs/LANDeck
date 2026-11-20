@@ -6,6 +6,7 @@ import '../core/utils/url_utils.dart';
 import '../data/database/app_database.dart';
 import '../models/device.dart';
 import '../models/device_category.dart';
+import '../models/download_task.dart';
 import '../models/service.dart';
 
 class ServiceConflictException implements Exception {
@@ -39,12 +40,17 @@ class LanDeckRepository extends ChangeNotifier {
 
   List<Service> _services = <Service>[];
   List<Device> _devices = <Device>[];
+  List<DownloadTask> _downloads = <DownloadTask>[];
   bool _loaded = false;
 
   bool get isLoaded => _loaded;
 
   List<Service> get services => List<Service>.unmodifiable(_services);
   List<Device> get devices => List<Device>.unmodifiable(_devices);
+  List<DownloadTask> get downloads => List<DownloadTask>.unmodifiable(_downloads);
+
+  int get activeDownloadCount =>
+      _downloads.where((DownloadTask task) => task.isActive).length;
 
   List<Service> get favorites =>
       _services.where((Service service) => service.isFavorite).toList();
@@ -76,6 +82,18 @@ class LanDeckRepository extends ChangeNotifier {
       return service.copyWith(deviceAddress: () => device?.primaryAddress);
     }).toList();
     _services.sort(_compareServices);
+
+    final List<RecordSnapshot<String, Map<String, Object?>>> downloadRecords =
+        await AppDatabase.downloadStore.find(_appDatabase.db);
+    _downloads = downloadRecords
+        .map(
+          (RecordSnapshot<String, Map<String, Object?>> record) =>
+              DownloadTask.fromMap(record.value),
+        )
+        .toList();
+    _downloads.sort(
+      (DownloadTask a, DownloadTask b) => b.createdAt.compareTo(a.createdAt),
+    );
     _loaded = true;
     notifyListeners();
   }
@@ -519,6 +537,56 @@ class LanDeckRepository extends ChangeNotifier {
       await AppDatabase.deviceStore.record(id).delete(transaction);
     });
     await load();
+  }
+
+
+  DownloadTask? downloadById(String id) {
+    for (final DownloadTask task in _downloads) {
+      if (task.id == id) {
+        return task;
+      }
+    }
+    return null;
+  }
+
+  Future<DownloadTask> addDownload(DownloadTask task) async {
+    await AppDatabase.downloadStore
+        .record(task.id)
+        .put(_appDatabase.db, task.toMap());
+    _downloads.insert(0, task);
+    notifyListeners();
+    return task;
+  }
+
+  Future<void> updateDownload(DownloadTask task) async {
+    final int index = _downloads.indexWhere(
+      (DownloadTask item) => item.id == task.id,
+    );
+    if (index < 0) {
+      return;
+    }
+    await AppDatabase.downloadStore
+        .record(task.id)
+        .put(_appDatabase.db, task.toMap());
+    _downloads[index] = task;
+    notifyListeners();
+  }
+
+  Future<void> deleteDownload(String id) async {
+    await AppDatabase.downloadStore.record(id).delete(_appDatabase.db);
+    _downloads.removeWhere((DownloadTask task) => task.id == id);
+    notifyListeners();
+  }
+
+  Future<void> clearCompletedDownloads() async {
+    final List<DownloadTask> completed = _downloads
+        .where((DownloadTask task) => !task.isActive)
+        .toList();
+    for (final DownloadTask task in completed) {
+      await AppDatabase.downloadStore.record(task.id).delete(_appDatabase.db);
+    }
+    _downloads.removeWhere((DownloadTask task) => !task.isActive);
+    notifyListeners();
   }
 
   int _nextDeviceSortOrder() {

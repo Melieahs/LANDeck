@@ -5,18 +5,26 @@ import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../../core/app_scope.dart';
 import '../../core/utils/feedback.dart';
+import '../../models/download_task.dart';
 import '../../models/http_credential.dart';
 import '../../models/service.dart';
 import '../../repositories/service_repository.dart';
+import '../../services/download_center.dart';
+import '../../services/download_probe.dart';
+import '../../services/download_request_headers.dart';
+import '../../services/download_utils.dart';
 import '../../services/http_credential_store.dart';
+import 'widgets/download_confirm_dialog.dart';
 import 'widgets/http_auth_dialog.dart';
 import 'widgets/more_actions_sheet.dart';
 import 'widgets/service_switcher_sheet.dart';
 import 'widgets/web_error_view.dart';
 import 'widgets/web_view_toolbar.dart';
+import '../downloads/downloads_page.dart';
 
 /// Immersive viewer for a user-added service URL.
 ///
@@ -62,6 +70,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   final Set<String> _blockedHosts = <String>{};
   bool _authDialogOpen = false;
   int _authAttempts = 0;
+  bool _downloadPromptOpen = false;
+  bool _downloadAuthPromptOpen = false;
+  final Set<String> _attachmentProbes = <String>{};
   bool _immersive = false;
 
   @override
@@ -82,6 +93,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       _service = latest;
       if (latest != null && _nativeWebView) {
         _controller = _createController();
+        unawaited(_configureFileChooser(_controller!));
         WidgetsBinding.instance.addPostFrameCallback((_) => _loadUrl());
       }
       return;
@@ -239,9 +251,20 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (uri == null) {
       return NavigationDecision.prevent;
     }
+    if (<String>{'http', 'https'}.contains(uri.scheme)) {
+      if (looksLikeDownloadUrl(request.url)) {
+        unawaited(_handleDownload(uri));
+        return NavigationDecision.prevent;
+      }
+      // Content-Disposition: attachment can be returned by URLs without a
+      // file extension. The WebView download listener gives us no metadata,
+      // so probe only page-like URLs that may actually be attachments.
+      if (request.isMainFrame && shouldProbeForAttachment(request.url)) {
+        unawaited(_probeForAttachment(uri));
+      }
+      return NavigationDecision.navigate;
+    }
     const Set<String> webSchemes = <String>{
-      'http',
-      'https',
       'about',
       'data',
       'blob',
@@ -249,6 +272,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       'javascript',
     };
     if (webSchemes.contains(uri.scheme)) {
+      if (uri.scheme == 'blob' && request.isMainFrame) {
+        showAppSnackBar(context, '网页生成的 blob 下载暂不支持，请使用文件直链');
+      }
       return NavigationDecision.navigate;
     }
     final bool opened = await launchUrl(
@@ -262,11 +288,278 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   }
 
   // ---------------------------------------------------------------------------
+  // Downloads
+  // ---------------------------------------------------------------------------
+
+  HttpCredential? _sessionCredentialFor(Uri uri) {
+    for (final HttpCredential credential in _sessionCredentials.values) {
+      if (credential.matches(uri.host, credential.realm)) {
+        return credential;
+      }
+    }
+    return null;
+  }
+
+  Future<Map<String, String>> _downloadHeaders(
+    Service service,
+    Uri uri,
+  ) async {
+    return DownloadRequestHeaders.build(
+      service: service,
+      url: uri.toString(),
+      sessionCredential: _sessionCredentialFor(uri),
+    );
+  }
+
+  Future<void> _handleDownload(Uri uri) async {
+    final Service? service = _service;
+    if (!mounted || service == null || _downloadPromptOpen) {
+      return;
+    }
+    try {
+      final ({DownloadProbeResult probe, Map<String, String> headers})? result =
+          await _probeDownloadWithAuth(service, uri);
+      if (!mounted || result == null) {
+        return;
+      }
+      await _presentDownload(
+        service,
+        uri,
+        result.probe,
+        result.headers,
+      );
+    } on Object {
+      if (mounted) {
+        showAppSnackBar(context, '无法读取下载信息，请重试');
+      }
+    }
+  }
+
+  /// Probes a download URL, and if the server demands HTTP Basic auth, asks
+  /// for credentials in the app, retries once, and returns the headers that
+  /// must be passed to the native downloader. The WebView itself is never
+  /// rebuilt and credentials are never placed in the URL.
+  Future<({DownloadProbeResult probe, Map<String, String> headers})?>
+  _probeDownloadWithAuth(Service service, Uri uri) async {
+    Map<String, String> headers = await _downloadHeaders(service, uri);
+    DownloadProbeResult probe = await DownloadProbe(headers: headers).probe(uri);
+    if (probe.statusCode != 401 ||
+        probe.authChallenge == null ||
+        _downloadAuthPromptOpen) {
+      return (probe: probe, headers: headers);
+    }
+    if (!probe.authChallenge!.toLowerCase().contains('basic')) {
+      if (mounted) {
+        showAppSnackBar(context, '该服务使用暂不支持的认证方式，无法下载');
+      }
+      return null;
+    }
+    if (!mounted) {
+      return null;
+    }
+    final String host = uri.host;
+    final String realm = _realmFromChallenge(probe.authChallenge!);
+    final HttpCredential? stale = await HttpCredentialStore.instance.find(
+      service.id,
+      host: host,
+      realm: realm,
+    );
+    if (stale != null) {
+      // The saved credential was already tried by DownloadRequestHeaders and
+      // rejected; remove it so a wrong password is not retried forever.
+      await HttpCredentialStore.instance.deleteScope(
+        service.id,
+        host: host,
+        realm: realm,
+      );
+    }
+    if (!mounted) {
+      return null;
+    }
+    _downloadAuthPromptOpen = true;
+    try {
+      final HttpAuthResult? result = await showHttpAuthDialog(
+        context,
+        serviceName: service.name,
+        address: service.address,
+        host: host,
+        realm: realm.isEmpty ? '受限资源' : realm,
+        initialUsername: stale?.username,
+        errorText: stale != null ? '认证失败，请检查用户名和密码' : null,
+      );
+      if (!mounted || result == null) {
+        if (mounted) {
+          showAppSnackBar(context, '需要登录后才能下载');
+        }
+        return null;
+      }
+      final HttpCredential credential = HttpCredential(
+        serviceId: service.id,
+        host: host,
+        realm: realm,
+        username: result.username,
+        password: result.password,
+        updatedAt: DateTime.now(),
+      );
+      _sessionCredentials[_authScope(host, realm)] = credential;
+      if (result.remember) {
+        await HttpCredentialStore.instance.save(credential);
+      }
+      headers = await _downloadHeaders(service, uri);
+      probe = await DownloadProbe(headers: headers).probe(uri);
+      if (probe.statusCode == 401) {
+        if (mounted) {
+          showAppSnackBar(context, '认证失败，请检查用户名和密码后重试');
+        }
+        return null;
+      }
+      return (probe: probe, headers: headers);
+    } finally {
+      _downloadAuthPromptOpen = false;
+    }
+  }
+
+  static String _realmFromChallenge(String challenge) {
+    final RegExpMatch? match = RegExp(
+      r'realm\s*=\s*"([^"]*)"',
+      caseSensitive: false,
+    ).firstMatch(challenge);
+    return match?.group(1) ?? '';
+  }
+
+  Future<void> _probeForAttachment(Uri uri) async {
+    final String key = uri.toString();
+    if (_attachmentProbes.contains(key) || _downloadPromptOpen) {
+      return;
+    }
+    _attachmentProbes.add(key);
+    try {
+      final Service? service = _service;
+      if (service == null || !mounted) {
+        return;
+      }
+      final Map<String, String> headers = await _downloadHeaders(service, uri);
+      final DownloadProbeResult probe = await DownloadProbe(
+        headers: headers,
+      ).probe(uri);
+      if (!mounted || !probe.attachment) {
+        return;
+      }
+      await _presentDownload(service, uri, probe, headers);
+    } on Object {
+      // A background probe must never interrupt ordinary navigation.
+    } finally {
+      _attachmentProbes.remove(key);
+    }
+  }
+
+  Future<void> _presentDownload(
+    Service service,
+    Uri uri,
+    DownloadProbeResult probe,
+    Map<String, String> headers,
+  ) async {
+    if (!mounted || _downloadPromptOpen) {
+      return;
+    }
+    final String fileName = safeFileName(probe.fileName);
+    _downloadPromptOpen = true;
+    try {
+      final bool confirmed = await showDownloadConfirmDialog(
+        context,
+        serviceName: service.name,
+        data: DownloadConfirmation(
+          fileName: fileName,
+          url: uri.toString(),
+          mimeType: probe.mimeType,
+          totalBytes: probe.totalBytes,
+          risky: isRiskyFileName(fileName),
+        ),
+      );
+      if (!mounted || !confirmed) {
+        return;
+      }
+      final String? destination = await DownloadCenter.instance.fileBridge
+          .pickSaveFile(fileName: fileName, mimeType: probe.mimeType);
+      if (!mounted) {
+        return;
+      }
+      if (destination == null) {
+        showAppSnackBar(context, '已取消，未选择保存位置');
+        return;
+      }
+      await DownloadCenter.instance.requestNotificationPermission();
+      if (!mounted) {
+        return;
+      }
+      final DownloadTask? task = await DownloadCenter.instance.enqueue(
+        service: service,
+        url: uri.toString(),
+        fileName: fileName,
+        mimeType: probe.mimeType,
+        totalBytes: probe.totalBytes,
+        destinationUri: destination,
+        headers: headers,
+      );
+      if (!mounted) {
+        return;
+      }
+      showAppSnackBar(
+        context,
+        task == null ? '无法开始下载' : '已开始下载：$fileName',
+      );
+    } finally {
+      _downloadPromptOpen = false;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Uploads (system file picker)
+  // ---------------------------------------------------------------------------
+
+  Future<void> _configureFileChooser(WebViewController controller) async {
+    if (!_nativeWebView) {
+      return;
+    }
+    try {
+      final platform = controller.platform;
+      if (platform is AndroidWebViewController) {
+        await platform.setOnShowFileSelector(_onShowFileSelector);
+      }
+    } on Object {
+      // Older/custom platforms may not expose a file chooser.
+    }
+  }
+
+  Future<List<String>> _onShowFileSelector(FileSelectorParams params) async {
+    if (params.mode == FileSelectorMode.save) {
+      final String? destination = await DownloadCenter.instance.fileBridge
+          .pickSaveFile(
+            fileName: params.filenameHint ?? 'download',
+            mimeType: params.acceptTypes.isEmpty
+                ? 'application/octet-stream'
+                : params.acceptTypes.first,
+          );
+      return destination == null ? <String>[] : <String>[destination];
+    }
+    final List<String> files = await DownloadCenter.instance.fileBridge
+        .pickFiles(
+          acceptTypes: params.acceptTypes,
+          multiple: params.mode == FileSelectorMode.openMultiple,
+          capture: params.isCaptureEnabled,
+        );
+    return files;
+  }
+
+  // ---------------------------------------------------------------------------
   // HTTP authentication
   // ---------------------------------------------------------------------------
 
   static String _normalizeHost(String host) =>
       host.toLowerCase().replaceAll(RegExp(r'\.$'), '');
+
+  static String _authScope(String host, String realm) =>
+      '${_normalizeHost(host)}|$realm';
 
   void _resetAuthState() {
     _autoTriedScopes.clear();
@@ -575,6 +868,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (_nativeWebView) {
       _clearTimeout();
       _controller = _createController();
+      unawaited(_configureFileChooser(_controller!));
       await _loadUrl();
     }
   }
@@ -632,6 +926,11 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         return;
       case MoreAction.shareAddress:
         showAppSnackBar(context, '系统分享将在后续版本开放');
+        return;
+      case MoreAction.downloads:
+        await Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const DownloadsPage()),
+        );
         return;
       case MoreAction.toggleImmersive:
         _setImmersive(!_immersive);

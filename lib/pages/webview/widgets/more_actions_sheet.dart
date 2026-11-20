@@ -9,6 +9,7 @@ enum MoreAction {
   openExternal,
   copyAddress,
   shareAddress,
+  downloads,
   toggleImmersive,
   pageInfo,
 }
@@ -162,6 +163,14 @@ class _MoreActionsSheet extends StatelessWidget {
                         subtitle: '分享功能将在后续版本开放',
                         onTap: () =>
                             Navigator.of(context).pop(MoreAction.shareAddress),
+                      ),
+                      const _ActionDivider(),
+                      _ActionRow(
+                        icon: Icons.download_rounded,
+                        title: '下载管理',
+                        subtitle: '查看进度、打开或分享已下载文件',
+                        onTap: () =>
+                            Navigator.of(context).pop(MoreAction.downloads),
                       ),
                       const _ActionDivider(),
                       _ActionRow(
