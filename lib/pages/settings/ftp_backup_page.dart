@@ -21,8 +21,9 @@ class _FtpBackupPageState extends State<FtpBackupPage> {
   final TextEditingController _user = TextEditingController();
   final TextEditingController _password = TextEditingController();
   final TextEditingController _directory = TextEditingController(text: '/');
-  final TextEditingController _fileName =
-      TextEditingController(text: 'landeck-backup.json');
+  final TextEditingController _fileName = TextEditingController(
+    text: 'landeck-backup.json',
+  );
 
   FtpSecurity _security = FtpSecurity.ftp;
   bool _obscure = true;
@@ -144,11 +145,14 @@ class _FtpBackupPageState extends State<FtpBackupPage> {
 
   Future<void> _restore() {
     return _run('恢复', (FtpConfig config) async {
-      final Map<String, Object?> snapshot = await _service.downloadBackup(config);
+      final Map<String, Object?> snapshot = await _service.downloadBackup(
+        config,
+      );
       if (!mounted) {
         return;
       }
-      final bool confirmed = await showDialog<bool>(
+      final bool confirmed =
+          await showDialog<bool>(
             context: context,
             builder: (BuildContext context) => AlertDialog(
               title: const Text('从 FTP 恢复数据？'),
@@ -172,8 +176,8 @@ class _FtpBackupPageState extends State<FtpBackupPage> {
       if (!confirmed || !mounted) {
         return;
       }
-      final BackupImportResult result =
-          await AppScope.of(context).importBackup(snapshot);
+      final BackupImportResult result = await AppScope.of(context)
+          .importBackup(snapshot);
       if (!mounted) {
         return;
       }
@@ -248,10 +252,11 @@ class _FtpBackupPageState extends State<FtpBackupPage> {
                         decoration: const InputDecoration(labelText: '连接方式'),
                         items: FtpSecurity.values
                             .map(
-                              (FtpSecurity value) => DropdownMenuItem<FtpSecurity>(
-                                value: value,
-                                child: Text(value.label),
-                              ),
+                              (FtpSecurity value) =>
+                                  DropdownMenuItem<FtpSecurity>(
+                                    value: value,
+                                    child: Text(value.label),
+                                  ),
                             )
                             .toList(),
                         onChanged: (FtpSecurity? value) {

@@ -1,4 +1,5 @@
 import Flutter
+import Network
 import UIKit
 
 @main
@@ -14,6 +15,9 @@ import UIKit
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "LandeckDownloads") {
       registerIosDownloadBridge(registrar)
+    }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "LandeckBonjour") {
+      registerIosBonjourBridge(registrar)
     }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "LandeckGlass") {
       registrar.register(
@@ -650,5 +654,149 @@ final class LandeckDownloadManager: NSObject, URLSessionDownloadDelegate {
 extension AppDelegate {
   func registerIosDownloadBridge(_ registrar: FlutterPluginRegistrar) {
     LandeckDownloadManager.shared.register(with: registrar.messenger())
+  }
+}
+
+
+
+// MARK: - Bonjour device discovery
+
+private func registerIosBonjourBridge(_ registrar: FlutterPluginRegistrar) {
+  let channel = FlutterMethodChannel(
+    name: "com.example.landeck/bonjour",
+    binaryMessenger: registrar.messenger()
+  )
+  let browser = LandeckBonjourBrowser(channel: channel)
+  registrar.addMethodCallDelegate(browser, channel: channel)
+}
+
+final class LandeckBonjourBrowser: NSObject, FlutterPlugin {
+  private let channel: FlutterMethodChannel
+  private let queue = DispatchQueue(label: "com.example.landeck.bonjour")
+  private var browsers: [NWBrowser] = []
+  private var connections: [ObjectIdentifier: NWConnection] = [:]
+  private var seen = Set<String>()
+
+  init(channel: FlutterMethodChannel) {
+    self.channel = channel
+    super.init()
+  }
+
+  static func register(with registrar: FlutterPluginRegistrar) {
+    let channel = FlutterMethodChannel(
+      name: "com.example.landeck/bonjour",
+      binaryMessenger: registrar.messenger()
+    )
+    registrar.addMethodCallDelegate(LandeckBonjourBrowser(channel: channel), channel: channel)
+  }
+
+  func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    switch call.method {
+    case "start":
+      let args = call.arguments as? [String: Any]
+      let types = args?["types"] as? [String] ?? []
+      start(types: types)
+      result(nil)
+    case "stop":
+      stop()
+      result(nil)
+    default:
+      result(FlutterMethodNotImplemented)
+    }
+  }
+
+  private func start(types: [String]) {
+    stop()
+    seen.removeAll()
+    let requested = types.isEmpty ? ["_http._tcp"] : types
+    for type in requested {
+      let browser = NWBrowser(
+        for: .bonjour(type: type, domain: nil),
+        using: .tcp
+      )
+      browser.browseResultsChangedHandler = { [weak self] results, _ in
+        for item in results {
+          self?.resolve(item, type: type)
+        }
+      }
+      browser.stateUpdateHandler = { state in
+        if case .failed = state {
+          // A failed service type must not stop the remaining browsers.
+        }
+      }
+      browser.start(queue: queue)
+      browsers.append(browser)
+    }
+  }
+
+  private func stop() {
+    for browser in browsers {
+      browser.cancel()
+    }
+    browsers.removeAll()
+    for connection in connections.values {
+      connection.cancel()
+    }
+    connections.removeAll()
+  }
+
+  private func resolve(_ result: NWBrowser.Result, type: String) {
+    guard case let .service(name, _, _, _) = result.endpoint else {
+      return
+    }
+    let connection = NWConnection(to: result.endpoint, using: .tcp)
+    connections[ObjectIdentifier(connection)] = connection
+    connection.stateUpdateHandler = { [weak self] state in
+      guard let self else { return }
+      switch state {
+      case .ready:
+        if case let .hostPort(host, port)? = connection.currentPath?.remoteEndpoint {
+          let ip = self.hostString(host)
+          if !ip.isEmpty {
+            let key = "\(ip)|\(name)|\(port.rawValue)|\(type)"
+            self.queue.async {
+              guard !self.seen.contains(key) else { return }
+              self.seen.insert(key)
+              DispatchQueue.main.async {
+                self.channel.invokeMethod("onResult", arguments: [
+                  "ip": ip,
+                  "name": name,
+                  "type": type,
+                  "port": Int(port.rawValue),
+                ])
+              }
+            }
+          }
+        }
+        self.finishConnection(connection)
+      case .failed, .cancelled:
+        self.finishConnection(connection)
+      default:
+        break
+      }
+    }
+    connection.start(queue: queue)
+    queue.asyncAfter(deadline: .now() + 4) { [weak self] in
+      self?.finishConnection(connection)
+    }
+  }
+
+  private func finishConnection(_ connection: NWConnection) {
+    connection.stateUpdateHandler = nil
+    connection.cancel()
+    connections.removeValue(forKey: ObjectIdentifier(connection))
+  }
+
+  private func hostString(_ host: NWEndpoint.Host) -> String {
+    switch host {
+    case let .ipv4(address):
+      return address
+    case let .ipv6(address):
+      return address
+    case let .name(name, _):
+      return name
+    @unknown default:
+      return "\(host)"
+    }
   }
 }

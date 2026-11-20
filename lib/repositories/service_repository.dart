@@ -47,7 +47,8 @@ class LanDeckRepository extends ChangeNotifier {
 
   List<Service> get services => List<Service>.unmodifiable(_services);
   List<Device> get devices => List<Device>.unmodifiable(_devices);
-  List<DownloadTask> get downloads => List<DownloadTask>.unmodifiable(_downloads);
+  List<DownloadTask> get downloads =>
+      List<DownloadTask>.unmodifiable(_downloads);
 
   int get activeDownloadCount =>
       _downloads.where((DownloadTask task) => task.isActive).length;
@@ -539,7 +540,6 @@ class LanDeckRepository extends ChangeNotifier {
     await load();
   }
 
-
   DownloadTask? downloadById(String id) {
     for (final DownloadTask task in _downloads) {
       if (task.id == id) {
@@ -622,7 +622,8 @@ extension LanDeckBackupRepository on LanDeckRepository {
     if (data['format'] != 'landeck-backup' || data['version'] != 1) {
       throw const FormatException('不是有效的 LANDeck 备份文件');
     }
-    final List<Object?> rawDevices = data['devices'] as List<Object?>? ?? <Object?>[];
+    final List<Object?> rawDevices =
+        data['devices'] as List<Object?>? ?? <Object?>[];
     final List<Object?> rawServices =
         data['services'] as List<Object?>? ?? <Object?>[];
     final List<Device> importedDevices = <Device>[];

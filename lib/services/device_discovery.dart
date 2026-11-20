@@ -10,6 +10,7 @@ import '../core/utils/network_utils.dart';
 import '../models/device.dart';
 import '../models/discovered_device.dart';
 import '../models/scan_candidate.dart';
+import 'ios_bonjour_bridge.dart';
 import 'multicast_lock.dart';
 
 class _DeviceBuilder {
@@ -89,35 +90,59 @@ class DeviceDiscoveryService {
       ),
     );
 
-    final MulticastLock lock = MulticastLock();
-    await lock.acquire();
     int mdnsCount = 0;
-    try {
-      final List<_MdnsDevice> found = await _discoverMdns(subnet, onProgress)
-          .timeout(
-            const Duration(seconds: 8),
-            onTimeout: () => const <_MdnsDevice>[],
+    if (Platform.isIOS) {
+      try {
+        final List<IosBonjourResult> found = await const IosBonjourBridge()
+            .browse();
+        mdnsCount = found.length;
+        for (final IosBonjourResult item in found) {
+          final _DeviceBuilder builder = builders.putIfAbsent(
+            item.ipAddress,
+            () => _DeviceBuilder(item.ipAddress),
           );
-      mdnsCount = found.length;
-      for (final _MdnsDevice item in found) {
-        final _DeviceBuilder builder = builders.putIfAbsent(
-          item.ipAddress,
-          () => _DeviceBuilder(item.ipAddress),
-        );
-        builder
-          ..sources.add(DiscoverySource.mdns)
-          ..name ??= item.instanceName
-          ..hostname ??= item.hostname
-          ..typeHint ??= item.typeHint;
-        builder.serviceTypes.add(item.serviceType);
+          builder
+            ..sources.add(DiscoverySource.mdns)
+            ..name ??= item.name
+            ..typeHint ??= _typeForMdns(item.serviceType);
+          builder.serviceTypes.add(item.serviceType);
+        }
+        if (found.isEmpty) {
+          errors.add('Bonjour 未发现服务（设备可能未广播）');
+        }
+      } on Object catch (error) {
+        errors.add('Bonjour 查询失败：$error');
       }
-      if (found.isEmpty) {
-        errors.add('mDNS 未收到广播（部分设备可能未启用 mDNS）');
+    } else {
+      final MulticastLock lock = MulticastLock();
+      await lock.acquire();
+      try {
+        final List<_MdnsDevice> found = await _discoverMdns(subnet, onProgress)
+            .timeout(
+              const Duration(seconds: 8),
+              onTimeout: () => const <_MdnsDevice>[],
+            );
+        mdnsCount = found.length;
+        for (final _MdnsDevice item in found) {
+          final _DeviceBuilder builder = builders.putIfAbsent(
+            item.ipAddress,
+            () => _DeviceBuilder(item.ipAddress),
+          );
+          builder
+            ..sources.add(DiscoverySource.mdns)
+            ..name ??= item.instanceName
+            ..hostname ??= item.hostname
+            ..typeHint ??= item.typeHint;
+          builder.serviceTypes.add(item.serviceType);
+        }
+        if (found.isEmpty) {
+          errors.add('mDNS 未收到广播（部分设备可能未启用 mDNS）');
+        }
+      } on Object catch (error) {
+        errors.add('mDNS 查询失败：$error');
+      } finally {
+        await lock.release();
       }
-    } on Object catch (error) {
-      errors.add('mDNS 查询失败：$error');
-    } finally {
-      await lock.release();
     }
 
     if (_cancelled) {
@@ -130,36 +155,40 @@ class DeviceDiscoveryService {
       );
     }
 
-    onProgress(
-      const DeviceDiscoveryProgress(
-        phase: 'ssdp',
-        message: '正在通过 SSDP / UPnP 查找设备…',
-      ),
-    );
     int ssdpCount = 0;
-    try {
-      final List<_SsdpDevice> found = await _discoverSsdp(subnet).timeout(
-        const Duration(seconds: 6),
-        onTimeout: () => const <_SsdpDevice>[],
+    if (Platform.isIOS) {
+      errors.add('iOS 上 SSDP 多播需要受限的网络权限，已跳过；使用 Bonjour 与主机发现');
+    } else {
+      onProgress(
+        const DeviceDiscoveryProgress(
+          phase: 'ssdp',
+          message: '正在通过 SSDP / UPnP 查找设备…',
+        ),
       );
-      ssdpCount = found.length;
-      for (final _SsdpDevice item in found) {
-        final _DeviceBuilder builder = builders.putIfAbsent(
-          item.ipAddress,
-          () => _DeviceBuilder(item.ipAddress),
+      try {
+        final List<_SsdpDevice> found = await _discoverSsdp(subnet).timeout(
+          const Duration(seconds: 6),
+          onTimeout: () => const <_SsdpDevice>[],
         );
-        builder
-          ..sources.add(DiscoverySource.ssdp)
-          ..name ??= item.name
-          ..manufacturer ??= item.manufacturer
-          ..model ??= item.model
-          ..typeHint ??= item.typeHint;
+        ssdpCount = found.length;
+        for (final _SsdpDevice item in found) {
+          final _DeviceBuilder builder = builders.putIfAbsent(
+            item.ipAddress,
+            () => _DeviceBuilder(item.ipAddress),
+          );
+          builder
+            ..sources.add(DiscoverySource.ssdp)
+            ..name ??= item.name
+            ..manufacturer ??= item.manufacturer
+            ..model ??= item.model
+            ..typeHint ??= item.typeHint;
+        }
+        if (found.isEmpty) {
+          errors.add('SSDP 未收到响应（不影响主机发现）');
+        }
+      } on Object catch (error) {
+        errors.add('SSDP 查询失败：$error');
       }
-      if (found.isEmpty) {
-        errors.add('SSDP 未收到响应（不影响主机发现）');
-      }
-    } on Object catch (error) {
-      errors.add('SSDP 查询失败：$error');
     }
 
     if (_cancelled) {

@@ -8,16 +8,16 @@ enum FtpSecurity { ftp, ftpes, ftps }
 
 extension FtpSecurityLabel on FtpSecurity {
   String get label => switch (this) {
-        FtpSecurity.ftp => 'FTP',
-        FtpSecurity.ftpes => 'FTPES（显式 TLS）',
-        FtpSecurity.ftps => 'FTPS（隐式 TLS）',
-      };
+    FtpSecurity.ftp => 'FTP',
+    FtpSecurity.ftpes => 'FTPES（显式 TLS）',
+    FtpSecurity.ftps => 'FTPS（隐式 TLS）',
+  };
 
   SecurityType get native => switch (this) {
-        FtpSecurity.ftp => SecurityType.ftp,
-        FtpSecurity.ftpes => SecurityType.ftpes,
-        FtpSecurity.ftps => SecurityType.ftps,
-      };
+    FtpSecurity.ftp => SecurityType.ftp,
+    FtpSecurity.ftpes => SecurityType.ftpes,
+    FtpSecurity.ftps => SecurityType.ftps,
+  };
 }
 
 class FtpConfig {
@@ -40,7 +40,10 @@ class FtpConfig {
   final FtpSecurity security;
 
   bool get isValid =>
-      host.trim().isNotEmpty && port > 0 && port <= 65535 && fileName.trim().isNotEmpty;
+      host.trim().isNotEmpty &&
+      port > 0 &&
+      port <= 65535 &&
+      fileName.trim().isNotEmpty;
 
   String get normalizedDirectory {
     final String value = remoteDirectory.trim();
@@ -71,14 +74,14 @@ class FtpConfig {
   }
 
   Map<String, Object?> toJson() => <String, Object?>{
-        'host': host,
-        'port': port,
-        'username': username,
-        'password': password,
-        'remoteDirectory': remoteDirectory,
-        'fileName': fileName,
-        'security': security.name,
-      };
+    'host': host,
+    'port': port,
+    'username': username,
+    'password': password,
+    'remoteDirectory': remoteDirectory,
+    'fileName': fileName,
+    'security': security.name,
+  };
 
   factory FtpConfig.fromJson(Map<String, Object?> json) {
     final String securityName = json['security'] as String? ?? 'ftp';
@@ -142,12 +145,18 @@ class FtpBackupService {
     await _withClient<void>(config, (FTPConnect client) async {});
   }
 
-  Future<void> uploadBackup(FtpConfig config, Map<String, Object?> snapshot) async {
+  Future<void> uploadBackup(
+    FtpConfig config,
+    Map<String, Object?> snapshot,
+  ) async {
     final Uint8List bytes = Uint8List.fromList(
       utf8.encode(const JsonEncoder.withIndent('  ').convert(snapshot)),
     );
     await _withClient<void>(config, (FTPConnect client) async {
-      final bool uploaded = await client.uploadData(bytes, config.fileName.trim());
+      final bool uploaded = await client.uploadData(
+        bytes,
+        config.fileName.trim(),
+      );
       if (!uploaded) {
         throw const FtpBackupException('FTP 服务器没有接受备份文件');
       }
@@ -156,7 +165,9 @@ class FtpBackupService {
 
   Future<Map<String, Object?>> downloadBackup(FtpConfig config) async {
     return _withClient<Map<String, Object?>>(config, (FTPConnect client) async {
-      final Uint8List bytes = await client.downloadToBytes(config.fileName.trim());
+      final Uint8List bytes = await client.downloadToBytes(
+        config.fileName.trim(),
+      );
       final Object? decoded = jsonDecode(utf8.decode(bytes));
       if (decoded is! Map) {
         throw const FtpBackupException('备份文件不是有效的 JSON 对象');
@@ -187,7 +198,9 @@ class FtpBackupService {
         throw const FtpBackupException('无法连接 FTP 服务器');
       }
       if (config.normalizedDirectory != '/') {
-        final bool changed = await client.changeDirectory(config.normalizedDirectory);
+        final bool changed = await client.changeDirectory(
+          config.normalizedDirectory,
+        );
         if (!changed) {
           throw FtpBackupException('FTP 目录不存在：${config.normalizedDirectory}');
         }
