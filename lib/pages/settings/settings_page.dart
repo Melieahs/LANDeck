@@ -8,6 +8,7 @@ import '../../core/utils/feedback.dart';
 import '../../repositories/service_repository.dart';
 import '../devices/devices_page.dart';
 import '../downloads/downloads_page.dart';
+import 'ftp_backup_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key, required this.onOpenDiscover});
@@ -172,6 +173,19 @@ class SettingsPage extends StatelessWidget {
                         MaterialPageRoute<void>(
                           builder: (BuildContext context) =>
                               const DownloadsPage(),
+                        ),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.swap_horiz_rounded),
+                      title: const Text('FTP 数据互通'),
+                      subtitle: const Text('设备与服务配置的备份与恢复'),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => Navigator.of(context).push<void>(
+                        MaterialPageRoute<void>(
+                          builder: (BuildContext context) =>
+                              const FtpBackupPage(),
                         ),
                       ),
                     ),

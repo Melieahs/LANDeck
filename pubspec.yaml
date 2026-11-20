@@ -49,6 +49,7 @@ dependencies:
   flutter_secure_storage: ^11.2.0
   dynamic_color: ^2.1.0
   webview_flutter_android: ^4.14.1
+  ftpconnect: ^3.0.0
 
 dev_dependencies:
   flutter_test:

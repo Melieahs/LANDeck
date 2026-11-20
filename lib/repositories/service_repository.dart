@@ -604,3 +604,87 @@ class LanDeckRepository extends ChangeNotifier {
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 }
+
+extension LanDeckBackupRepository on LanDeckRepository {
+  /// Exports only the user's configuration. Download history and HTTP
+  /// credentials are intentionally excluded from the portable snapshot.
+  Map<String, Object?> exportBackup() {
+    return <String, Object?>{
+      'format': 'landeck-backup',
+      'version': 1,
+      'exportedAt': DateTime.now().toUtc().toIso8601String(),
+      'devices': devices.map((Device device) => device.toMap()).toList(),
+      'services': services.map((Service service) => service.toMap()).toList(),
+    };
+  }
+
+  Future<BackupImportResult> importBackup(Map<String, Object?> data) async {
+    if (data['format'] != 'landeck-backup' || data['version'] != 1) {
+      throw const FormatException('不是有效的 LANDeck 备份文件');
+    }
+    final List<Object?> rawDevices = data['devices'] as List<Object?>? ?? <Object?>[];
+    final List<Object?> rawServices =
+        data['services'] as List<Object?>? ?? <Object?>[];
+    final List<Device> importedDevices = <Device>[];
+    final Set<String> deviceIds = <String>{};
+    for (final Object? item in rawDevices) {
+      if (item is! Map) {
+        throw const FormatException('备份中的设备数据格式不正确');
+      }
+      final Device device = Device.fromMap(Map<String, Object?>.from(item));
+      if (device.id.isEmpty || device.name.trim().isEmpty) {
+        throw const FormatException('备份中存在缺少 ID 或名称的设备');
+      }
+      if (!deviceIds.add(device.id)) {
+        throw const FormatException('备份中存在重复的设备 ID');
+      }
+      importedDevices.add(device);
+    }
+
+    final List<Service> importedServices = <Service>[];
+    final Set<String> serviceIds = <String>{};
+    for (final Object? item in rawServices) {
+      if (item is! Map) {
+        throw const FormatException('备份中的服务数据格式不正确');
+      }
+      Service service = Service.fromMap(Map<String, Object?>.from(item));
+      if (service.id.isEmpty || service.name.trim().isEmpty) {
+        throw const FormatException('备份中存在缺少 ID 或名称的服务');
+      }
+      if (!serviceIds.add(service.id)) {
+        throw const FormatException('备份中存在重复的服务 ID');
+      }
+      if (service.deviceId != null && !deviceIds.contains(service.deviceId)) {
+        service = service.copyWith(deviceId: () => null);
+      }
+      importedServices.add(service);
+    }
+
+    await _appDatabase.db.transaction((Transaction transaction) async {
+      await AppDatabase.deviceStore.delete(transaction);
+      await AppDatabase.serviceStore.delete(transaction);
+      for (final Device device in importedDevices) {
+        await AppDatabase.deviceStore
+            .record(device.id)
+            .put(transaction, device.toMap());
+      }
+      for (final Service service in importedServices) {
+        await AppDatabase.serviceStore
+            .record(service.id)
+            .put(transaction, service.toMap());
+      }
+    });
+    await load();
+    return BackupImportResult(
+      devices: importedDevices.length,
+      services: importedServices.length,
+    );
+  }
+}
+
+class BackupImportResult {
+  const BackupImportResult({required this.devices, required this.services});
+
+  final int devices;
+  final int services;
+}
