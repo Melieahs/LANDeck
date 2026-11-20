@@ -61,6 +61,7 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 - `dist/LANDeck-0.6.0.apk`（约 55.5 MB，含 arm64-v8a / armeabi-v7a / x86_64）
 - 构建产物：`build/app/outputs/flutter-apk/app-release.apk`
 - 包名 `com.example.landeck`，版本 `0.6.0+6`
+- SHA-256：`28a92f42ba788c11ddd908ed6c21eaee9e6335e445f755c809f92a75c6a16597`
 - 当前使用 Flutter 默认 debug 签名，可直接安装测试，不适合直接上架
 
 > `permission_handler_android 13.0.2` 要求编译 SDK ≥ 37，因此 `compileSdk = 37`；`targetSdk` 保持 36。target 36 下局域网访问由 INTERNET 隐式允许，不声明/请求 `ACCESS_LOCAL_NETWORK`。
