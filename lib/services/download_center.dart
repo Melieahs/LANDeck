@@ -332,28 +332,33 @@ class DownloadCenter {
     final int downloaded = (native['downloaded'] as num?)?.toInt() ?? 0;
     final int? total = (native['total'] as num?)?.toInt();
     final String? error = native['error'] as String?;
+    final String? nativeName = native['fileName'] as String?;
+    final String? nativeDestination = native['destination'] as String?;
     final DownloadStatus next = switch (status) {
       'completed' => DownloadStatus.completed,
       'failed' => DownloadStatus.failed,
       'cancelled' => DownloadStatus.cancelled,
       _ => DownloadStatus.downloading,
     };
+    final bool nameChanged =
+        nativeName != null &&
+        nativeName.isNotEmpty &&
+        nativeName != task.fileName;
     if (next == DownloadStatus.downloading &&
         task.downloadedBytes == downloaded &&
-        task.totalBytes == total) {
+        task.totalBytes == total &&
+        !nameChanged) {
       return;
     }
     await repository.updateDownload(
       task.copyWith(
+        fileName: nameChanged ? nativeName : null,
+        destinationUri: nativeDestination,
         status: next,
         downloadedBytes: downloaded,
         totalBytes: total,
-        errorMessage: next == DownloadStatus.failed
-            ? (error ?? '下载失败')
-            : null,
-        completedAt: next == DownloadStatus.completed
-            ? DateTime.now()
-            : null,
+        errorMessage: next == DownloadStatus.failed ? (error ?? '下载失败') : null,
+        completedAt: next == DownloadStatus.completed ? DateTime.now() : null,
         clearError: next != DownloadStatus.failed,
       ),
     );

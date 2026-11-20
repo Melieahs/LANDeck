@@ -9,6 +9,7 @@ class DownloadConfirmation {
     required this.mimeType,
     required this.totalBytes,
     required this.risky,
+    this.namePending = false,
   });
 
   final String fileName;
@@ -16,6 +17,7 @@ class DownloadConfirmation {
   final String? mimeType;
   final int? totalBytes;
   final bool risky;
+  final bool namePending;
 }
 
 Future<bool> showDownloadConfirmDialog(
@@ -25,6 +27,8 @@ Future<bool> showDownloadConfirmDialog(
 }) async {
   final bool? result = await showDialog<bool>(
     context: context,
+    useRootNavigator: true,
+    barrierDismissible: true,
     builder: (BuildContext context) {
       final ColorScheme scheme = Theme.of(context).colorScheme;
       return AlertDialog(
@@ -48,6 +52,14 @@ Future<bool> showDownloadConfirmDialog(
                   ),
                 ],
               ),
+              if (data.namePending) ...<Widget>[
+                const SizedBox(height: 4),
+                Text(
+                  '文件名将在下载完成后按服务器响应确定，完成后会自动重命名。',
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: scheme.onSurfaceVariant),
+                ),
+              ],
               const SizedBox(height: 14),
               _InfoRow(label: '来源服务', value: serviceName),
               _InfoRow(
@@ -108,12 +120,14 @@ Future<bool> showDownloadConfirmDialog(
         actions: <Widget>[
           TextButton(
             key: const ValueKey<String>('download-confirm-cancel'),
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () =>
+                Navigator.of(context, rootNavigator: true).pop(false),
             child: const Text('取消'),
           ),
           FilledButton.icon(
             key: const ValueKey<String>('download-confirm-start'),
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () =>
+                Navigator.of(context, rootNavigator: true).pop(true),
             icon: const Icon(Icons.download_rounded, size: 18),
             label: const Text('下载'),
           ),

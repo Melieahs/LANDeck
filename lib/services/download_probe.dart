@@ -13,6 +13,7 @@ class DownloadProbeResult {
     this.contentDisposition,
     this.statusCode,
     this.authChallenge,
+    this.nameKnown = false,
   });
 
   final String url;
@@ -23,6 +24,9 @@ class DownloadProbeResult {
   final String? contentDisposition;
   final int? statusCode;
   final String? authChallenge;
+
+  /// True when a real filename came from Content-Disposition or the URL.
+  final bool nameKnown;
 }
 
 /// Reads response metadata without downloading the body. The WebView's public
@@ -41,20 +45,33 @@ class DownloadProbe {
       ..connectionTimeout = timeout
       ..idleTimeout = const Duration(seconds: 2)
       ..userAgent = headers['User-Agent'];
-    client.badCertificateCallback = (_, _, _) =>
-        _isPrivateHost(uri.host);
+    client.badCertificateCallback = (_, _, _) => _isPrivateHost(uri.host);
     try {
-      _ProbeHeaders? head = await _request(client, uri, method: 'HEAD');
+      final _ProbeHeaders? head = await _request(client, uri, method: 'HEAD');
       _ProbeHeaders? response = head;
-      if (head == null || head.statusCode >= 400) {
+      // Some appliance download endpoints implement only GET and answer HEAD
+      // with 405. A ranged GET against those one-shot endpoints starts (and
+      // then cancels) the real transfer, so the later native GET fails. Keep
+      // the HEAD metadata and let the native service perform the only GET.
+      final bool headUnsupported =
+          head != null && (head.statusCode == 405 || head.statusCode == 501);
+      final bool destructiveFallback =
+          head == null || (head.statusCode >= 400 && !headUnsupported);
+      if (destructiveFallback) {
         response = await _request(
           client,
           uri,
           method: 'GET',
           extraHeaders: const <String, String>{'Range': 'bytes=0-0'},
         );
+      } else if (headUnsupported) {
+        // HEAD failed on a GET-only endpoint; its JSON error body metadata is
+        // not the file. Let the native GET discover the real headers.
+        response = null;
       }
-      response ??= head;
+      if (response == null && !headUnsupported) {
+        response = head;
+      }
       return _result(uri, response);
     } finally {
       client.close(force: true);
@@ -82,9 +99,7 @@ class DownloadProbe {
       );
       final _ProbeHeaders result = _ProbeHeaders(
         statusCode: response.statusCode,
-        contentDisposition: response.headers.value(
-          'content-disposition',
-        ),
+        contentDisposition: response.headers.value('content-disposition'),
         contentType: response.headers.contentType?.mimeType,
         contentLength: response.contentLength >= 0
             ? response.contentLength
@@ -107,12 +122,26 @@ class DownloadProbe {
   DownloadProbeResult _result(Uri uri, _ProbeHeaders? response) {
     final String disposition = response?.contentDisposition ?? '';
     final String dispositionName = fileNameFromDisposition(disposition);
-    final String fallbackName = fileNameFromUrl(uri.toString());
+    String fallbackName = fileNameFromUrl(uri.toString());
+    if (fallbackName.toLowerCase() == 'download' ||
+        fallbackName.toLowerCase() == 'file') {
+      final String queryName = <String>['filename', 'file', 'name']
+          .map((String key) => uri.queryParameters[key] ?? '')
+          .firstWhere(
+            (String value) => value.trim().isNotEmpty,
+            orElse: () => '',
+          );
+      if (queryName.isNotEmpty) {
+        fallbackName = Uri.decodeComponent(queryName);
+      } else {
+        fallbackName = '下载文件_${DateTime.now().millisecondsSinceEpoch}';
+      }
+    }
     final String name = safeFileName(
       dispositionName.isNotEmpty ? dispositionName : fallbackName,
     );
-    final String? mime = _cleanMime(response?.contentType) ??
-        mimeForFileName(name);
+    final String? mime =
+        _cleanMime(response?.contentType) ?? mimeForFileName(name);
     final bool attachment =
         disposition.toLowerCase().contains('attachment') ||
         (looksLikeDownloadUrl(uri.toString()) &&
@@ -132,7 +161,13 @@ class DownloadProbe {
       contentDisposition: disposition.isEmpty ? null : disposition,
       statusCode: response?.statusCode,
       authChallenge: response?.authChallenge,
+      nameKnown: dispositionName.isNotEmpty || fallbackNameWasMeaningful(uri),
     );
+  }
+
+  static bool fallbackNameWasMeaningful(Uri uri) {
+    final String raw = uri.path.split('/').last;
+    return raw.isNotEmpty && raw.toLowerCase() != 'download';
   }
 
   static String? _cleanMime(String? value) {

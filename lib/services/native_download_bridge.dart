@@ -19,14 +19,17 @@ class NativeDownloadBridge {
     required Map<String, String> headers,
   }) async {
     try {
-      final bool? started = await _channel.invokeMethod<bool>('start', <String, Object?>{
-        'taskId': taskId,
-        'url': url,
-        'fileName': fileName,
-        'mimeType': mimeType,
-        'destinationUri': destinationUri,
-        'headers': jsonEncode(headers),
-      });
+      final bool? started = await _channel.invokeMethod<bool>(
+        'start',
+        <String, Object?>{
+          'taskId': taskId,
+          'url': url,
+          'fileName': fileName,
+          'mimeType': mimeType,
+          'destinationUri': destinationUri,
+          'headers': jsonEncode(headers),
+        },
+      );
       return started ?? false;
     } on PlatformException {
       return false;
@@ -105,12 +108,31 @@ class NativeFileBridge {
     bool capture = false,
   }) async {
     try {
-      final List<Object?>? result = await _channel
-          .invokeListMethod<Object?>('pickFiles', <String, Object?>{
-            'acceptTypes': acceptTypes,
-            'multiple': multiple,
-            'capture': capture,
-          });
+      final List<Object?>? result = await _channel.invokeListMethod<Object?>(
+        'pickFiles',
+        <String, Object?>{
+          'acceptTypes': acceptTypes,
+          'multiple': multiple,
+          'capture': capture,
+        },
+      );
+      return result
+              ?.whereType<String>()
+              .where((String value) => value.isNotEmpty)
+              .toList() ??
+          <String>[];
+    } on PlatformException {
+      return <String>[];
+    } on MissingPluginException {
+      return <String>[];
+    }
+  }
+
+  Future<List<String>> pickFolderFiles() async {
+    try {
+      final List<Object?>? result = await _channel.invokeListMethod<Object?>(
+        'pickFolderFiles',
+      );
       return result
               ?.whereType<String>()
               .where((String value) => value.isNotEmpty)
@@ -128,10 +150,10 @@ class NativeFileBridge {
     required String? mimeType,
   }) async {
     try {
-      return await _channel.invokeMethod<String>('pickSaveFile', <String, Object?>{
-        'fileName': fileName,
-        'mimeType': mimeType,
-      });
+      return await _channel.invokeMethod<String>(
+        'pickSaveFile',
+        <String, Object?>{'fileName': fileName, 'mimeType': mimeType},
+      );
     } on PlatformException {
       return null;
     } on MissingPluginException {
