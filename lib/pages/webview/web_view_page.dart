@@ -701,23 +701,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           );
       return destination == null ? <String>[] : <String>[destination];
     }
-    if (defaultTargetPlatform == TargetPlatform.android && mounted) {
-      // Android experiment: the app owns the file UI instead of handing the
-      // user to DocumentsUI. Downloads are saved and uploaded from LANDeck's
-      // internal Downloads directory.
-      final List<String>? selected = await Navigator.of(context)
-          .push<List<String>>(
-            MaterialPageRoute<List<String>>(
-              builder: (BuildContext context) => InternalFilePickerPage(
-                multiple:
-                    params.mode != FileSelectorMode.open &&
-                    params.mode != FileSelectorMode.save,
-                title: params.isCaptureEnabled ? '选择图片或视频' : '选择要上传的文件',
-              ),
-            ),
-          );
-      return selected ?? <String>[];
-    }
     bool wantsFolder = false;
     try {
       final Object? flag = await _controller?.runJavaScriptReturningResult(
@@ -728,9 +711,29 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     } on Object {
       // Pages without the hook fall back to file selection.
     }
+    if (defaultTargetPlatform == TargetPlatform.android && mounted) {
+      // Android experiment: LANDeck owns the file UI. The browser stays inside
+      // the app; no DocumentsUI picker is opened.
+      final List<String>? selected = await Navigator.of(context)
+          .push<List<String>>(
+            MaterialPageRoute<List<String>>(
+              builder: (BuildContext context) => InternalFilePickerPage(
+                multiple:
+                    wantsFolder || params.mode == FileSelectorMode.openMultiple,
+                mode: wantsFolder
+                    ? InternalFilePickMode.folder
+                    : InternalFilePickMode.files,
+                title: wantsFolder
+                    ? '选择文件夹'
+                    : params.isCaptureEnabled
+                    ? '选择图片或视频'
+                    : '选择要上传的文件',
+              ),
+            ),
+          );
+      return selected ?? <String>[];
+    }
     if (wantsFolder) {
-      // Canceled folder selection cancels the page's request; do not open a
-      // second (file) picker immediately after it.
       return DownloadCenter.instance.fileBridge.pickFolderFiles();
     }
     final List<String> files = await DownloadCenter.instance.fileBridge

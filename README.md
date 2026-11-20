@@ -412,3 +412,13 @@ iOS 端当前直接复用与 Android 相同的 Material 3 页面、主题和业�
 - 当前可用：WKWebView 网页浏览、导航、服务切换、Cookie/Session、HTTP Basic Auth、文件上传。
 - iOS 下载：新增 Swift `URLSession` 下载桥接，文件保存到「文件 App / LANDeck / Downloads」，支持取消、打开和分享；Basic Auth、Cookie 和私有网段自签名证书沿用 WebView 会话。
 - 当前限制：Bonjour 发现和端口扫描尚未接入 iOS；原生 Liquid Glass 代码仍保留但未启用。
+
+
+### 内建文件管理器（0.7.7）
+
+Android 实验分支 `feature/android-internal-files` 不再使用系统文件管理器完成下载保存和网页上传。
+
+- 下载直接保存到 `Android/data/com.example.landeck/files/Downloads`。
+- 设置 → 内部文件：浏览目录、新建文件夹、重命名、删除、分享/导出、从链接导入。
+- 网页上传使用应用内文件选择器；目录上传按递归文件列表提交。
+- 已知限制：不保留 `webkitRelativePath`，卸载应用会删除文件；暂无系统相册/相机导入。

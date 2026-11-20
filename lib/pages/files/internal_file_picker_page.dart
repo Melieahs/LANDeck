@@ -1,19 +1,24 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../core/utils/feedback.dart';
 import '../../services/native_download_bridge.dart';
 
-/// In-app replacement for the Android document picker.
+enum InternalFilePickMode { files, folder }
+
+/// In-app file/folder picker for WebView uploads.
 ///
-/// Lists files downloaded or stored in LANDeck's own Downloads directory and
-/// returns `content://` URIs that the WebView can upload.
+/// The user browses LANDeck's own directory tree; no system document picker
+/// is opened. Returned values are FileProvider content URIs.
 class InternalFilePickerPage extends StatefulWidget {
   const InternalFilePickerPage({
     super.key,
     required this.multiple,
+    this.mode = InternalFilePickMode.files,
     this.title = '选择文件',
   });
 
   final bool multiple;
+  final InternalFilePickMode mode;
   final String title;
 
   @override
@@ -22,7 +27,9 @@ class InternalFilePickerPage extends StatefulWidget {
 
 class _InternalFilePickerPageState extends State<InternalFilePickerPage> {
   static const NativeFileBridge _bridge = NativeFileBridge();
-  List<InternalFile> _files = <InternalFile>[];
+
+  String _path = '';
+  List<InternalFile> _entries = <InternalFile>[];
   final Set<String> _selected = <String>{};
   bool _loading = true;
 
@@ -33,97 +40,170 @@ class _InternalFilePickerPageState extends State<InternalFilePickerPage> {
   }
 
   Future<void> _load() async {
-    final List<InternalFile> files = await _bridge.listInternalFiles();
+    setState(() => _loading = true);
+    final List<InternalFile> entries = await _bridge.listInternalFiles(
+      path: _path,
+    );
     if (!mounted) return;
     setState(() {
-      _files = files;
+      _entries = entries;
       _loading = false;
     });
   }
 
-  void _toggle(InternalFile file) {
+  void _openDirectory(InternalFile entry) {
+    setState(() {
+      _path = entry.path;
+      _entries = <InternalFile>[];
+      _selected.clear();
+      _loading = true;
+    });
+    _load();
+  }
+
+  void _goUp() {
+    if (_path.isEmpty) return;
+    final List<String> parts = _path.split('/')..removeLast();
+    setState(() {
+      _path = parts.join('/');
+      _entries = <InternalFile>[];
+      _selected.clear();
+      _loading = true;
+    });
+    _load();
+  }
+
+  void _toggle(InternalFile entry) {
     if (!widget.multiple) {
-      Navigator.of(context).pop(<String>[file.uri]);
+      Navigator.of(context).pop(<String>[entry.uri]);
       return;
     }
     setState(() {
-      if (!_selected.remove(file.uri)) {
-        _selected.add(file.uri);
-      }
+      if (!_selected.remove(entry.uri)) _selected.add(entry.uri);
     });
   }
 
-  void _confirm() {
+  void _confirmFiles() {
     if (_selected.isEmpty) return;
     Navigator.of(context).pop(_selected.toList());
+  }
+
+  Future<void> _confirmFolder() async {
+    final List<InternalFile> all = await _bridge.listInternalFilesRecursive(
+      path: _path,
+    );
+    if (!mounted) return;
+    if (all.isEmpty) {
+      showAppSnackBar(context, '这个文件夹里没有文件');
+      return;
+    }
+    Navigator.of(context)
+        .pop(all.map((InternalFile file) => file.uri).toList());
   }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final bool folderMode = widget.mode == InternalFilePickMode.folder;
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
         actions: <Widget>[
-          if (widget.multiple && _files.isNotEmpty)
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  if (_selected.length == _files.length) {
-                    _selected.clear();
-                  } else {
-                    _selected
-                      ..clear()
-                      ..addAll(_files.map((InternalFile file) => file.uri));
-                  }
-                });
-              },
-              child: Text(_selected.length == _files.length ? '取消全选' : '全选'),
-            ),
+          IconButton(
+            tooltip: '刷新',
+            onPressed: _load,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _files.isEmpty
-          ? _EmptyInternalFiles(onRefresh: _load)
-          : RefreshIndicator(
-              onRefresh: _load,
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: _files.length,
-                separatorBuilder: (_, _) => const Divider(height: 1),
-                itemBuilder: (BuildContext context, int index) {
-                  final InternalFile file = _files[index];
-                  final bool selected = _selected.contains(file.uri);
-                  return ListTile(
-                    leading: Icon(
-                      _iconFor(file.name),
-                      color: theme.colorScheme.primary,
-                    ),
-                    title: Text(
-                      file.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Text(
-                      '${_sizeLabel(file.size)} · ${_dateLabel(file.modified)}',
-                    ),
-                    trailing: widget.multiple
-                        ? Checkbox(
-                            value: selected,
-                            onChanged: (_) => _toggle(file),
-                          )
-                        : const Icon(Icons.chevron_right_rounded),
-                    onTap: () => _toggle(file),
-                  );
-                },
-              ),
+      body: Column(
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 6, 16, 6),
+            child: Row(
+              children: <Widget>[
+                IconButton(
+                  tooltip: '上一级',
+                  onPressed: _path.isEmpty ? null : _goUp,
+                  icon: const Icon(Icons.arrow_upward_rounded),
+                ),
+                const Icon(Icons.folder_outlined, size: 18),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _path.isEmpty ? '内部文件 / Downloads' : '内部文件 / $_path',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+              ],
             ),
-      bottomNavigationBar: widget.multiple
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _entries.isEmpty
+                ? _EmptyPicker(folderMode: folderMode)
+                : ListView.separated(
+                    itemCount: _entries.length,
+                    separatorBuilder: (_, _) => const Divider(height: 1),
+                    itemBuilder: (BuildContext context, int index) {
+                      final InternalFile entry = _entries[index];
+                      final bool selected = _selected.contains(entry.uri);
+                      return ListTile(
+                        leading: Icon(
+                          entry.isDirectory
+                              ? Icons.folder_rounded
+                              : _iconFor(entry.name),
+                          color: entry.isDirectory
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurfaceVariant,
+                        ),
+                        title: Text(
+                          entry.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: entry.isDirectory
+                            ? const Text('文件夹')
+                            : Text(
+                                '${_sizeLabel(entry.size)} · ${_dateLabel(entry.modified)}',
+                              ),
+                        trailing: entry.isDirectory
+                            ? const Icon(Icons.chevron_right_rounded)
+                            : widget.multiple
+                            ? Checkbox(
+                                value: selected,
+                                onChanged: (_) => _toggle(entry),
+                              )
+                            : const Icon(Icons.chevron_right_rounded),
+                        onTap: () => entry.isDirectory
+                            ? _openDirectory(entry)
+                            : _toggle(entry),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: folderMode
+          ? SafeArea(
+              minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: FilledButton.icon(
+                onPressed: _confirmFolder,
+                icon: const Icon(Icons.drive_folder_upload_outlined),
+                label: Text(
+                  _path.isEmpty ? '使用 Downloads 文件夹' : '使用「$_path」文件夹',
+                ),
+              ),
+            )
+          : widget.multiple
           ? SafeArea(
               minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
               child: FilledButton(
-                onPressed: _selected.isEmpty ? null : _confirm,
+                onPressed: _selected.isEmpty ? null : _confirmFiles,
                 child: Text(
                   _selected.isEmpty ? '选择文件' : '上传 ${_selected.length} 个文件',
                 ),
@@ -170,10 +250,10 @@ class _InternalFilePickerPageState extends State<InternalFilePickerPage> {
   }
 }
 
-class _EmptyInternalFiles extends StatelessWidget {
-  const _EmptyInternalFiles({required this.onRefresh});
+class _EmptyPicker extends StatelessWidget {
+  const _EmptyPicker({required this.folderMode});
 
-  final Future<void> Function() onRefresh;
+  final bool folderMode;
 
   @override
   Widget build(BuildContext context) {
@@ -189,22 +269,22 @@ class _EmptyInternalFiles extends StatelessWidget {
               size: 56,
               color: theme.colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 16),
-            Text('内部目录暂无文件', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
+            Text('这个文件夹是空的', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 6),
             Text(
-              '通过 LANDeck 下载的文件会保存在应用内，之后可在这里选择上传。',
+              '通过 LANDeck 下载的文件会保存在应用内；也可以先新建文件夹整理。',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 20),
-            OutlinedButton.icon(
-              onPressed: onRefresh,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('刷新'),
-            ),
+            const SizedBox(height: 16),
+            if (!folderMode)
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(<String>[]),
+                child: const Text('取消'),
+              ),
           ],
         ),
       ),

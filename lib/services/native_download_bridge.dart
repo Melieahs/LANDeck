@@ -102,6 +102,7 @@ class InternalFile {
     required this.uri,
     required this.size,
     required this.modified,
+    required this.isDirectory,
   });
 
   final String name;
@@ -109,6 +110,7 @@ class InternalFile {
   final String uri;
   final int size;
   final DateTime modified;
+  final bool isDirectory;
 }
 
 class NativeFileBridge {
@@ -161,31 +163,107 @@ class NativeFileBridge {
     }
   }
 
-  Future<List<InternalFile>> listInternalFiles() async {
+  Future<List<InternalFile>> listInternalFiles({String path = ''}) async {
+    return _listInternal('listInternalFiles', path);
+  }
+
+  Future<List<InternalFile>> listInternalFilesRecursive({
+    String path = '',
+  }) async {
+    return _listInternal('listInternalFilesRecursive', path);
+  }
+
+  Future<List<InternalFile>> _listInternal(String method, String path) async {
     try {
       final List<Object?>? result = await _channel.invokeListMethod<Object?>(
-        'listInternalFiles',
+        method,
+        <String, Object?>{'path': path},
       );
       return result
               ?.whereType<Map<Object?, Object?>>()
-              .map((Map<Object?, Object?> raw) {
-                return InternalFile(
-                  name: raw['name'] as String? ?? '',
-                  path: raw['path'] as String? ?? '',
-                  uri: raw['uri'] as String? ?? '',
-                  size: (raw['size'] as num?)?.toInt() ?? 0,
-                  modified: DateTime.fromMillisecondsSinceEpoch(
-                    (raw['modified'] as num?)?.toInt() ?? 0,
-                  ),
-                );
-              })
-              .where((InternalFile file) => file.uri.isNotEmpty)
+              .map(_entryFromMap)
+              .where((InternalFile file) => file.name.isNotEmpty)
               .toList() ??
           <InternalFile>[];
     } on PlatformException {
       return <InternalFile>[];
     } on MissingPluginException {
       return <InternalFile>[];
+    }
+  }
+
+  static InternalFile _entryFromMap(Map<Object?, Object?> raw) {
+    return InternalFile(
+      name: raw['name'] as String? ?? '',
+      path: raw['path'] as String? ?? '',
+      uri: raw['uri'] as String? ?? '',
+      size: (raw['size'] as num?)?.toInt() ?? 0,
+      modified: DateTime.fromMillisecondsSinceEpoch(
+        (raw['modified'] as num?)?.toInt() ?? 0,
+      ),
+      isDirectory: raw['isDirectory'] as bool? ?? false,
+    );
+  }
+
+  Future<String?> createInternalFile({
+    required String path,
+    required String name,
+  }) async {
+    try {
+      return await _channel.invokeMethod<String>('createInternalFile', <String, Object?>{
+        'path': path,
+        'name': name,
+      });
+    } on PlatformException {
+      return null;
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
+  Future<String?> createInternalFolder({
+    required String path,
+    required String name,
+  }) async {
+    try {
+      return await _channel.invokeMethod<String>(
+        'createInternalFolder',
+        <String, Object?>{'path': path, 'name': name},
+      );
+    } on PlatformException {
+      return null;
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
+  Future<String?> renameInternalEntry({
+    required String path,
+    required String newName,
+  }) async {
+    try {
+      return await _channel.invokeMethod<String>(
+        'renameInternalEntry',
+        <String, Object?>{'path': path, 'newName': newName},
+      );
+    } on PlatformException {
+      return null;
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
+  Future<bool> deleteInternalEntry({required String path}) async {
+    try {
+      return await _channel.invokeMethod<bool>(
+            'deleteInternalEntry',
+            <String, Object?>{'path': path},
+          ) ??
+          false;
+    } on PlatformException {
+      return false;
+    } on MissingPluginException {
+      return false;
     }
   }
 

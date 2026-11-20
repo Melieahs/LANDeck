@@ -125,9 +125,61 @@ class MainActivity : FlutterActivity() {
                 }
                 "listInternalFiles" -> {
                     try {
-                        result.success(listInternalFiles())
+                        result.success(listInternalFiles(call.argument<String>("path")))
                     } catch (error: Exception) {
                         result.error("storage_unavailable", "无法读取下载目录", error.message)
+                    }
+                }
+                "listInternalFilesRecursive" -> {
+                    try {
+                        result.success(listInternalFilesRecursive(call.argument<String>("path")))
+                    } catch (error: Exception) {
+                        result.error("storage_unavailable", "无法读取下载目录", error.message)
+                    }
+                }
+                "createInternalFolder" -> {
+                    try {
+                        result.success(
+                            createInternalFolder(
+                                call.argument<String>("path"),
+                                call.argument<String>("name") ?: "新建文件夹",
+                            ),
+                        )
+                    } catch (error: Exception) {
+                        result.error("storage_unavailable", "无法新建文件夹", error.message)
+                    }
+                }
+                "createInternalFile" -> {
+                    try {
+                        result.success(
+                            createInternalFile(
+                                call.argument<String>("path"),
+                                call.argument<String>("name") ?: "下载文件",
+                            ).toString(),
+                        )
+                    } catch (error: Exception) {
+                        result.error("storage_unavailable", "无法新建文件", error.message)
+                    }
+                }
+                "renameInternalEntry" -> {
+                    try {
+                        result.success(
+                            renameInternalEntry(
+                                call.argument<String>("path") ?: "",
+                                call.argument<String>("newName") ?: "",
+                            ),
+                        )
+                    } catch (error: Exception) {
+                        result.error("storage_unavailable", "无法重命名", error.message)
+                    }
+                }
+                "deleteInternalEntry" -> {
+                    try {
+                        result.success(
+                            deleteInternalEntry(call.argument<String>("path") ?: ""),
+                        )
+                    } catch (error: Exception) {
+                        result.error("storage_unavailable", "无法删除", error.message)
                     }
                 }
                 else -> result.notImplemented()
@@ -438,15 +490,45 @@ class MainActivity : FlutterActivity() {
         return Uri.fromFile(file)
     }
 
-    private fun listInternalFiles(): List<Map<String, Any>> {
-        val dir = internalDownloadsDir()
+    private fun listInternalFiles(path: String?): List<Map<String, Any>> {
+        val dir = resolveInternal(path)
+        if (!dir.isDirectory) throw IllegalArgumentException("目录不存在")
+        val base = internalDownloadsDir().canonicalFile
         return dir.listFiles()
-            ?.filter { it.isFile }
-            ?.sortedByDescending { it.lastModified() }
+            ?.sortedWith(
+                compareByDescending<File> { it.isDirectory }
+                    .thenBy { it.name.lowercase() },
+            )
             ?.map { file ->
                 mapOf(
                     "name" to file.name,
-                    "path" to file.absolutePath,
+                    "path" to file.relativeTo(base).path.replace(File.separatorChar, '/'),
+                    "uri" to if (file.isFile) {
+                        FileProvider.getUriForFile(
+                            this,
+                            "$packageName.fileprovider",
+                            file,
+                        ).toString()
+                    } else {
+                        ""
+                    },
+                    "size" to if (file.isFile) file.length() else 0L,
+                    "modified" to file.lastModified(),
+                    "isDirectory" to file.isDirectory,
+                )
+            } ?: emptyList()
+    }
+
+    private fun listInternalFilesRecursive(path: String?): List<Map<String, Any>> {
+        val dir = resolveInternal(path)
+        if (!dir.isDirectory) throw IllegalArgumentException("目录不存在")
+        val base = internalDownloadsDir().canonicalFile
+        return dir.walkTopDown()
+            .filter { it.isFile }
+            .map { file ->
+                mapOf(
+                    "name" to file.name,
+                    "path" to file.relativeTo(base).path.replace(File.separatorChar, '/'),
                     "uri" to FileProvider.getUriForFile(
                         this,
                         "$packageName.fileprovider",
@@ -454,8 +536,78 @@ class MainActivity : FlutterActivity() {
                     ).toString(),
                     "size" to file.length(),
                     "modified" to file.lastModified(),
+                    "isDirectory" to false,
                 )
-            } ?: emptyList()
+            }
+            .toList()
+    }
+
+    private fun resolveInternal(path: String?): File {
+        val base = internalDownloadsDir().canonicalFile
+        val requested = File(base, path ?: "").canonicalFile
+        if (requested != base &&
+            !requested.path.startsWith(base.path + File.separator)
+        ) {
+            throw IllegalArgumentException("路径越界")
+        }
+        return requested
+    }
+
+    private fun createInternalFile(path: String?, rawName: String): Uri {
+        val dir = resolveInternal(path)
+        if (!dir.isDirectory) throw IllegalArgumentException("目录不存在")
+        val name = sanitizeInternalName(rawName).ifBlank { "下载文件" }
+        val dot = name.lastIndexOf('.')
+        val stem = if (dot > 0) name.substring(0, dot) else name
+        val ext = if (dot > 0) name.substring(dot) else ""
+        var file = File(dir, name)
+        var index = 1
+        while (file.exists()) {
+            file = File(dir, "$stem ($index)$ext")
+            index += 1
+        }
+        if (!file.createNewFile()) throw IllegalArgumentException("无法创建文件")
+        return Uri.fromFile(file)
+    }
+
+    private fun createInternalFolder(path: String?, rawName: String): String {
+        val dir = resolveInternal(path)
+        if (!dir.isDirectory) throw IllegalArgumentException("目录不存在")
+        val name = sanitizeInternalName(rawName)
+        if (name.isBlank()) throw IllegalArgumentException("名称不能为空")
+        val target = File(dir, name)
+        if (target.exists()) throw IllegalArgumentException("同名文件或文件夹已存在")
+        if (!target.mkdirs()) throw IllegalArgumentException("无法创建文件夹")
+        return target.relativeTo(internalDownloadsDir()).path.replace(File.separatorChar, '/')
+    }
+
+    private fun renameInternalEntry(path: String, rawName: String): String {
+        val source = resolveInternal(path)
+        if (source == internalDownloadsDir().canonicalFile) {
+            throw IllegalArgumentException("不能重命名根目录")
+        }
+        val name = sanitizeInternalName(rawName)
+        if (name.isBlank()) throw IllegalArgumentException("名称不能为空")
+        val target = File(source.parentFile, name)
+        if (source == target) return path
+        if (target.exists()) throw IllegalArgumentException("同名文件或文件夹已存在")
+        if (!source.renameTo(target)) throw IllegalArgumentException("无法重命名")
+        return target.relativeTo(internalDownloadsDir()).path.replace(File.separatorChar, '/')
+    }
+
+    private fun deleteInternalEntry(path: String): Boolean {
+        val target = resolveInternal(path)
+        if (target == internalDownloadsDir().canonicalFile) {
+            throw IllegalArgumentException("不能删除根目录")
+        }
+        if (!target.exists()) return true
+        return target.deleteRecursively()
+    }
+
+    private fun sanitizeInternalName(raw: String): String {
+        return raw.map { char ->
+            if (char.code < 32 || char in "\\/:*?\"<>|") '_' else char
+        }.joinToString("").trim().trimStart('.').take(120)
     }
 
     private fun shareableUri(raw: String): Uri {

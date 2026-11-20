@@ -8,6 +8,7 @@ import '../../core/utils/feedback.dart';
 import '../../repositories/service_repository.dart';
 import '../devices/devices_page.dart';
 import '../downloads/downloads_page.dart';
+import '../files/internal_files_page.dart';
 import 'ftp_backup_page.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -178,6 +179,19 @@ class SettingsPage extends StatelessWidget {
                     ),
                     const Divider(height: 1),
                     ListTile(
+                      leading: const Icon(Icons.folder_copy_outlined),
+                      title: const Text('内部文件'),
+                      subtitle: const Text('浏览、导入、重命名与分享应用内文件'),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => Navigator.of(context).push<void>(
+                        MaterialPageRoute<void>(
+                          builder: (BuildContext context) =>
+                              const InternalFilesPage(),
+                        ),
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
                       leading: const Icon(Icons.swap_horiz_rounded),
                       title: const Text('FTP 数据互通'),
                       subtitle: const Text('设备与服务配置的备份与恢复'),
@@ -207,12 +221,12 @@ class SettingsPage extends StatelessWidget {
                 child: ListTile(
                   leading: const Icon(Icons.info_outline_rounded),
                   title: const Text('LANDeck'),
-                  subtitle: const Text('v0.7.6 · 内建文件实验 · 本地优先'),
+                  subtitle: const Text('v0.7.7 · 内建文件 · 本地优先'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => showAboutDialog(
                     context: context,
                     applicationName: 'LANDeck',
-                    applicationVersion: '0.7.6',
+                    applicationVersion: '0.7.7',
                     applicationLegalese: 'Local-first. No account. No cloud.',
                     children: const <Widget>[
                       SizedBox(height: 12),
