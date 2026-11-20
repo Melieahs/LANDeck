@@ -132,10 +132,7 @@ class _EmptyFavorites extends StatelessWidget {
         leading: const Icon(Icons.star_outline_rounded),
         title: const Text('还没有收藏的服务'),
         subtitle: const Text('在服务编辑页打开收藏，即可出现在这里。'),
-        trailing: TextButton(
-          onPressed: onAddService,
-          child: const Text('添加'),
-        ),
+        trailing: TextButton(onPressed: onAddService, child: const Text('添加')),
       ),
     );
   }

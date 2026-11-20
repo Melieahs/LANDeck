@@ -16,10 +16,10 @@ String? extractHtmlTitle(String html) {
   if (title.isEmpty || title.length > 120) {
     return title.isEmpty ? null : title.substring(0, 120);
   }
-  return _decodeBasicEntities(title);
+  return decodeBasicHtmlEntities(title);
 }
 
-String _decodeBasicEntities(String value) {
+String decodeBasicHtmlEntities(String value) {
   return value
       .replaceAll('&amp;', '&')
       .replaceAll('&lt;', '<')

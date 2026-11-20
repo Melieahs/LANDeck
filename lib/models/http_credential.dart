@@ -21,7 +21,8 @@ class HttpCredential {
   final String password;
   final DateTime updatedAt;
 
-  String get normalizedHost => host.toLowerCase().replaceAll(RegExp(r'\.$'), '');
+  String get normalizedHost =>
+      host.toLowerCase().replaceAll(RegExp(r'\.$'), '');
 
   /// Scopes are compared case-insensitively by host and exactly by realm.
   bool matches(String candidateHost, String candidateRealm) {

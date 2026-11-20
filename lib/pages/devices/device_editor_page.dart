@@ -6,11 +6,21 @@ import '../../core/utils/feedback.dart';
 import '../../core/utils/url_utils.dart';
 import '../../models/device.dart';
 import '../../repositories/service_repository.dart';
+import '../../widgets/service_icon.dart';
 
 class DeviceEditorPage extends StatefulWidget {
-  const DeviceEditorPage({super.key, this.device});
+  const DeviceEditorPage({
+    super.key,
+    this.device,
+    this.initialName,
+    this.initialAddress,
+    this.initialType,
+  });
 
   final Device? device;
+  final String? initialName;
+  final String? initialAddress;
+  final DeviceType? initialType;
 
   bool get isEditing => device != null;
 
@@ -24,18 +34,22 @@ class _DeviceEditorPageState extends State<DeviceEditorPage> {
   late final TextEditingController _addressController;
   late final TextEditingController _notesController;
   late DeviceType _type;
+  String? _icon;
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
     final Device? device = widget.device;
-    _nameController = TextEditingController(text: device?.name ?? '');
+    _nameController = TextEditingController(
+      text: device?.name ?? widget.initialName ?? '',
+    );
     _addressController = TextEditingController(
-      text: device?.primaryAddress ?? '',
+      text: device?.primaryAddress ?? widget.initialAddress ?? '',
     );
     _notesController = TextEditingController(text: device?.notes ?? '');
-    _type = device?.deviceType ?? DeviceType.nas;
+    _type = device?.deviceType ?? widget.initialType ?? DeviceType.other;
+    _icon = device?.icon;
   }
 
   @override
@@ -62,6 +76,7 @@ class _DeviceEditorPageState extends State<DeviceEditorPage> {
             deviceType: _type,
             primaryAddress: _addressController.text,
             notes: () => _notesController.text,
+            icon: () => _icon,
           ),
         );
       } else {
@@ -70,6 +85,7 @@ class _DeviceEditorPageState extends State<DeviceEditorPage> {
           deviceType: _type,
           primaryAddress: _addressController.text,
           notes: _notesController.text,
+          icon: _icon,
         );
       }
       if (!mounted) {
@@ -90,6 +106,18 @@ class _DeviceEditorPageState extends State<DeviceEditorPage> {
       showAppSnackBar(context, '保存设备失败：$error');
     }
   }
+
+  String _iconLabel(String key) => switch (key) {
+    'storage' => '存储',
+    'router' => '路由',
+    'computer' => '电脑',
+    'server' => '服务器',
+    'phone' => '手机',
+    'media' => '影音',
+    'home' => '家庭',
+    'devices' => '通用',
+    _ => key,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -113,9 +141,8 @@ class _DeviceEditorPageState extends State<DeviceEditorPage> {
                 children: <Widget>[
                   Text(
                     '设备地址是关联服务 URL 的基础。修改地址后，所有关联服务会自动更新。',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
+                    style: Theme.of(context).textTheme.bodyMedium
+                        ?.copyWith(color: scheme.onSurfaceVariant),
                   ),
                   const SizedBox(height: 20),
                   TextFormField(
@@ -174,6 +201,28 @@ class _DeviceEditorPageState extends State<DeviceEditorPage> {
                         setState(() => _type = value);
                       }
                     },
+                  ),
+                  const SizedBox(height: 16),
+                  Text('图标（可选）', style: Theme.of(context).textTheme.labelLarge),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: <Widget>[
+                      ChoiceChip(
+                        label: const Text('自动'),
+                        selected: _icon == null,
+                        onSelected: (_) => setState(() => _icon = null),
+                      ),
+                      for (final MapEntry<String, IconData> entry
+                          in deviceIconChoices.entries)
+                        ChoiceChip(
+                          avatar: Icon(entry.value, size: 18),
+                          label: Text(_iconLabel(entry.key)),
+                          selected: _icon == entry.key,
+                          onSelected: (_) => setState(() => _icon = entry.key),
+                        ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   TextFormField(

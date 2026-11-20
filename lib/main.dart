@@ -13,12 +13,12 @@ Future<void> main() async {
     final AppDatabase database = await AppDatabase.open();
     final LanDeckRepository repository = LanDeckRepository(database);
     await repository.load();
-    final ThemeController themeController =
-        await ThemeController.load(database);
-    runApp(LanDeckApp(
-      repository: repository,
-      themeController: themeController,
-    ));
+    final ThemeController themeController = await ThemeController.load(
+      database,
+    );
+    runApp(
+      LanDeckApp(repository: repository, themeController: themeController),
+    );
   } on Object catch (error, stack) {
     debugPrint('LANDeck database startup failed: $error\n$stack');
     runApp(_BootstrapFailureApp(message: error.toString()));

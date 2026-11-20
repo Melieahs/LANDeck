@@ -13,8 +13,7 @@ Future<void> migrateDatabase(Database db) async {
   final StoreRef<String, Map<String, Object?>> serviceStore =
       StoreRef<String, Map<String, Object?>>('services');
 
-  final Map<String, Object?>? meta =
-      await metaStore.record('schema').get(db);
+  final Map<String, Object?>? meta = await metaStore.record('schema').get(db);
   final int currentVersion = (meta?['version'] as num?)?.toInt() ?? 0;
   if (currentVersion >= 2) {
     return;
@@ -80,16 +79,15 @@ Future<void> migrateDatabase(Database db) async {
 
       bool linksToDevice = false;
       if (device != null && uri != null && uri.host.isNotEmpty) {
-        final String deviceAddress =
-            (device['primaryAddress'] as String? ?? '').toLowerCase();
+        final String deviceAddress = (device['primaryAddress'] as String? ?? '')
+            .toLowerCase();
         linksToDevice =
             deviceAddress == uri.host.toLowerCase() &&
             !uri.hasQuery &&
             !uri.hasFragment;
       }
 
-      updated['protocol'] =
-          uri?.scheme == 'https' ? 'https' : 'http';
+      updated['protocol'] = uri?.scheme == 'https' ? 'https' : 'http';
       updated['port'] = uri != null && uri.hasPort ? uri.port : null;
       if (linksToDevice) {
         updated['deviceId'] = device!['id'];

@@ -111,9 +111,7 @@ class _Stat extends StatelessWidget {
             ),
             Text(
               label,
-              style: text.labelSmall?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
+              style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ],
         ),

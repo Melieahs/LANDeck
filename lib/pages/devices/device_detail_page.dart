@@ -10,6 +10,7 @@ import '../../widgets/service_icon.dart';
 import '../../widgets/service_list_tile.dart';
 import '../services/service_editor_page.dart';
 import 'device_editor_page.dart';
+import 'device_service_scan_page.dart';
 
 class DeviceDetailPage extends StatelessWidget {
   const DeviceDetailPage({super.key, required this.deviceId});
@@ -24,7 +25,10 @@ class DeviceDetailPage extends StatelessWidget {
     );
   }
 
-  Future<void> _delete(BuildContext context, LanDeckRepository repository) async {
+  Future<void> _delete(
+    BuildContext context,
+    LanDeckRepository repository,
+  ) async {
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) => AlertDialog(
@@ -57,13 +61,20 @@ class DeviceDetailPage extends StatelessWidget {
     Navigator.of(context).pop();
   }
 
+  Future<void> _scanServices(BuildContext context, Device device) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) =>
+            DeviceServiceScanPage(deviceId: device.id),
+      ),
+    );
+  }
+
   Future<void> _addService(BuildContext context, Device device) async {
     await Navigator.of(context).push<Service>(
       MaterialPageRoute<Service>(
-        builder: (BuildContext context) => ServiceEditorPage(
-          initialDeviceId: device.id,
-          quickMode: true,
-        ),
+        builder: (BuildContext context) =>
+            ServiceEditorPage(initialDeviceId: device.id, quickMode: true),
       ),
     );
   }
@@ -95,6 +106,12 @@ class DeviceDetailPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(device.name),
         actions: <Widget>[
+          IconButton(
+            key: const ValueKey<String>('device-scan-services'),
+            tooltip: '扫描服务',
+            onPressed: () => _scanServices(context, device),
+            icon: const Icon(Icons.radar_rounded),
+          ),
           IconButton(
             tooltip: '编辑设备',
             onPressed: () => _edit(context, device),
@@ -133,7 +150,7 @@ class DeviceDetailPage extends StatelessWidget {
                     child: Row(
                       children: <Widget>[
                         ServiceIconBadge(
-                          icon: iconForDeviceType(device.deviceType),
+                          icon: iconForDevice(device),
                           size: 56,
                           emphasized: true,
                         ),
@@ -146,10 +163,10 @@ class DeviceDetailPage extends StatelessWidget {
                                 device.deviceType.label,
                                 style: Theme.of(context).textTheme.labelLarge
                                     ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
                               ),
                               const SizedBox(height: 2),
                               Text(
@@ -160,14 +177,12 @@ class DeviceDetailPage extends StatelessWidget {
                                 const SizedBox(height: 6),
                                 Text(
                                   device.notes!,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
+                                  style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                  ),
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                      ),
                                 ),
                               ],
                             ],
@@ -177,7 +192,16 @@ class DeviceDetailPage extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 22),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _scanServices(context, device),
+                    icon: const Icon(Icons.radar_rounded),
+                    label: const Text('扫描该设备的服务端口'),
+                  ),
+                ),
+                const SizedBox(height: 18),
                 Row(
                   children: <Widget>[
                     Text(
@@ -188,9 +212,8 @@ class DeviceDetailPage extends StatelessWidget {
                     Text(
                       '${services.length}',
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -233,8 +256,8 @@ class DeviceDetailPage extends StatelessWidget {
                   '设备地址修改后，关联服务的 URL 会自动更新。',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),

@@ -41,9 +41,7 @@ class NetworkInspector {
       wifiIp = await detectLocalIPv4();
     }
     if (wifiIp == null || wifiIp == '0.0.0.0') {
-      throw const NetworkInspectionException(
-        '没有检测到局域网地址，请先连接 Wi-Fi 或网线后重试',
-      );
+      throw const NetworkInspectionException('没有检测到局域网地址，请先连接 Wi-Fi 或网线后重试');
     }
 
     final int? prefix = prefixFromSubnetMask(mask);

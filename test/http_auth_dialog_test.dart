@@ -35,7 +35,10 @@ void main() {
 
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey<String>('http-auth-dialog')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('http-auth-dialog')),
+      findsOneWidget,
+    );
     expect(find.text('需要身份验证'), findsOneWidget);
     expect(find.text('Padavan'), findsWidgets);
     expect(find.text('认证失败，请检查用户名和密码'), findsOneWidget);
@@ -54,7 +57,10 @@ void main() {
     expect(result!.username, 'admin');
     expect(result!.password, 'secret');
     expect(result!.remember, isTrue);
-    expect(find.byKey(const ValueKey<String>('http-auth-dialog')), findsNothing);
+    expect(
+      find.byKey(const ValueKey<String>('http-auth-dialog')),
+      findsNothing,
+    );
   });
 
   testWidgets('auth dialog cancel returns null and does not submit', (

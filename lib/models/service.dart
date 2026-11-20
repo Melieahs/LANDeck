@@ -153,7 +153,9 @@ class Service {
       port: port == null ? this.port : port(),
       path: path == null ? this.path : path(),
       customUrl: customUrl == null ? this.customUrl : customUrl(),
-      deviceAddress: deviceAddress == null ? this.deviceAddress : deviceAddress(),
+      deviceAddress: deviceAddress == null
+          ? this.deviceAddress
+          : deviceAddress(),
       category: category == null ? this.category : category(),
       icon: icon == null ? this.icon : icon(),
       isFavorite: isFavorite ?? this.isFavorite,
@@ -227,9 +229,7 @@ class Service {
               (ServiceStatus value) => value.name == statusName,
               orElse: () => ServiceStatus.offline,
             ),
-      lastCheckedAt: DateTime.tryParse(
-        map['lastCheckedAt'] as String? ?? '',
-      ),
+      lastCheckedAt: DateTime.tryParse(map['lastCheckedAt'] as String? ?? ''),
       createdAt:
           DateTime.tryParse(map['createdAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),

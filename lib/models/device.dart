@@ -45,8 +45,7 @@ class Device {
 
   bool get hasAddress => primaryAddress.trim().isNotEmpty;
 
-  String get addressLabel =>
-      hasAddress ? primaryAddress.trim() : '未填写地址';
+  String get addressLabel => hasAddress ? primaryAddress.trim() : '未填写地址';
 
   Device copyWith({
     String? id,
@@ -88,7 +87,8 @@ class Device {
 
   factory Device.fromMap(Map<String, Object?> map) {
     final String typeName = map['deviceType'] as String? ?? 'other';
-    final String primary = (map['primaryAddress'] as String?)?.trim() ??
+    final String primary =
+        (map['primaryAddress'] as String?)?.trim() ??
         (map['ipAddress'] as String?)?.trim() ??
         (map['hostname'] as String?)?.trim() ??
         '';

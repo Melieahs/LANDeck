@@ -7,7 +7,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../core/app_scope.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/utils/feedback.dart';
 import '../../models/http_credential.dart';
 import '../../models/service.dart';
@@ -454,6 +453,12 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   // Toolbar
   // ---------------------------------------------------------------------------
 
+  void _exitWebView() {
+    // PopScope(canPop: false) blocks maybePop, so exit must pop the route
+    // directly. This intentionally ignores page history.
+    Navigator.of(context).pop();
+  }
+
   void _toggleToolbar() {
     if (_toolbarVisible) {
       _collapseToolbar();
@@ -720,8 +725,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
         statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
         systemNavigationBarColor: Theme.of(context).colorScheme.surface,
-        systemNavigationBarIconBrightness:
-            isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarIconBrightness: isDark
+            ? Brightness.light
+            : Brightness.dark,
       ),
       child: PopScope<Object?>(
         canPop: false,
@@ -787,6 +793,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
                                     onRefresh: _handleRefresh,
                                     onSwitchService: _openServiceSwitcher,
                                     onMore: _openMore,
+                                    onExit: _exitWebView,
                                     canGoForward:
                                         _nativeWebView && _canGoForward,
                                   )
@@ -949,7 +956,7 @@ class _UnsupportedWebView extends StatelessWidget {
                           width: 58,
                           height: 58,
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceHigh,
+                            color: Theme.of(context).colorScheme.surfaceContainerHigh,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -988,9 +995,9 @@ class _UnsupportedWebView extends StatelessWidget {
                           width: double.infinity,
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.surface,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.border),
+                            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                           ),
                           child: Text(
                             service.url,

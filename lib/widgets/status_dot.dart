@@ -4,11 +4,7 @@ import '../core/theme/app_colors.dart';
 
 /// Small dot used for the real online / offline state.
 class StatusDot extends StatelessWidget {
-  const StatusDot({
-    super.key,
-    required this.isOnline,
-    this.size = 6,
-  });
+  const StatusDot({super.key, required this.isOnline, this.size = 6});
 
   final bool isOnline;
   final double size;
@@ -19,10 +15,7 @@ class StatusDot extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }

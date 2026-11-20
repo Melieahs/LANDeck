@@ -1,3 +1,4 @@
+import 'package:dynamic_color/dynamic_color.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/app_scope.dart';
@@ -30,9 +31,8 @@ class SettingsPage extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 '本地优先 · 无账号 · 无云端',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
+                style: Theme.of(context).textTheme.bodyMedium
+                    ?.copyWith(color: scheme.onSurfaceVariant),
               ),
               const SizedBox(height: 20),
               const _SectionLabel('外观'),
@@ -75,6 +75,35 @@ class SettingsPage extends StatelessWidget {
                           },
                         ),
                       ),
+                    ),
+                    const Divider(height: 1),
+                    DynamicColorBuilder(
+                      builder:
+                          (
+                            ColorScheme? lightDynamic,
+                            ColorScheme? darkDynamic,
+                          ) {
+                            final bool supported =
+                                lightDynamic != null || darkDynamic != null;
+                            return SwitchListTile(
+                              key: const ValueKey<String>(
+                                'dynamic-color-switch',
+                              ),
+                              secondary: const Icon(
+                                Icons.auto_awesome_outlined,
+                              ),
+                              title: const Text('动态颜色'),
+                              subtitle: Text(
+                                supported
+                                    ? '跟随系统壁纸生成 Material You 配色'
+                                    : '当前系统不支持动态取色，使用 LANDeck 品牌配色',
+                              ),
+                              value: supported && themeController.dynamicColor,
+                              onChanged: supported
+                                  ? themeController.setDynamicColor
+                                  : null,
+                            );
+                          },
                     ),
                   ],
                 ),
@@ -125,20 +154,16 @@ class SettingsPage extends StatelessWidget {
                         label: Text('本机'),
                         visualDensity: VisualDensity.compact,
                       ),
-                      onTap: () => showAppSnackBar(
-                        context,
-                        '服务、设备与凭据都保存在本机，不使用云端。',
-                      ),
+                      onTap: () =>
+                          showAppSnackBar(context, '服务、设备与凭据都保存在本机，不使用云端。'),
                     ),
                     const Divider(height: 1),
                     ListTile(
                       leading: const Icon(Icons.shield_outlined),
                       title: const Text('隐私'),
                       subtitle: const Text('扫描只访问当前局域网，不读取位置。'),
-                      onTap: () => showAppSnackBar(
-                        context,
-                        '不启用账号，不上传数据，不扫描公网。',
-                      ),
+                      onTap: () =>
+                          showAppSnackBar(context, '不启用账号，不上传数据，不扫描公网。'),
                     ),
                   ],
                 ),
@@ -150,12 +175,12 @@ class SettingsPage extends StatelessWidget {
                 child: ListTile(
                   leading: const Icon(Icons.info_outline_rounded),
                   title: const Text('LANDeck'),
-                  subtitle: const Text('v0.5.0 · Material 3 · 本地优先'),
+                  subtitle: const Text('v0.6.0 · Material 3 · 本地优先'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => showAboutDialog(
                     context: context,
                     applicationName: 'LANDeck',
-                    applicationVersion: '0.5.0',
+                    applicationVersion: '0.6.0',
                     applicationLegalese: 'Local-first. No account. No cloud.',
                     children: const <Widget>[
                       SizedBox(height: 12),
@@ -171,9 +196,8 @@ class SettingsPage extends StatelessWidget {
               Center(
                 child: Text(
                   'LANDeck · Local-first',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
+                  style: Theme.of(context).textTheme.labelSmall
+                      ?.copyWith(color: scheme.onSurfaceVariant),
                 ),
               ),
             ],
@@ -195,9 +219,8 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
       child: Text(
         text,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-            ),
+        style: Theme.of(context).textTheme.labelLarge
+            ?.copyWith(color: Theme.of(context).colorScheme.primary),
       ),
     );
   }

@@ -11,12 +11,13 @@
 - 首次安装零服务、零收藏、零设备，空状态引导添加或扫描
 - 手动添加服务，URL 支持 IP / 域名 / 端口 / HTTP / HTTPS / 路径 / Query
 - Sembast 本机数据库持久化，重启 App 后数据仍在
-- 真实局域网扫描：mDNS、SSDP、常见 Web 端口 TCP 探测、HTTP/HTTPS 页面验证
+- 两阶段局域网发现：先发现设备（mDNS / SSDP / 子网活跃主机），再在设备详情里只扫描该设备的服务端口
 - 扫描结果只是候选，必须由用户确认后才会写入数据库
 - 设备 CRUD；删除设备只解绑服务，不级联删除
 - 真实 Android 系统 WebView，加载数据库中的 URL；Cookie 由系统 WebView 持久化
 - HTTP Authentication（Basic 及系统 WebView 支持的方案）：应用内凭据弹窗、失败重试、取消不循环、可选 Keystore 加密记住
-- Material 3 全局视觉体系：浅色 / 深色 / 跟随系统，统一 Color Scheme、Typography、Shape、Surface 层级、Ripple 与组件规范
+- Material 3 全局视觉体系：浅色 / 深色 / 跟随系统，支持 Material You 动态取色与品牌色回退
+- 沉浸式 WebView 工具栏含独立「退出」按钮，与网页后退语义分离
 - 手机优先的现代 Android 原生观感
 
 ## 技术栈
@@ -24,6 +25,7 @@
 - Flutter 3.50.0 / Dart 3.14.0
 - Material 3（`material_ui`）
 - `webview_flutter` 4.14.1
+- `dynamic_color` 2.1.0（Material You 动态取色）
 - `flutter_secure_storage` 11.2.0（Android Keystore + AES-GCM）
 - `sembast` 3.10.1 + `sembast_web` 2.4.7
 - `network_info_plus` / `multicast_dns` / `permission_handler`
@@ -56,10 +58,9 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 
 产物：
 
-- `dist/LANDeck-0.5.0.apk`（约 54.9 MB，含 arm64-v8a / armeabi-v7a / x86_64）
+- `dist/LANDeck-0.6.0.apk`（约 55.5 MB，含 arm64-v8a / armeabi-v7a / x86_64）
 - 构建产物：`build/app/outputs/flutter-apk/app-release.apk`
-- 包名 `com.example.landeck`，版本 `0.5.0+5`
-- SHA-256：`1c203c08fcc94efaece1dc9a58b41d5b379f4419307e03336d674e78b396e2db`
+- 包名 `com.example.landeck`，版本 `0.6.0+6`
 - 当前使用 Flutter 默认 debug 签名，可直接安装测试，不适合直接上架
 
 > `permission_handler_android 13.0.2` 要求编译 SDK ≥ 37，因此 `compileSdk = 37`；`targetSdk` 保持 36。target 36 下局域网访问由 INTERNET 隐式允许，不声明/请求 `ACCESS_LOCAL_NETWORK`。
@@ -95,15 +96,16 @@ lib/
 │   └── service_repository.dart       # LanDeckRepository（ChangeNotifier）
 ├── services/
 │   ├── network_inspector.dart        # Wi-Fi IP / 掩码 / CIDR
-│   ├── lan_scanner.dart              # mDNS + SSDP + TCP + HTTP 验证
+│   ├── device_discovery.dart         # 阶段 1：mDNS + SSDP + 子网活跃主机
+│   ├── device_port_scanner.dart      # 阶段 2：单设备端口 + HTTP/HTTPS 验证
 │   └── multicast_lock.dart           # Android MulticastLock 通道
 ├── pages/
 │   ├── main_shell.dart               # 底部导航 + IndexedStack
 │   ├── home/                         # 首页与收藏/分类/全部服务组件
 │   ├── category/                     # 分类筛选
-│   ├── discover/                     # 网络信息 + 真实扫描
+│   ├── discover/                     # 阶段 1：发现设备
 │   ├── services/service_editor_page.dart
-│   ├── devices/                      # 设备列表/详情/编辑
+│   ├── devices/                      # 设备列表/详情/编辑、单设备端口扫描
 │   ├── webview/                      # 沉浸 WebView、工具栏、服务切换
 │   └── settings/
 └── widgets/                          # 服务行、图标、状态点、底部导航
@@ -132,17 +134,28 @@ Service.protocol = http, port = 8096, path = /web
 - 删除设备不会删除服务：服务会冻结当前 URL，转为「未分配设备」。
 - 扫描结果按 IP 匹配已有设备，并预填端口、协议、路径和名称。
 
-## 扫描实现
+## 两阶段发现
 
-1. **网络信息**：`network_info_plus` 读取 Wi-Fi IPv4 与子网掩码；失败时用 `NetworkInterface` 找本机 IPv4。允许 `/23`–`/30`，最多 512 台主机；更大网段明确拒绝，避免压垮网络。
-2. **mDNS**：查询 `_http._tcp`、`_https._tcp`、`_workstation._tcp`、`_device-info._tcp`、`_home-assistant._tcp`、`_googlecast._tcp`，通过 SRV/A 记录得到主机与端口；Android 端用 `MulticastLock`。
-3. **SSDP**：向 `239.255.255.250:1900` 发 M-SEARCH，只接受本网段内的响应；没有确认 Web UI 的设备不会被直接当成服务。
-4. **TCP 探测**：固定常见端口列表
-   `80, 443, 8000, 8080, 8443, 3000, 5000, 5001, 9090, 9443, 8096, 8920, 9000, 9091, 8989, 7878`，
-   并发 64、单端口 350 ms 超时，不扫 1–65535，不跨网段。
-5. **HTTP/HTTPS 验证**：对开放端口发 GET，接受局域网自签证书，跟随重定向，读取最多 64 KB，提取状态码、Server、`<title>`。任何 HTTP 响应（包括 401/403/404）都算「已确认 Web 服务」；只有 TCP 开放但没有 HTTP 响应则标为「候选」。
-6. **结果**：按 host:port 去重并合并来源；显示 IP、hostname、端口、HTTP/HTTPS、标题、来源、检测状态。可取消，取消后不保留半截结果。所有结果必须用户确认后才会写入数据库，重复 URL 会提示「该地址已经添加过了」。
+### 阶段 1：发现设备
 
+入口：底部「发现」。
+
+- **网络信息**：`network_info_plus` 读取 Wi-Fi IPv4 与子网掩码；只扫描当前 Wi-Fi 网段，不跨 VPN/其他接口。
+- **mDNS**：查询 `_http._tcp`、`_https._tcp`、`_ssh._tcp`、`_smb._tcp`、`_workstation._tcp`、`_device-info._tcp`、`_airplay._tcp`、`_googlecast._tcp`、`_home-assistant._tcp`、`_printer._tcp`，通过 SRV/A 记录获得主机名与 IP；Android 端持有 `MulticastLock`。
+- **SSDP / UPnP**：向 `239.255.255.250:1900` 发 M-SEARCH，读取 `LOCATION` 描述并尽量解析 friendlyName / manufacturer / modelName / deviceType；只接受本网段响应。
+- **活跃主机**：对当前子网主机做有限 TCP 存活探测（常见 80/443/22/445/548），只用于判断“主机活跃”，不据此认定 NAS/路由器类型。
+- **结果**：按 IP 合并来源，显示名称（未知时 IP）、类型（未识别保持「未知设备」）、来源、已添加状态；支持多选、编辑名称/类型/地址/图标后添加设备。设备发现阶段不扫描服务端口、不自动添加服务，也不要求先发现 Web 服务。
+- 支持进度、取消、错误提示；mDNS/SSDP 在当前模拟器网络无响应时，仍会通过活跃主机发现兜底，并明确标注来源。
+
+### 阶段 2：扫描该设备的服务端口
+
+入口：设备详情页「扫描该设备的服务端口」。
+
+- 只扫描当前设备的一个 IP，不再对全网段做端口扫描。
+- 端口：`80, 443, 8000, 8080, 8443, 3000, 5000, 5001, 9090, 9443, 8096, 8920, 9000, 9091, 8989`。
+- 先 TCP 连接；对开放端口再做 HTTP/HTTPS 验证，接受局域网自签证书，读取状态码、Server、`<title>`。
+- 分类：`Confirmed HTTPS`、`Confirmed HTTP`、`Candidate`（TCP 开放但未确认 HTTP）、`Open Port`。401/403/404 等 HTTP 响应仍视为已确认 Web 服务。
+- 结果可筛选、取消、重扫；添加时打开服务编辑表单（设备已填、端口/协议预填），用户确认后才写入数据库；已存在的 URL 会标记「已添加」，不会重复创建。
 ## HTTP 身份验证
 
 - 使用系统 WebView 的 `onHttpAuthRequest` / `HttpAuthHandler.proceed`，不重建 WebView、不重新打开页面。
@@ -156,8 +169,8 @@ Service.protocol = http, port = 8096, path = /web
 ## 验证结果
 
 - `flutter analyze`：No issues found
-- `flutter test`：27 tests passed
-- `flutter build apk --release`：成功，54.9 MB（0.5.0+5）
+- `flutter test`：28 tests passed
+- `flutter build apk --release`：成功，55.5 MB（0.6.0+6）
 - Android 模拟器（Android 36 x86_64，1080×2400）实测：
   - 首次安装 0 服务、0 收藏、0 设备，空状态正常
   - 手动添加 → 首页计数/分类/收藏更新 → 强制停止再启动仍存在
@@ -179,6 +192,11 @@ Service.protocol = http, port = 8096, path = /web
   - 浅色 / 深色 / 跟随系统切换正常，强制停止重启后主题选择保持
   - 浅色下 WebView 状态栏图标、返回图标、工具栏与弹窗对比度正常
   - M3 发现页真实扫描 `10.0.2.16/24`：68 个候选、4 个已确认，来源/HTTP 状态/已添加标记正常，可取消
+  - 两阶段发现：真实发现 5 台活跃主机；添加其中一台为设备后进入设备详情
+  - 单设备扫描 `10.0.2.2`：确认 80/3000/8000/8080 四个 Web 服务，已存在的 8080 正确显示「已添加」，未重复添加
+  - 快捷添加：只填端口 8080，自动生成 `http://10.0.2.3:8080`
+  - Material You 动态取色开关可即时切换；关闭后回到 LANDeck 品牌蓝色
+  - WebView 工具栏第六个「退出」按钮直接退回首页，不执行网页后退
 
 ## 截图
 
@@ -206,6 +224,30 @@ Service.protocol = http, port = 8096, path = /web
 | `p1-17-custom-url-webview.png` | 迁移后的自定义 URL 服务可打开 |
 | `p1-18-persisted-device-link.png` | 重启后设备关联与数据仍在 |
 | `p1-19-settings.png` | 版本 0.3.0、设备管理计数 |
+
+### 动态取色 / 两阶段发现（0.6.0）
+
+| 文件 | 内容 |
+| --- | --- |
+| `s1-01-home-dynamic.png` | Material You 动态取色首页 |
+| `s1-08-settings-dynamic.png` | 外观设置：主题 + 动态颜色开关 |
+| `s1-19-dynamic-color-off.png` | 关闭动态取色后的品牌蓝色 |
+| `s1-02-discover-devices.png` | 发现设备：网络信息与扫描入口 |
+| `s1-03-discover-progress.png` | 阶段 1 扫描进度 |
+| `s1-04-discover-results.png` | 活跃主机结果（来源、未知类型、添加） |
+| `s1-05-add-discovered-device.png` | 从发现结果预填新建设备 |
+| `s1-06-device-form-filled.png` | 设备名称/类型/地址/图标 |
+| `s1-07-device-detail.png` | 新设备详情 |
+| `s1-09-quick-add.png` | 设备内快捷添加：只填端口 |
+| `s1-10-device-detail-service.png` | 快捷添加后的关联服务 |
+| `s1-11-devices.png` | 设备列表（真实服务数量） |
+| `s1-12-device-detail-scan-entry.png` | 设备详情「扫描该设备的服务端口」 |
+| `s1-13-device-scan.png` | 单设备端口扫描 |
+| `s1-14-device-scan-results.png` | 扫描结果与「已添加」去重 |
+| `s1-15-add-from-device-scan.png` | 结果预填服务表单 |
+| `s1-16-webview-exit-toolbar.png` | 六按钮工具栏：后退/前进/刷新/服务/更多/退出 |
+| `s1-17-webview-auth.png` | HTTP Basic Auth 成功后加载真实页面 |
+| `s1-18-webview-exited-home.png` | 点击「退出」直接回到首页 |
 
 ### Material 3 改版（0.5.0）
 

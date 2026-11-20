@@ -18,10 +18,7 @@ void main() {
       normalizeForTest('192.168.1.10:8080/docker'),
       'http://192.168.1.10:8080/docker',
     );
-    expect(
-      normalizeForTest('https://nas.local'),
-      'https://nas.local',
-    );
+    expect(normalizeForTest('https://nas.local'), 'https://nas.local');
     expect(normalizeForTest('ftp://nas.local'), isNull);
   });
 
@@ -51,27 +48,28 @@ void main() {
     expect(repository.serviceById(service.id)!.statusLabel, '在线');
   });
 
-  test('deleting a device unassigns its services, never deletes them', () async {
-    final LanDeckRepository repository = await createTestRepository();
-    final Device device = await repository.addDevice(
-      name: '客厅路由',
-      deviceType: DeviceType.router,
-      primaryAddress: '192.168.1.1',
-    );
-    final Service service = await repository.addService(
-      name: 'OpenWrt',
-      deviceId: device.id,
-    );
+  test(
+    'deleting a device unassigns its services, never deletes them',
+    () async {
+      final LanDeckRepository repository = await createTestRepository();
+      final Device device = await repository.addDevice(
+        name: '客厅路由',
+        deviceType: DeviceType.router,
+        primaryAddress: '192.168.1.1',
+      );
+      final Service service = await repository.addService(
+        name: 'OpenWrt',
+        deviceId: device.id,
+      );
 
-    await repository.deleteDevice(device.id);
+      await repository.deleteDevice(device.id);
 
-    expect(repository.devices, isEmpty);
-    expect(repository.services.single.id, service.id);
-    expect(repository.services.single.deviceId, isNull);
-    expect(repository.deviceNameFor(repository.services.single), '未分配设备');
-  });
-
-
+      expect(repository.devices, isEmpty);
+      expect(repository.services.single.id, service.id);
+      expect(repository.services.single.deviceId, isNull);
+      expect(repository.deviceNameFor(repository.services.single), '未分配设备');
+    },
+  );
 
   test('deleting a device freezes linked service URLs', () async {
     final LanDeckRepository repository = await createTestRepository();
@@ -123,26 +121,29 @@ void main() {
     );
   });
 
-  test('custom URL service stays independent from device address changes', () async {
-    final LanDeckRepository repository = await createTestRepository();
-    final Device device = await repository.addDevice(
-      name: 'NAS',
-      deviceType: DeviceType.nas,
-      primaryAddress: '192.168.1.10',
-    );
-    final Service service = await repository.addService(
-      name: '反向代理 Jellyfin',
-      deviceId: device.id,
-      customUrl: 'https://jellyfin.example.com',
-    );
-    await repository.updateDevice(
-      device.copyWith(primaryAddress: '192.168.1.99'),
-    );
-    expect(
-      repository.serviceById(service.id)!.url,
-      'https://jellyfin.example.com',
-    );
-  });
+  test(
+    'custom URL service stays independent from device address changes',
+    () async {
+      final LanDeckRepository repository = await createTestRepository();
+      final Device device = await repository.addDevice(
+        name: 'NAS',
+        deviceType: DeviceType.nas,
+        primaryAddress: '192.168.1.10',
+      );
+      final Service service = await repository.addService(
+        name: '反向代理 Jellyfin',
+        deviceId: device.id,
+        customUrl: 'https://jellyfin.example.com',
+      );
+      await repository.updateDevice(
+        device.copyWith(primaryAddress: '192.168.1.99'),
+      );
+      expect(
+        repository.serviceById(service.id)!.url,
+        'https://jellyfin.example.com',
+      );
+    },
+  );
 
   test('migrates v1 full-URL services to device-centric data', () async {
     final Directory directory = await Directory.systemTemp.createTemp(
@@ -225,7 +226,10 @@ void main() {
     );
     final LanDeckRepository repository = LanDeckRepository(first);
     await repository.load();
-    await repository.addService(name: 'Jellyfin', customUrl: 'http://10.0.0.2:8096');
+    await repository.addService(
+      name: 'Jellyfin',
+      customUrl: 'http://10.0.0.2:8096',
+    );
     await first.close();
 
     final AppDatabase second = await AppDatabase.openFromFactory(

@@ -92,30 +92,34 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
     _icon = service?.icon;
     _favorite = service?.isFavorite ?? false;
 
-    final Uri? candidateUri =
-        candidate == null ? null : Uri.tryParse(candidate.url);
-    _protocol = service?.protocol ??
+    final Uri? candidateUri = candidate == null
+        ? null
+        : Uri.tryParse(candidate.url);
+    _protocol =
+        service?.protocol ??
         (candidateUri?.scheme == 'https' ? 'https' : 'http');
     _portController = TextEditingController(
-      text: service?.port?.toString() ??
+      text:
+          service?.port?.toString() ??
           (candidate == null ? '' : candidate.port.toString()),
     );
     _pathController = TextEditingController(
       text: service?.path ?? _candidatePath(candidateUri),
     );
     _customUrlController = TextEditingController(
-      text: service?.customUrl ??
-          (_deviceId == null ? candidate?.url ?? '' : ''),
+      text:
+          service?.customUrl ?? (_deviceId == null ? candidate?.url ?? '' : ''),
     );
-    _useCustomUrl = service?.hasCustomUrl ??
-        (_deviceId == null && candidate != null);
+    _useCustomUrl =
+        service?.hasCustomUrl ?? (_deviceId == null && candidate != null);
 
     final String initialName = service?.name ?? candidate?.displayTitle ?? '';
     _nameController = TextEditingController(text: initialName);
     _autoName = initialName.trim().isEmpty;
     if (_autoName && _portController.text.isNotEmpty) {
-      _nameController.text =
-          _suggestionForPort(int.tryParse(_portController.text));
+      _nameController.text = _suggestionForPort(
+        int.tryParse(_portController.text),
+      );
     }
     if (_deviceId != null) {
       _useCustomUrl = service?.hasCustomUrl ?? false;
@@ -131,8 +135,8 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
       return;
     }
     setState(() => _credentialsLoading = true);
-    final List<HttpCredential> credentials =
-        await HttpCredentialStore.instance.credentialsFor(service.id);
+    final List<HttpCredential> credentials = await HttpCredentialStore.instance
+        .credentialsFor(service.id);
     if (!mounted) {
       return;
     }
@@ -247,8 +251,7 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
       return;
     }
     final bool useCustom = _deviceId == null || _useCustomUrl;
-    final String? custom =
-        useCustom ? _customUrlController.text.trim() : null;
+    final String? custom = useCustom ? _customUrlController.text.trim() : null;
     if (useCustom && (custom == null || custom.isEmpty)) {
       setState(() => _formError = '请输入完整 URL');
       return;
@@ -262,7 +265,9 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
 
     final ScanCandidate? candidate = widget.candidate;
     final ServiceStatus? scannedStatus =
-        candidate != null && candidate.isConfirmed ? ServiceStatus.online : null;
+        candidate != null && candidate.isConfirmed
+        ? ServiceStatus.online
+        : null;
     final DateTime? scannedAt = scannedStatus == null ? null : DateTime.now();
 
     setState(() {
@@ -332,11 +337,13 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.isEditing
-            ? '编辑服务'
-            : widget.quickMode
-                ? '快捷添加服务'
-                : '添加服务'),
+        title: Text(
+          widget.isEditing
+              ? '编辑服务'
+              : widget.quickMode
+              ? '快捷添加服务'
+              : '添加服务',
+        ),
       ),
       body: SafeArea(
         top: false,
@@ -363,8 +370,7 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
                     decoration: InputDecoration(
                       labelText: '服务名称',
                       hintText: widget.quickMode ? '例如：Jellyfin' : '例如：飞牛 NAS',
-                      helperText:
-                          widget.quickMode ? '根据端口自动建议，可随时修改' : null,
+                      helperText: widget.quickMode ? '根据端口自动建议，可随时修改' : null,
                     ),
                     onChanged: (_) => _autoName = false,
                     validator: (String? value) {
@@ -592,7 +598,10 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
                     runSpacing: 8,
                     children: <Widget>[
                       ChoiceChip(
-                        avatar: const Icon(Icons.auto_awesome_rounded, size: 18),
+                        avatar: const Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 18,
+                        ),
                         label: const Text('自动'),
                         selected: _icon == null,
                         onSelected: (_) => setState(() => _icon = null),
@@ -651,9 +660,8 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
                   Text(
                     '服务会保存在本机数据库中，不会上传到云端。',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
+                    style: Theme.of(context).textTheme.bodySmall
+                        ?.copyWith(color: scheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -701,14 +709,14 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
   }
 
   String _glyphLabel(ServiceGlyph glyph) => switch (glyph) {
-        ServiceGlyph.nas => 'NAS',
-        ServiceGlyph.router => '路由',
-        ServiceGlyph.docker => '容器',
-        ServiceGlyph.media => '影音',
-        ServiceGlyph.download => '下载',
-        ServiceGlyph.home => '家居',
-        ServiceGlyph.generic => '通用',
-      };
+    ServiceGlyph.nas => 'NAS',
+    ServiceGlyph.router => '路由',
+    ServiceGlyph.docker => '容器',
+    ServiceGlyph.media => '影音',
+    ServiceGlyph.download => '下载',
+    ServiceGlyph.home => '家居',
+    ServiceGlyph.generic => '通用',
+  };
 }
 
 class _SavedCredentialsCard extends StatelessWidget {
@@ -745,41 +753,37 @@ class _SavedCredentialsCard extends StatelessWidget {
             Text(
               '仅在 WebView 中主动勾选「记住登录信息」时保存。'
               '凭据使用 Android Keystore 加密，并与本服务、认证域绑定。',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: scheme.onSurfaceVariant),
             ),
             if (loading) ...<Widget>[
               const SizedBox(height: 10),
               const LinearProgressIndicator(minHeight: 2),
             ] else if (credentials.isEmpty) ...<Widget>[
               const SizedBox(height: 8),
-              Text(
-                '尚未保存凭据。',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
+              Text('尚未保存凭据。', style: Theme.of(context).textTheme.bodySmall),
             ] else ...<Widget>[
               const SizedBox(height: 4),
               ...credentials.asMap().entries.map(
-                    (MapEntry<int, HttpCredential> entry) => ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      dense: true,
-                      leading: const Icon(Icons.person_outline_rounded),
-                      title: Text(entry.value.username),
-                      subtitle: Text(
-                        '${entry.value.host} · '
-                        '${entry.value.realm.isEmpty ? '默认认证域' : entry.value.realm}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      trailing: IconButton(
-                        key: ValueKey<String>('delete-credential-${entry.key}'),
-                        tooltip: '删除凭据',
-                        onPressed: () => onDelete(entry.value),
-                        icon: const Icon(Icons.delete_outline_rounded),
-                      ),
-                    ),
+                (MapEntry<int, HttpCredential> entry) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  leading: const Icon(Icons.person_outline_rounded),
+                  title: Text(entry.value.username),
+                  subtitle: Text(
+                    '${entry.value.host} · '
+                    '${entry.value.realm.isEmpty ? '默认认证域' : entry.value.realm}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
+                  trailing: IconButton(
+                    key: ValueKey<String>('delete-credential-${entry.key}'),
+                    tooltip: '删除凭据',
+                    onPressed: () => onDelete(entry.value),
+                    icon: const Icon(Icons.delete_outline_rounded),
+                  ),
+                ),
+              ),
             ],
           ],
         ),

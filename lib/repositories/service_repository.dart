@@ -68,12 +68,12 @@ class LanDeckRepository extends ChangeNotifier {
     };
     final List<RecordSnapshot<String, Map<String, Object?>>> serviceRecords =
         await AppDatabase.serviceStore.find(_appDatabase.db);
-    _services = serviceRecords.map((RecordSnapshot<String, Map<String, Object?>> record) {
+    _services = serviceRecords.map((
+      RecordSnapshot<String, Map<String, Object?>> record,
+    ) {
       final Service service = Service.fromMap(record.value);
       final Device? device = byId[service.deviceId];
-      return service.copyWith(
-        deviceAddress: () => device?.primaryAddress,
-      );
+      return service.copyWith(deviceAddress: () => device?.primaryAddress);
     }).toList();
     _services.sort(_compareServices);
     _loaded = true;
@@ -82,12 +82,16 @@ class LanDeckRepository extends ChangeNotifier {
 
   int _compareServices(Service a, Service b) {
     final int order = a.sortOrder.compareTo(b.sortOrder);
-    return order != 0 ? order : a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    return order != 0
+        ? order
+        : a.name.toLowerCase().compareTo(b.name.toLowerCase());
   }
 
   int _compareDevices(Device a, Device b) {
     final int order = a.sortOrder.compareTo(b.sortOrder);
-    return order != 0 ? order : a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    return order != 0
+        ? order
+        : a.name.toLowerCase().compareTo(b.name.toLowerCase());
   }
 
   Service? serviceById(String id) {
@@ -113,7 +117,10 @@ class LanDeckRepository extends ChangeNotifier {
 
   /// Finds the device whose primary address matches a scanned host.
   Device? findDeviceForHost(String host) {
-    final String needle = host.trim().toLowerCase().replaceAll(RegExp(r'\.$'), '');
+    final String needle = host.trim().toLowerCase().replaceAll(
+      RegExp(r'\.$'),
+      '',
+    );
     if (needle.isEmpty) {
       return null;
     }
@@ -286,8 +293,7 @@ class LanDeckRepository extends ChangeNotifier {
     if (service.protocol != 'http' && service.protocol != 'https') {
       throw const ServiceConflictException('协议只能是 HTTP 或 HTTPS');
     }
-    if (service.port != null &&
-        (service.port! < 1 || service.port! > 65535)) {
+    if (service.port != null && (service.port! < 1 || service.port! > 65535)) {
       throw const ServiceConflictException('端口必须在 1–65535 之间');
     }
     final Device? device = deviceById(service.deviceId);
@@ -496,10 +502,10 @@ class LanDeckRepository extends ChangeNotifier {
             finder: Finder(filter: Filter.equals('deviceId', id)),
           );
       final DateTime now = DateTime.now();
-      for (final RecordSnapshot<String, Map<String, Object?>> record in linked) {
-        final Service service = Service.fromMap(record.value).copyWith(
-          deviceAddress: () => device?.primaryAddress,
-        );
+      for (final RecordSnapshot<String, Map<String, Object?>> record
+          in linked) {
+        final Service service = Service.fromMap(record.value)
+            .copyWith(deviceAddress: () => device?.primaryAddress);
         final String frozenUrl = service.url;
         await AppDatabase.serviceStore.record(record.key).update(
           transaction,

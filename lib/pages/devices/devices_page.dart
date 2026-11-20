@@ -65,10 +65,10 @@ class DevicesPage extends StatelessWidget {
                             '${devices.length} 台设备 · 点击查看关联服务',
                             style: Theme.of(context).textTheme.labelLarge
                                 ?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
                           ),
                         );
                       }
@@ -77,9 +77,14 @@ class DevicesPage extends StatelessWidget {
                         key: ValueKey<String>('device-${device.id}'),
                         clipBehavior: Clip.antiAlias,
                         child: ListTile(
-                          contentPadding: const EdgeInsets.fromLTRB(16, 8, 12, 8),
+                          contentPadding: const EdgeInsets.fromLTRB(
+                            16,
+                            8,
+                            12,
+                            8,
+                          ),
                           leading: ServiceIconBadge(
-                            icon: iconForDeviceType(device.deviceType),
+                            icon: iconForDevice(device),
                             emphasized: device.deviceType == DeviceType.nas,
                           ),
                           title: Text(device.name),
@@ -126,17 +131,13 @@ class _EmptyDevices extends StatelessWidget {
               color: scheme.onSurfaceVariant,
             ),
             const SizedBox(height: 16),
-            Text(
-              '还没有添加设备',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('还没有添加设备', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 6),
             Text(
               '添加设备后，可以把服务归类到 NAS、路由器或电脑，并只需输入端口即可创建服务。',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
+              style: Theme.of(context).textTheme.bodyMedium
+                  ?.copyWith(color: scheme.onSurfaceVariant),
             ),
             const SizedBox(height: 20),
             FilledButton.icon(

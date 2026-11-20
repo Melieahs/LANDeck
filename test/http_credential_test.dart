@@ -51,13 +51,19 @@ void main() {
     await store.save(credential(serviceId: 'service-2', host: '10.0.0.2'));
 
     expect(
-      (await store.find('service-1', host: '192.168.1.1', realm: 'Padavan'))
-          ?.username,
+      (await store.find(
+        'service-1',
+        host: '192.168.1.1',
+        realm: 'Padavan',
+      ))?.username,
       'admin',
     );
     expect(
-      (await store.find('service-1', host: '192.168.1.1', realm: 'Other'))
-          ?.username,
+      (await store.find(
+        'service-1',
+        host: '192.168.1.1',
+        realm: 'Other',
+      ))?.username,
       'second',
     );
     expect(
@@ -75,11 +81,7 @@ void main() {
     await store.save(credential());
     await store.save(credential(realm: 'Other', username: 'second'));
 
-    await store.deleteScope(
-      'service-1',
-      host: '192.168.1.1',
-      realm: 'Padavan',
-    );
+    await store.deleteScope('service-1', host: '192.168.1.1', realm: 'Padavan');
     expect(
       await store.find('service-1', host: '192.168.1.1', realm: 'Padavan'),
       isNull,

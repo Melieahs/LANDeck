@@ -65,7 +65,7 @@ class _MoreActionsSheet extends StatelessWidget {
         color: Theme.of(context).colorScheme.surfaceContainerLow,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
-          side: BorderSide(color: AppColors.border),
+          side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         clipBehavior: Clip.antiAlias,
         child: SafeArea(
@@ -79,7 +79,7 @@ class _MoreActionsSheet extends StatelessWidget {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.border,
+                    color: Theme.of(context).colorScheme.outlineVariant,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -96,7 +96,7 @@ class _MoreActionsSheet extends StatelessWidget {
                               fontSize: 19,
                               fontWeight: FontWeight.w700,
                               letterSpacing: -0.3,
-                              color: AppColors.textPrimary,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -106,7 +106,9 @@ class _MoreActionsSheet extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 10.5,
-                              color: AppColors.textMuted,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -119,7 +121,7 @@ class _MoreActionsSheet extends StatelessWidget {
                       icon: Icon(
                         Icons.close_rounded,
                         size: 20,
-                        color: AppColors.textSecondary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -127,9 +129,11 @@ class _MoreActionsSheet extends StatelessWidget {
                 const SizedBox(height: 14),
                 Container(
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Column(
@@ -185,7 +189,10 @@ class _MoreActionsSheet extends StatelessWidget {
                   nativeWebView
                       ? '页面由系统 WebView 加载；分享功能尚未接入'
                       : '当前平台未启用系统 WebView；分享功能尚未接入',
-                  style: TextStyle(fontSize: 9.5, color: AppColors.textMuted),
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -223,7 +230,7 @@ class _ActionRow extends StatelessWidget {
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                color: AppColors.surfaceHigh,
+                color: Theme.of(context).colorScheme.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
@@ -242,7 +249,7 @@ class _ActionRow extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -250,7 +257,10 @@ class _ActionRow extends StatelessWidget {
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 10, color: AppColors.textMuted),
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -260,7 +270,7 @@ class _ActionRow extends StatelessWidget {
                 Icon(
                   Icons.chevron_right_rounded,
                   size: 17,
-                  color: AppColors.textMuted,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
           ],
         ),
@@ -293,12 +303,14 @@ class _StateChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: active ? AppColors.accentSoft : AppColors.surfaceHigh,
+        color: active
+            ? Theme.of(context).colorScheme.primaryContainer
+            : Theme.of(context).colorScheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(7),
         border: Border.all(
           color: active
-              ? AppColors.accent.withValues(alpha: 0.3)
-              : AppColors.border,
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.3)
+              : Theme.of(context).colorScheme.outlineVariant,
         ),
       ),
       child: Text(
@@ -306,7 +318,9 @@ class _StateChip extends StatelessWidget {
         style: TextStyle(
           fontSize: 9.5,
           fontWeight: FontWeight.w500,
-          color: active ? AppColors.accent : AppColors.textMuted,
+          color: active
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -359,7 +373,7 @@ class _PageInfoSheet extends StatelessWidget {
         color: Theme.of(context).colorScheme.surfaceContainerLow,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
-          side: BorderSide(color: AppColors.border),
+          side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         clipBehavior: Clip.antiAlias,
         child: SafeArea(
@@ -373,7 +387,7 @@ class _PageInfoSheet extends StatelessWidget {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.border,
+                    color: Theme.of(context).colorScheme.outlineVariant,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -395,7 +409,7 @@ class _PageInfoSheet extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -403,7 +417,9 @@ class _PageInfoSheet extends StatelessWidget {
                             service.name,
                             style: TextStyle(
                               fontSize: 10.5,
-                              color: AppColors.textMuted,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -416,7 +432,7 @@ class _PageInfoSheet extends StatelessWidget {
                       icon: Icon(
                         Icons.close_rounded,
                         size: 20,
-                        color: AppColors.textSecondary,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -424,9 +440,11 @@ class _PageInfoSheet extends StatelessWidget {
                 const SizedBox(height: 14),
                 Container(
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Column(
@@ -442,7 +460,7 @@ class _PageInfoSheet extends StatelessWidget {
                         value: service.statusLabel,
                         valueColor: service.isOnline
                             ? AppColors.online
-                            : AppColors.textMuted,
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
                         leadingDot: true,
                       ),
                       const _ActionDivider(),
@@ -477,7 +495,7 @@ class _PageInfoSheet extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 9.5,
                     height: 1.5,
-                    color: AppColors.textMuted,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -513,7 +531,10 @@ class _InfoRow extends StatelessWidget {
             width: 84,
             child: Text(
               label,
-              style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -532,7 +553,9 @@ class _InfoRow extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11.5,
                       height: 1.4,
-                      color: valueColor ?? AppColors.textSecondary,
+                      color:
+                          valueColor ??
+                          Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),

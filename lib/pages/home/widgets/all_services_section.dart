@@ -33,7 +33,9 @@ class AllServicesSection extends StatelessWidget {
       children: <Widget>[
         SectionHeader(
           title: '全部服务',
-          trailing: _isSearching ? '${services.length} 个结果' : '共 ${services.length} 个',
+          trailing: _isSearching
+              ? '${services.length} 个结果'
+              : '共 ${services.length} 个',
           action: IconButton(
             key: const ValueKey<String>('all-services-add'),
             onPressed: onAddService,
@@ -50,7 +52,11 @@ class AllServicesSection extends StatelessWidget {
             clipBehavior: Clip.antiAlias,
             child: Column(
               children: <Widget>[
-                for (int index = 0; index < services.length; index++) ...<Widget>[
+                for (
+                  int index = 0;
+                  index < services.length;
+                  index++
+                ) ...<Widget>[
                   ServiceListTile(
                     key: ValueKey<String>('service-${services[index].id}'),
                     service: services[index],
@@ -83,20 +89,14 @@ class _EmptyServicesState extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
         child: Column(
           children: <Widget>[
-            Icon(
-              Icons.dns_outlined,
-              size: 36,
-              color: scheme.onSurfaceVariant,
-            ),
+            Icon(Icons.dns_outlined, size: 36, color: scheme.onSurfaceVariant),
             const SizedBox(height: 12),
             Text('还没有添加服务', style: text.titleMedium),
             const SizedBox(height: 4),
             Text(
               '扫描当前局域网，或手动填写一个 Web 服务地址。',
               textAlign: TextAlign.center,
-              style: text.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
+              style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -146,9 +146,8 @@ class _EmptySearchState extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               '试试服务名称、设备或 IP 地址',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: scheme.onSurfaceVariant),
             ),
             const SizedBox(height: 8),
             TextButton(onPressed: onClearSearch, child: const Text('清除搜索')),

@@ -34,14 +34,9 @@ class SectionHeader extends StatelessWidget {
           if (trailing != null)
             Text(
               trailing!,
-              style: text.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
+              style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
-          if (action != null) ...<Widget>[
-            const SizedBox(width: 4),
-            action!,
-          ],
+          if (action != null) ...<Widget>[const SizedBox(width: 4), action!],
         ],
       ),
     );

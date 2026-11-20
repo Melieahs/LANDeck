@@ -38,8 +38,8 @@ class LanDeckNavBar extends StatelessWidget {
               index == 0
                   ? Icons.home_rounded
                   : index == 1
-                      ? Icons.explore_rounded
-                      : Icons.settings_rounded,
+                  ? Icons.explore_rounded
+                  : Icons.settings_rounded,
             ),
             label: navDestinations[index].label,
           ),

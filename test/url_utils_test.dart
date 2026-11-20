@@ -9,10 +9,7 @@ void main() {
       normalizeHttpUrl('192.168.1.10:8080/docker?x=1'),
       'http://192.168.1.10:8080/docker?x=1',
     );
-    expect(
-      normalizeHttpUrl('https://nas.local/app'),
-      'https://nas.local/app',
-    );
+    expect(normalizeHttpUrl('https://nas.local/app'), 'https://nas.local/app');
     expect(normalizeHttpUrl('ftp://nas.local'), isNull);
     expect(normalizeHttpUrl(''), isNull);
   });

@@ -14,9 +14,7 @@ class HttpCredentialStore {
     : _storage =
           storage ??
           const FlutterSecureStorage(
-            aOptions: AndroidOptions(
-              storageNamespace: 'landeck_http_auth',
-            ),
+            aOptions: AndroidOptions(storageNamespace: 'landeck_http_auth'),
           );
 
   static final HttpCredentialStore instance = HttpCredentialStore();
@@ -49,7 +47,9 @@ class HttpCredentialStore {
               ),
             ),
           )
-          .where((HttpCredential credential) => credential.serviceId == serviceId)
+          .where(
+            (HttpCredential credential) => credential.serviceId == serviceId,
+          )
           .toList(growable: false);
     } on Object {
       // A secure-storage failure must not break the WebView. Treat it as

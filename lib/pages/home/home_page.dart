@@ -117,6 +117,12 @@ class _HomePageState extends State<HomePage> {
         title: const Text('LANDeck'),
         actions: <Widget>[
           IconButton(
+            key: const ValueKey<String>('home-add-service-appbar'),
+            onPressed: _handleAddService,
+            tooltip: '添加服务',
+            icon: const Icon(Icons.add_rounded),
+          ),
+          IconButton(
             key: const ValueKey<String>('home-settings'),
             onPressed: widget.onOpenSettings,
             tooltip: '设置',
@@ -125,11 +131,11 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(width: 4),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton.small(
         key: const ValueKey<String>('home-add-service'),
         onPressed: _handleAddService,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('添加服务'),
+        tooltip: '添加服务',
+        child: const Icon(Icons.add_rounded),
       ),
       body: SafeArea(
         top: false,
@@ -175,10 +181,7 @@ class _HomePageState extends State<HomePage> {
                     onAddDevice: _handleAddDevice,
                   ),
                   const SizedBox(height: AppSpacing.sectionGap),
-                  CategoriesSection(
-                    counts: counts,
-                    onSelect: _openCategory,
-                  ),
+                  CategoriesSection(counts: counts, onSelect: _openCategory),
                   const SizedBox(height: AppSpacing.sectionGap),
                   AllServicesSection(
                     services: visible,

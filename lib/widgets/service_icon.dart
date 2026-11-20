@@ -14,6 +14,25 @@ IconData iconForDeviceType(DeviceType type) => switch (type) {
   DeviceType.other => Icons.more_horiz_rounded,
 };
 
+const Map<String, IconData> deviceIconChoices = <String, IconData>{
+  'storage': Icons.storage_rounded,
+  'router': Icons.router_rounded,
+  'computer': Icons.desktop_windows_rounded,
+  'server': Icons.dns_rounded,
+  'phone': Icons.smartphone_rounded,
+  'media': Icons.movie_rounded,
+  'home': Icons.home_rounded,
+  'devices': Icons.devices_other_rounded,
+};
+
+IconData iconForDevice(Device device) {
+  final String? icon = device.icon;
+  if (icon != null && deviceIconChoices.containsKey(icon)) {
+    return deviceIconChoices[icon]!;
+  }
+  return iconForDeviceType(device.deviceType);
+}
+
 IconData iconForCategory(DeviceCategory category) => switch (category) {
   DeviceCategory.all => Icons.grid_view_rounded,
   DeviceCategory.nas => Icons.storage_rounded,

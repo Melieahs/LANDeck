@@ -103,7 +103,9 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
           color: Theme.of(context).colorScheme.surfaceContainerLow,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
-            side: BorderSide(color: AppColors.border),
+            side: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
           ),
           clipBehavior: Clip.antiAlias,
           child: SafeArea(
@@ -115,7 +117,7 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: AppColors.border,
+                    color: Theme.of(context).colorScheme.outlineVariant,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -134,7 +136,7 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                                 fontSize: 19,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: -0.3,
-                                color: AppColors.textPrimary,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -142,7 +144,9 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                               '同一局域网 · ${widget.services.length} 个服务',
                               style: TextStyle(
                                 fontSize: 10.5,
-                                color: AppColors.textMuted,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -155,7 +159,7 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                         icon: Icon(
                           Icons.close_rounded,
                           size: 20,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -167,16 +171,18 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                     height: 44,
                     padding: const EdgeInsets.only(left: 13, right: 6),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(13),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
                     ),
                     child: Row(
                       children: <Widget>[
                         Icon(
                           Icons.search_rounded,
                           size: 18,
-                          color: AppColors.textMuted,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -185,17 +191,19 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                             onChanged: (String value) =>
                                 setState(() => _query = value),
                             textInputAction: TextInputAction.search,
-                            cursorColor: AppColors.accent,
+                            cursorColor: Theme.of(context).colorScheme.primary,
                             style: TextStyle(
                               fontSize: 12.5,
-                              color: AppColors.textPrimary,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                             decoration: InputDecoration(
                               isDense: true,
                               hintText: '搜索名称、设备或 IP',
                               hintStyle: TextStyle(
                                 fontSize: 12,
-                                color: AppColors.textMuted,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
                               ),
                               border: InputBorder.none,
                               contentPadding: EdgeInsets.symmetric(
@@ -222,7 +230,9 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                                   icon: Icon(
                                     Icons.close_rounded,
                                     size: 16,
-                                    color: AppColors.textMuted,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
                                   ),
                                 );
                               },
@@ -241,7 +251,7 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
                           letterSpacing: 0.2,
-                          color: AppColors.textMuted,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const Spacer(),
@@ -249,7 +259,7 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                         '${filtered.length} 个',
                         style: TextStyle(
                           fontSize: 10,
-                          color: AppColors.textMuted,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -299,7 +309,11 @@ class _GroupHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(2, 12, 2, 6),
       child: Row(
         children: <Widget>[
-          Icon(Icons.devices_rounded, size: 12, color: AppColors.textMuted),
+          Icon(
+            Icons.devices_rounded,
+            size: 12,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(width: 5),
           Expanded(
             child: Text(
@@ -309,13 +323,16 @@ class _GroupHeader extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textMuted,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
           Text(
             '$count',
-            style: TextStyle(fontSize: 9.5, color: AppColors.textMuted),
+            style: TextStyle(
+              fontSize: 9.5,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -339,13 +356,15 @@ class _ServiceRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: selected ? AppColors.accentSoft : AppColors.surface,
+        color: selected
+            ? Theme.of(context).colorScheme.primaryContainer
+            : Theme.of(context).colorScheme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
           side: BorderSide(
             color: selected
-                ? AppColors.accent.withValues(alpha: 0.42)
-                : AppColors.border,
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.42)
+                : Theme.of(context).colorScheme.outlineVariant,
           ),
         ),
         clipBehavior: Clip.antiAlias,
@@ -373,7 +392,7 @@ class _ServiceRow extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -383,7 +402,7 @@ class _ServiceRow extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 10,
-                          color: AppColors.textMuted,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -394,7 +413,7 @@ class _ServiceRow extends StatelessWidget {
                   Icon(
                     Icons.check_circle_rounded,
                     size: 18,
-                    color: AppColors.accent,
+                    color: Theme.of(context).colorScheme.primary,
                   )
                 else
                   Row(
@@ -408,7 +427,7 @@ class _ServiceRow extends StatelessWidget {
                           fontSize: 10,
                           color: service.isOnline
                               ? AppColors.online
-                              : AppColors.textMuted,
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -431,20 +450,27 @@ class _EmptyResult extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(Icons.search_off_rounded, size: 30, color: AppColors.textMuted),
+          Icon(
+            Icons.search_off_rounded,
+            size: 30,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           SizedBox(height: 10),
           Text(
             '没有匹配的服务',
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           SizedBox(height: 3),
           Text(
             '试试服务名称、设备或 IP 地址',
-            style: TextStyle(fontSize: 10.5, color: AppColors.textMuted),
+            style: TextStyle(
+              fontSize: 10.5,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),

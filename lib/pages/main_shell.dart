@@ -44,10 +44,7 @@ class _MainShellState extends State<MainShell> {
         index: _currentIndex,
         children: <Widget>[
           for (int i = 0; i < _pages.length; i++)
-            TickerMode(
-              enabled: i == _currentIndex,
-              child: _pages[i],
-            ),
+            TickerMode(enabled: i == _currentIndex, child: _pages[i]),
         ],
       ),
       bottomNavigationBar: LanDeckNavBar(

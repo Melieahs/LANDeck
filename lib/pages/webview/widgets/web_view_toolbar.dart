@@ -9,6 +9,7 @@ class WebViewToolbar extends StatelessWidget {
     required this.onRefresh,
     required this.onSwitchService,
     required this.onMore,
+    required this.onExit,
     this.canGoForward = false,
   });
 
@@ -17,6 +18,7 @@ class WebViewToolbar extends StatelessWidget {
   final VoidCallback onRefresh;
   final VoidCallback onSwitchService;
   final VoidCallback onMore;
+  final VoidCallback onExit;
   final bool canGoForward;
 
   @override
@@ -64,6 +66,12 @@ class WebViewToolbar extends StatelessWidget {
                     icon: Icons.more_horiz_rounded,
                     label: '更多',
                     onTap: onMore,
+                  ),
+                  _ToolbarAction(
+                    key: const Key('webview-exit'),
+                    icon: Icons.close_rounded,
+                    label: '退出',
+                    onTap: onExit,
                   ),
                 ],
               ),

@@ -6,13 +6,20 @@ import 'package:material_ui/material_ui.dart';
 /// intentionally restrained. All pages, dialogs, sheets and form controls read
 /// from this theme so light, dark and system modes remain consistent.
 abstract final class AppTheme {
-  static ThemeData get light => _build(Brightness.light);
+  static ThemeData get light => lightWith(null);
 
-  static ThemeData get dark => _build(Brightness.dark);
+  static ThemeData get dark => darkWith(null);
 
-  static ThemeData _build(Brightness brightness) {
+  /// Builds the brand theme, or applies a system dynamic [scheme] when given.
+  static ThemeData lightWith(ColorScheme? scheme) =>
+      _build(scheme ?? _brandScheme(Brightness.light));
+
+  static ThemeData darkWith(ColorScheme? scheme) =>
+      _build(scheme ?? _brandScheme(Brightness.dark));
+
+  static ThemeData _build(ColorScheme scheme) {
+    final Brightness brightness = scheme.brightness;
     final bool isLight = brightness == Brightness.light;
-    final ColorScheme scheme = _scheme(brightness);
     final ThemeData base = ThemeData(
       useMaterial3: true,
       brightness: brightness,
@@ -30,10 +37,7 @@ abstract final class AppTheme {
     );
 
     final TextTheme textTheme = base.textTheme
-        .apply(
-          bodyColor: scheme.onSurface,
-          displayColor: scheme.onSurface,
-        )
+        .apply(bodyColor: scheme.onSurface, displayColor: scheme.onSurface)
         .copyWith(
           headlineSmall: base.textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w600,
@@ -70,9 +74,7 @@ abstract final class AppTheme {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       dividerTheme: DividerThemeData(
         color: scheme.outlineVariant,
@@ -82,13 +84,8 @@ abstract final class AppTheme {
       listTileTheme: ListTileThemeData(
         iconColor: scheme.onSurfaceVariant,
         textColor: scheme.onSurface,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 4,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -145,17 +142,13 @@ abstract final class AppTheme {
         ),
       ),
       iconButtonTheme: IconButtonThemeData(
-        style: IconButton.styleFrom(
-          foregroundColor: scheme.onSurfaceVariant,
-        ),
+        style: IconButton.styleFrom(foregroundColor: scheme.onSurfaceVariant),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: scheme.surfaceContainerLow,
         selectedColor: scheme.secondaryContainer,
         side: BorderSide(color: scheme.outlineVariant),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         labelStyle: textTheme.labelLarge,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       ),
@@ -197,9 +190,7 @@ abstract final class AppTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: scheme.surfaceContainerHigh,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(28),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         titleTextStyle: textTheme.headlineSmall?.copyWith(
           fontSize: 22,
           color: scheme.onSurface,
@@ -215,16 +206,12 @@ abstract final class AppTheme {
         actionTextColor: scheme.inversePrimary,
         elevation: 2,
         insetPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       popupMenuTheme: PopupMenuThemeData(
         color: scheme.surfaceContainerHigh,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: scheme.primaryContainer,
@@ -232,9 +219,7 @@ abstract final class AppTheme {
         elevation: 1,
         focusElevation: 2,
         hoverElevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       pageTransitionsTheme: PageTransitionsTheme(
         builders: <TargetPlatform, PageTransitionsBuilder>{
@@ -247,7 +232,7 @@ abstract final class AppTheme {
     );
   }
 
-  static ColorScheme _scheme(Brightness brightness) {
+  static ColorScheme _brandScheme(Brightness brightness) {
     if (brightness == Brightness.light) {
       return ColorScheme.fromSeed(
         seedColor: const Color(0xFF2E6BE6),

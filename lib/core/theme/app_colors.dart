@@ -33,9 +33,8 @@ abstract final class AppColors {
   static Color get accent =>
       isLight ? const Color(0xFF1B5FD9) : const Color(0xFFAAC7FF);
 
-  static Color get accentSoft => isLight
-      ? const Color(0x1A1B5FD9)
-      : const Color(0x33AAC7FF);
+  static Color get accentSoft =>
+      isLight ? const Color(0x1A1B5FD9) : const Color(0x33AAC7FF);
 
   static Color get textPrimary =>
       isLight ? const Color(0xFF171C24) : const Color(0xFFE3E8F0);

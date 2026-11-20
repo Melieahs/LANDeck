@@ -97,7 +97,7 @@ class _DeviceCard extends StatelessWidget {
           child: Row(
             children: <Widget>[
               ServiceIconBadge(
-                icon: iconForDeviceType(device.deviceType),
+                icon: iconForDevice(device),
                 size: 42,
                 emphasized: true,
               ),

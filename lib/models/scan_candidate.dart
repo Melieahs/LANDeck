@@ -100,47 +100,12 @@ class LanNetworkInfo {
         ? 0
         : (0xFFFFFFFF << (32 - prefixLength)) & 0xFFFFFFFF;
     final List<int> parts = ipAddress.split('.').map(int.parse).toList();
-    final int ip = (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3];
+    final int ip =
+        (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3];
     final int network = ip & mask;
     final int broadcast = network | (~mask & 0xFFFFFFFF);
     String fmt(int value) =>
         '${(value >> 24) & 255}.${(value >> 16) & 255}.${(value >> 8) & 255}.${value & 255}';
     return '${fmt(network)} – ${fmt(broadcast)}';
   }
-}
-
-class ScanProgress {
-  const ScanProgress({
-    required this.phase,
-    required this.message,
-    this.completed = 0,
-    this.total = 0,
-  });
-
-  final String phase;
-  final String message;
-  final int completed;
-  final int total;
-
-  double get ratio => total <= 0 ? 0 : (completed / total).clamp(0, 1);
-}
-
-class LanScanResult {
-  const LanScanResult({
-    required this.network,
-    required this.candidates,
-    required this.errors,
-    required this.cancelled,
-    required this.duration,
-    required this.mdnsCount,
-    required this.ssdpCount,
-  });
-
-  final LanNetworkInfo network;
-  final List<ScanCandidate> candidates;
-  final List<String> errors;
-  final bool cancelled;
-  final Duration duration;
-  final int mdnsCount;
-  final int ssdpCount;
 }

@@ -32,8 +32,9 @@ class CategoryPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final LanDeckRepository repository = AppScope.of(context);
     final List<Service> services = repository.servicesForCategory(category);
-    final String title =
-        category == DeviceCategory.all ? '全部服务' : category.label;
+    final String title = category == DeviceCategory.all
+        ? '全部服务'
+        : category.label;
 
     return Scaffold(
       appBar: AppBar(
@@ -72,18 +73,16 @@ class CategoryPage extends StatelessWidget {
                             '${services.where((Service s) => s.isOnline).length} 在线',
                             style: Theme.of(context).textTheme.labelLarge
                                 ?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
                           ),
                         );
                       }
                       final Service service = services[index - 1];
                       return ServiceListTile(
-                        key: ValueKey<String>(
-                          'category-service-${service.id}',
-                        ),
+                        key: ValueKey<String>('category-service-${service.id}'),
                         service: service,
                         deviceName: repository.deviceNameFor(service),
                         onTap: () => Navigator.of(context).pushNamed<void>(
@@ -129,9 +128,8 @@ class _EmptyCategory extends StatelessWidget {
             Text(
               '服务只来自你手动添加或扫描确认的记录。',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
+              style: Theme.of(context).textTheme.bodyMedium
+                  ?.copyWith(color: scheme.onSurfaceVariant),
             ),
             const SizedBox(height: 20),
             FilledButton.icon(
