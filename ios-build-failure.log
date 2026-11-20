@@ -1,0 +1,8 @@
+Building com.example.landeck for simulator (ios)...
+Running Xcode build...                                          
+Xcode build done.                                           70.3s
+Failed to build iOS app
+Swift Compiler Error (Xcode): 'NSMutableURLRequest' is not implicitly convertible to 'URLRequest'; did you mean to use 'as' to explicitly convert?
+/Users/runner/work/LANDeck/LANDeck/ios/Runner/AppDelegate.swift:448:42
+
+Encountered error while building for simulator.
