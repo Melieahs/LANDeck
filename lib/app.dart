@@ -1,10 +1,12 @@
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:material_ui/material_ui.dart';
 
 import 'core/app_scope.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
+import 'ios/lan_deck_ios_app.dart';
 import 'pages/main_shell.dart';
 import 'repositories/service_repository.dart';
 import 'routes/app_router.dart';
@@ -19,6 +21,12 @@ class LanDeckApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeController controller =
         themeController ?? ThemeController.inMemory();
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return LanDeckIosApp(
+        repository: repository,
+        themeController: controller,
+      );
+    }
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
         return AnimatedBuilder(

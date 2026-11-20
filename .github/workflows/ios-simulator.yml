@@ -1,0 +1,51 @@
+name: iOS Simulator Build
+
+on:
+  push:
+    branches: [feature/ios, main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.50.0'
+          channel: stable
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Build iOS simulator app
+        run: flutter build ios --simulator --debug
+
+      - name: Package simulator app
+        run: |
+          cd build/ios/iphonesimulator
+          ditto -c -k --keepParent Runner.app LANDeck-ios-simulator.zip
+
+      - name: Upload simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: LANDeck-ios-simulator
+          path: build/ios/iphonesimulator/LANDeck-ios-simulator.zip
+          if-no-files-found: error
+          retention-days: 14

@@ -387,3 +387,14 @@ Service.protocol = http, port = 8096, path = /web
 - 后台下载使用前台 Service；已验证系统下载服务与通知权限，但未做进程被系统杀死、长时间断网重连的压力测试。
 - 不提供暂停/断点续传；取消后需重新下载。
 - 网页 `capture` 不直接调用相机，统一走系统文件/媒体选择器。
+
+
+## iOS / iPadOS（Phase B 进行中）
+
+iOS 使用 Flutter + Cupertino 原生观感 UI，Android 仍保持 Material 3，两者共享数据模型、Sembast 数据库、URL 生成和仓库逻辑。
+
+- iOS 入口：`lib/ios/lan_deck_ios_app.dart`，由 `lib/app.dart` 在 iOS 平台分流。
+- 已实现：首页（大标题/搜索/收藏/设备/全部服务）、设备详情、设备编辑、快捷端口添加服务、发现占位页、分组设置。
+- iOS 本地网络权限描述与 Bonjour 服务类型已写入 `ios/Runner/Info.plist`；真实 Bonjour 发现与 WKWebView 在阶段 D/E 接入。
+- 构建：Linux 只能执行 `flutter analyze` / `flutter test`，不能编译 iOS。使用 `.github/workflows/ios-simulator.yml` 在 GitHub Actions macOS Runner 上生成未签名模拟器 `.app`。
+- 尚未完成：真实 iOS 截图、WKWebView、HTTP 认证、下载/上传、Bonjour/端口扫描、iPad `NavigationSplitView`、签名 IPA/TestFlight。
