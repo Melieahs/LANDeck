@@ -74,7 +74,8 @@ jobs:
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
           xcrun simctl launch "$UDID" com.example.landeck
-          sleep 8
+          sleep 20
+          xcrun simctl spawn "$UDID" log show --last 40s --predicate 'process == "Runner"' > /tmp/runner.log || true
           mkdir -p screenshots/ios
           xcrun simctl io "$UDID" screenshot screenshots/ios/ios-home.png
           ls -lh screenshots/ios/ios-home.png
@@ -94,8 +95,17 @@ jobs:
           git config user.name "LANDeck CI"
           git config user.email "ci@users.noreply.github.com"
           git add docs/screenshots/ios-home.png
-          git commit -m "docs(ios): update Liquid Glass home screenshot [skip ci]" || true
+          git commit -m "docs(ios): update Material 3 home screenshot [skip ci]" || true
           git push || true
+
+      - name: Upload runner log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: LANDeck-ios-runner-log
+          path: /tmp/runner.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Build unsigned device app
         run: flutter build ios --release --no-codesign
