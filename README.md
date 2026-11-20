@@ -389,12 +389,12 @@ Service.protocol = http, port = 8096, path = /web
 - 网页 `capture` 不直接调用相机，统一走系统文件/媒体选择器。
 
 
-## iOS / iPadOS（Phase B 进行中）
+## iOS / iPadOS（Material 3）
 
-iOS 使用 Flutter + Cupertino 原生观感 UI，Android 仍保持 Material 3，两者共享数据模型、Sembast 数据库、URL 生成和仓库逻辑。
+iOS 端当前直接复用与 Android 相同的 Material 3 页面、主题和业务逻辑，不再使用 Cupertino / Liquid Glass 实验界面。
 
-- iOS 入口：`lib/ios/lan_deck_ios_app.dart`，由 `lib/app.dart` 在 iOS 平台分流。
-- 已实现：首页（大标题/搜索/收藏/设备/全部服务）、设备详情、设备编辑、快捷端口添加服务、发现占位页、分组设置。
-- iOS 本地网络权限描述与 Bonjour 服务类型已写入 `ios/Runner/Info.plist`；真实 Bonjour 发现与 WKWebView 在阶段 D/E 接入。
-- 构建：Linux 只能执行 `flutter analyze` / `flutter test`，不能编译 iOS。使用 `.github/workflows/ios-simulator.yml` 在 GitHub Actions macOS Runner 上生成未签名模拟器 `.app`。
-- 尚未完成：真实 iOS 截图、WKWebView、HTTP 认证、下载/上传、Bonjour/端口扫描、iPad `NavigationSplitView`、签名 IPA/TestFlight。
+- iOS 入口：`lib/app.dart` 不再按平台分流，直接使用 `LanDeckApp`。
+- 共享：数据模型、Sembast 数据库、URL 生成、仓库逻辑、Material 3 主题。
+- `ios/Runner/Info.plist` 已包含本地网络权限描述与 Bonjour 服务类型。
+- 构建：Linux 只能执行 `flutter analyze` / `flutter test`，不能编译 iOS；`.github/workflows/ios-simulator.yml` 在 GitHub Actions macOS Runner 上构建模拟器 `.app` 并提交首页截图到 `docs/screenshots/ios-home.png`。
+- 当前限制：iOS 端尚未接入 WKWebView、HTTP 认证、下载/上传、Bonjour 发现和端口扫描；原生 Liquid Glass 代码仍保留但未启用。
