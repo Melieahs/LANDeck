@@ -1091,6 +1091,15 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     }
   }
 
+  void _exitViewer() {
+    final ModalRoute<Object?>? route = ModalRoute.of(context);
+    if (route == null) {
+      Navigator.of(context).maybePop();
+      return;
+    }
+    Navigator.of(context).removeRoute(route);
+  }
+
   void _handleSystemBack() {
     if (View.of(context).viewInsets.bottom > 0) {
       FocusManager.instance.primaryFocus?.unfocus();
@@ -1475,7 +1484,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         key: const Key('webview-exit'),
         tooltip: '退出',
         icon: const Icon(Icons.arrow_back_rounded),
-        onPressed: () => Navigator.of(context).maybePop(),
+        onPressed: _exitViewer,
       ),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1515,7 +1524,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           key: const Key('webview-service-switch'),
           tooltip: '切换服务',
           onPressed: _openServiceSwitcher,
-          icon: const Icon(Icons.dashboard_customize_rounded),
+          icon: const Icon(Icons.swap_horiz_rounded),
         ),
       ],
     );

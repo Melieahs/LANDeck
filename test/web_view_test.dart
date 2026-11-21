@@ -57,6 +57,20 @@ void main() {
     expect(find.text('测试服务'), findsWidgets);
   });
 
+  testWidgets('exit button closes the viewer', (WidgetTester tester) async {
+    await tester.pumpWidget(LanDeckApp(repository: repository));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(Key('favorite-${repository.services.single.id}')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('webview-exit')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('webview-exit')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('webview-exit')), findsNothing);
+  });
+
   testWidgets('more sheet hosts refresh and forward', (
     WidgetTester tester,
   ) async {
