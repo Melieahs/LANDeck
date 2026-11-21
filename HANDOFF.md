@@ -513,7 +513,9 @@ PS5 Web File Manager：`192.168.1.50:8888`。
 - iOS CI：
   - Actions 页面：https://github.com/Melieahs/LANDeck/actions
   - 每次 push 到受支持分支都会触发；成功后下载 artifact `LANDeck-unsigned-ipa`
-  - 历史 run `44894071777` 对应 `d522c33`；后续文档提交会触发新的 run，以页面最新结果为准
+  - 最新成功 run `44899296418` 对应 `0854bbb`（Padavan 插件示例 + 发现页插件源），
+    artifact 8,605,336 字节；后续纯文档提交会触发新的 run，以页面最新结果为准
+  - 历史 run `44894071777` 对应 `d522c33`
 
 如果 CI 失败：先看 `flutter analyze` / Swift 编译日志；常见问题是 `macos-26` runner 的 Xcode 版本、Swift API 可用性、SPM 依赖。
 
