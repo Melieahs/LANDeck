@@ -6,6 +6,7 @@ import '../../models/service_mode.dart';
 import '../../native/native_module.dart';
 import '../../native/native_module_registry.dart';
 import '../../repositories/service_repository.dart';
+import '../webview/web_view_sessions.dart';
 import '../webview/widgets/service_switcher_sheet.dart';
 import 'service_viewer_page.dart';
 
@@ -47,6 +48,7 @@ class _NativeServicePageState extends State<NativeServicePage> {
       current: current,
       currentMode: ServiceMode.native,
       deviceNameFor: repository.deviceNameFor,
+      openServiceIds: WebViewSessionRegistry.instance.serviceIds,
     );
     if (!mounted || selection == null) {
       return;
@@ -63,6 +65,14 @@ class _NativeServicePageState extends State<NativeServicePage> {
         ),
       ),
     );
+  }
+
+  Future<void> _exitViewer() async {
+    WebViewSessionRegistry.instance.closeAll();
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).maybePop();
   }
 
   Future<void> _switchToWeb(Service service) async {
@@ -94,7 +104,15 @@ class _NativeServicePageState extends State<NativeServicePage> {
     );
     if (module == null || !module.supports(service)) {
       return Scaffold(
-        appBar: AppBar(title: Text(service.name)),
+        appBar: AppBar(
+          title: Text(service.name),
+          leading: IconButton(
+            key: const Key('native-service-exit'),
+            tooltip: '退出',
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: _exitViewer,
+          ),
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -116,30 +134,45 @@ class _NativeServicePageState extends State<NativeServicePage> {
       );
     }
     final ThemeData theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(service.name),
-            Text(
-              module.name,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+    return PopScope<Object?>(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (didPop) {
+          return;
+        }
+        _exitViewer();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: IconButton(
+            key: const Key('native-service-exit'),
+            tooltip: '退出',
+            icon: const Icon(Icons.arrow_back_rounded),
+            onPressed: _exitViewer,
+          ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(service.name),
+              Text(
+                module.name,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
+            ],
+          ),
+          actions: <Widget>[
+            IconButton(
+              key: const Key('native-service-switcher'),
+              tooltip: '切换服务',
+              onPressed: () => _switchService(service),
+              icon: const Icon(Icons.swap_horiz_rounded),
             ),
           ],
         ),
-        actions: <Widget>[
-          IconButton(
-            key: const Key('native-service-switcher'),
-            tooltip: '切换服务',
-            onPressed: () => _switchService(service),
-            icon: const Icon(Icons.swap_horiz_rounded),
-          ),
-        ],
+        body: module.buildPage(context, service),
       ),
-      body: module.buildPage(context, service),
     );
   }
 }

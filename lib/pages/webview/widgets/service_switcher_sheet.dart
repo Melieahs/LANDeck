@@ -25,6 +25,7 @@ Future<ServiceSelection?> showServiceSwitcherSheet(
   required ServiceMode currentMode,
   required String Function(Service service) deviceNameFor,
   NativeModuleRegistry? registry,
+  Set<String> openServiceIds = const <String>{},
 }) {
   return showModalBottomSheet<ServiceSelection>(
     context: context,
@@ -39,6 +40,7 @@ Future<ServiceSelection?> showServiceSwitcherSheet(
         currentMode: currentMode,
         deviceNameFor: deviceNameFor,
         registry: registry ?? NativeModuleRegistry.instance,
+        openServiceIds: openServiceIds,
       );
     },
   );
@@ -52,6 +54,7 @@ class ServiceSwitcherSheet extends StatefulWidget {
     required this.currentMode,
     required this.deviceNameFor,
     required this.registry,
+    this.openServiceIds = const <String>{},
   });
 
   final List<Service> services;
@@ -59,6 +62,7 @@ class ServiceSwitcherSheet extends StatefulWidget {
   final ServiceMode currentMode;
   final String Function(Service service) deviceNameFor;
   final NativeModuleRegistry registry;
+  final Set<String> openServiceIds;
 
   @override
   State<ServiceSwitcherSheet> createState() => _ServiceSwitcherSheetState();
@@ -321,6 +325,9 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                                 service: service,
                                 deviceName: widget.deviceNameFor(service),
                                 selected: service.id == widget.current.id,
+                                open: widget.openServiceIds.contains(
+                                  service.id,
+                                ),
                                 selectedMode: widget.currentMode,
                                 nativeAvailable:
                                     widget.registry.linkedModule(service) !=
@@ -355,6 +362,7 @@ class _ServiceRow extends StatelessWidget {
     required this.nativeAvailable,
     required this.defaultMode,
     required this.onSelect,
+    this.open = false,
   });
 
   final Service service;
@@ -364,6 +372,9 @@ class _ServiceRow extends StatelessWidget {
   final bool nativeAvailable;
   final ServiceMode defaultMode;
   final ValueChanged<ServiceMode> onSelect;
+
+  /// True when the service already has a live tab in the background.
+  final bool open;
 
   @override
   Widget build(BuildContext context) {
@@ -401,15 +412,42 @@ class _ServiceRow extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text(
-                        service.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: scheme.onSurface,
-                        ),
+                      Row(
+                        children: <Widget>[
+                          Flexible(
+                            child: Text(
+                              service.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: scheme.onSurface,
+                              ),
+                            ),
+                          ),
+                          if (open) ...<Widget>[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: scheme.secondaryContainer,
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              child: Text(
+                                '已打开',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  height: 1.2,
+                                  color: scheme.onSecondaryContainer,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 2),
                       Text(

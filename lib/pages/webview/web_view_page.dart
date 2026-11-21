@@ -8,6 +8,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
+import 'web_view_sessions.dart';
+
 import '../../core/app_scope.dart';
 import '../../core/utils/feedback.dart';
 import '../../models/download_task.dart';
@@ -52,7 +54,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   bool _initialized = false;
 
   late final bool _nativeWebView;
-  WebViewController? _controller;
+  WebViewSession? _session;
+  WebViewController? get _controller => _session?.controller;
   int _webViewGeneration = 0;
 
   bool _canGoBack = false;
@@ -83,6 +86,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   final Set<String> _handledDownloadUrls = <String>{};
   bool _immersive = false;
   bool _allowExit = false;
+  bool _closing = false;
 
   @override
   void initState() {
@@ -106,9 +110,26 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         unawaited(repository.markServiceOpened(latest.id));
       }
       if (latest != null && _nativeWebView) {
-        _controller = _createController();
-        unawaited(_configureFileChooser(_controller!));
-        WidgetsBinding.instance.addPostFrameCallback((_) => _loadUrl());
+        final WebViewSession? existing = WebViewSessionRegistry.instance
+            .byService(latest.id);
+        if (existing != null) {
+          _session = WebViewSessionRegistry.instance.register(existing);
+          _restoreSessionState(existing);
+          unawaited(_attachDelegates(existing.controller));
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _syncNavigationState();
+            }
+          });
+        } else {
+          final WebViewSession session = WebViewSession(
+            serviceId: latest.id,
+            controller: _createController(),
+          );
+          _session = WebViewSessionRegistry.instance.register(session);
+          unawaited(_configureFileChooser(session.controller));
+          WidgetsBinding.instance.addPostFrameCallback((_) => _loadUrl());
+        }
       }
       return;
     }
@@ -123,6 +144,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     if (_immersive && !kIsWeb) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
+    if (_closing) {
+      WebViewSessionRegistry.instance.closeAll();
     }
     super.dispose();
   }
@@ -149,6 +173,62 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         'LandeckPasswordBridge',
         onMessageReceived: _onPasswordBridgeMessage,
       );
+  }
+
+  /// Rebinds callbacks to this state. Needed when a session created by a
+  /// previous page instance is reused, since its delegate still points at the
+  /// disposed state.
+  Future<void> _attachDelegates(WebViewController controller) async {
+    await controller.setNavigationDelegate(
+      NavigationDelegate(
+        onProgress: _onProgress,
+        onPageStarted: _onPageStarted,
+        onPageFinished: _onPageFinished,
+        onWebResourceError: _onResourceError,
+        onNavigationRequest: _onNavigationRequest,
+        onHttpAuthRequest: _onHttpAuthRequest,
+      ),
+    );
+    for (final String name in <String>[
+      'LANDeckDownloads',
+      'LandeckPasswordBridge',
+    ]) {
+      try {
+        await controller.removeJavaScriptChannel(name);
+      } on Object {
+        // Channel was never registered on this controller.
+      }
+    }
+    await controller.addJavaScriptChannel(
+      'LANDeckDownloads',
+      onMessageReceived: _onDownloadBridgeMessage,
+    );
+    await controller.addJavaScriptChannel(
+      'LandeckPasswordBridge',
+      onMessageReceived: _onPasswordBridgeMessage,
+    );
+  }
+
+  void _storeSessionState() {
+    final WebViewSession? session = _session;
+    if (session == null) {
+      return;
+    }
+    session.canGoBack = _canGoBack;
+    session.canGoForward = _canGoForward;
+    session.hasError = _hasError;
+    session.error = _error;
+    session.progress = _progress;
+    WebViewSessionRegistry.instance.touch(session);
+  }
+
+  void _restoreSessionState(WebViewSession session) {
+    _canGoBack = session.canGoBack;
+    _canGoForward = session.canGoForward;
+    _hasError = session.hasError;
+    _error = session.error;
+    _progress = session.progress;
+    _loading = false;
   }
 
   // ---------------------------------------------------------------------------
@@ -1093,6 +1173,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   }
 
   void _exitViewer() {
+    _closing = true;
     if (_allowExit) {
       Navigator.of(context).maybePop();
       return;
@@ -1141,6 +1222,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       current: current,
       currentMode: ServiceMode.web,
       deviceNameFor: repository.deviceNameFor,
+      openServiceIds: WebViewSessionRegistry.instance.serviceIds,
     );
     if (!mounted || selection == null) {
       return;
@@ -1160,23 +1242,51 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (picked.id == current.id) {
       return;
     }
-    _resetAuthState();
+    _storeSessionState();
+    if (!_nativeWebView) {
+      setState(() {
+        _service = picked;
+        _hasError = false;
+        _error = null;
+        _progress = 0;
+        _loading = false;
+      });
+      return;
+    }
+    final WebViewSession? existing = WebViewSessionRegistry.instance.byService(
+      picked.id,
+    );
+    if (existing != null) {
+      _session = WebViewSessionRegistry.instance.register(existing);
+      await _attachDelegates(existing.controller);
+      if (!mounted) {
+        return;
+      }
+      _restoreSessionState(existing);
+      setState(() {
+        _service = picked;
+        _webViewGeneration++;
+      });
+      unawaited(_syncNavigationState());
+      return;
+    }
     setState(() {
       _service = picked;
       _hasError = false;
       _error = null;
       _progress = 0.03;
-      _loading = _nativeWebView;
+      _loading = true;
       _canGoBack = false;
       _canGoForward = false;
       _webViewGeneration++;
     });
-    if (_nativeWebView) {
-      _clearTimeout();
-      _controller = _createController();
-      unawaited(_configureFileChooser(_controller!));
-      await _loadUrl();
-    }
+    final WebViewSession session = WebViewSession(
+      serviceId: picked.id,
+      controller: _createController(),
+    );
+    _session = WebViewSessionRegistry.instance.register(session);
+    unawaited(_configureFileChooser(session.controller));
+    await _loadUrl();
   }
 
   Future<String> _currentUrl() async {
