@@ -74,6 +74,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   bool _authDialogOpen = false;
   bool _passwordPromptOpen = false;
   int _authAttempts = 0;
+  String? _pageScope;
   bool _downloadPromptOpen = false;
   bool _downloadAuthPromptOpen = false;
   final Set<String> _attachmentProbes = <String>{};
@@ -164,6 +165,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     }
     _resetAuthState();
     _handledDownloadUrls.clear();
+    _pageScope = null;
     setState(() {
       _loading = true;
       _progress = 0.03;
@@ -211,6 +213,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (!mounted) {
       return;
     }
+    _pageScope = WebPasswordFill.scopeHostOf(Uri.tryParse(url));
     setState(() {
       _loading = true;
       _progress = 0.03;
@@ -305,7 +308,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (pageUri == null || serviceUri == null) {
       return;
     }
-    if (pageUri.host.toLowerCase() != serviceUri.host.toLowerCase()) {
+    final String? scope = WebPasswordFill.scopeHostOf(pageUri);
+    if (scope == null ||
+        pageUri.host.toLowerCase() != serviceUri.host.toLowerCase()) {
       return;
     }
     try {
@@ -315,9 +320,19 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       HttpCredential? saved;
       for (final HttpCredential credential in credentials) {
         if (credential.realm == WebPasswordFill.webRealm &&
-            credential.matches(pageUri.host, WebPasswordFill.webRealm)) {
+            credential.matches(scope, WebPasswordFill.webRealm)) {
           saved = credential;
           break;
+        }
+      }
+      // Migrate old builds that stored only the hostname.
+      if (saved == null) {
+        for (final HttpCredential credential in credentials) {
+          if (credential.realm == WebPasswordFill.webRealm &&
+              credential.matches(pageUri.host, WebPasswordFill.webRealm)) {
+            saved = credential;
+            break;
+          }
         }
       }
       if (saved == null || !mounted) {
@@ -354,11 +369,15 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         return;
       }
       final Uri? serviceUri = Uri.tryParse(service.url);
+      final String? pageScope = _pageScope;
       if (serviceUri == null ||
-          host.toLowerCase() != serviceUri.host.toLowerCase()) {
+          pageScope == null ||
+          host.toLowerCase() != pageScope ||
+          serviceUri.host.toLowerCase() !=
+              Uri.tryParse('http://$host')?.host.toLowerCase()) {
         return;
       }
-      unawaited(_promptSaveLoginFromPage(host, username, password));
+      unawaited(_promptSaveLoginFromPage(pageScope, username, password));
     } on Object {
       // Ignore malformed messages from page scripts.
     }
@@ -1215,9 +1234,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (current == null || serviceUri == null) {
       return false;
     }
-    final String currentHost = current.host.toLowerCase();
-    final String serviceHost = serviceUri.host.toLowerCase();
-    return currentHost.isNotEmpty && currentHost == serviceHost;
+    return current.host.toLowerCase() == serviceUri.host.toLowerCase();
   }
 
   Future<Map<String, Object?>?> _runWebJson(String script) async {
@@ -1239,12 +1256,30 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       showAppSnackBar(context, '只能在当前服务的页面中填充登录信息');
       return;
     }
-    final String host = current.host.toLowerCase();
+    final String? scope = WebPasswordFill.scopeHostOf(current);
+    if (scope == null) {
+      showAppSnackBar(context, '无法识别当前页面地址');
+      return;
+    }
     final List<HttpCredential> all = await HttpCredentialStore.instance
         .credentialsFor(service.id);
-    final List<HttpCredential> matching = all
-        .where((HttpCredential item) => item.normalizedHost == host)
+    final List<HttpCredential> exact = all
+        .where(
+          (HttpCredential item) =>
+              item.realm == WebPasswordFill.webRealm &&
+              item.normalizedHost == scope,
+        )
         .toList(growable: false);
+    final List<HttpCredential> legacy = exact.isNotEmpty
+        ? const <HttpCredential>[]
+        : all
+              .where(
+                (HttpCredential item) =>
+                    item.realm == WebPasswordFill.webRealm &&
+                    item.normalizedHost == current.host.toLowerCase(),
+              )
+              .toList(growable: false);
+    final List<HttpCredential> matching = <HttpCredential>[...exact, ...legacy];
     if (!mounted) {
       return;
     }
@@ -1304,7 +1339,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       showAppSnackBar(context, '请先在网页中填写用户名和密码');
       return;
     }
-    if (pageHost != current.host.toLowerCase()) {
+    final String? scope = WebPasswordFill.scopeHostOf(current);
+    if (scope == null || pageHost != scope) {
       showAppSnackBar(context, '页面地址已变化，请重试');
       return;
     }

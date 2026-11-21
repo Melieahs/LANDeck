@@ -15,6 +15,30 @@ void main() {
       expect(WebPasswordFill.hostOf('not a url'), isNull);
     });
 
+    test('scopes credentials to host and non-default port', () {
+      expect(
+        WebPasswordFill.scopeHostOf(Uri.parse('http://192.168.1.2/')),
+        '192.168.1.2',
+      );
+      expect(
+        WebPasswordFill.scopeHostOf(Uri.parse('http://192.168.1.12:5666/')),
+        '192.168.1.12:5666',
+      );
+      expect(
+        WebPasswordFill.scopeHostOf(Uri.parse('https://nas.local:443/')),
+        'nas.local',
+      );
+      expect(
+        WebPasswordFill.scopeHostOf(Uri.parse('https://nas.local:8443/')),
+        'nas.local:8443',
+      );
+    });
+
+    test('serializes capture/fill with the full origin', () {
+      expect(WebPasswordFill.hookScript, contains('location.host'));
+      expect(WebPasswordFill.captureScript, contains('location.host'));
+    });
+
     test('serializes fill values safely', () {
       final String script = WebPasswordFill.fillScript(
         username: 'ad"min\\',

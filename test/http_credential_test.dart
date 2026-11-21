@@ -76,6 +76,35 @@ void main() {
     );
   });
 
+  test('store keeps separate accounts for different ports', () async {
+    final HttpCredentialStore store = HttpCredentialStore();
+    await store.save(credential(host: '192.168.1.12:5666', username: 'fnos'));
+    await store.save(
+      credential(host: '192.168.1.12:8096', username: 'jellyfin'),
+    );
+
+    expect(
+      (await store.find(
+        'service-1',
+        host: '192.168.1.12:5666',
+        realm: 'Padavan',
+      ))?.username,
+      'fnos',
+    );
+    expect(
+      (await store.find(
+        'service-1',
+        host: '192.168.1.12:8096',
+        realm: 'Padavan',
+      ))?.username,
+      'jellyfin',
+    );
+    expect(
+      (await store.find('service-1', host: '192.168.1.12', realm: 'Padavan')),
+      isNull,
+    );
+  });
+
   test('store can delete one scope and all service credentials', () async {
     final HttpCredentialStore store = HttpCredentialStore();
     await store.save(credential());

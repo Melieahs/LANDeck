@@ -752,7 +752,7 @@ class _SavedCredentialsCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               '仅在 WebView 中主动勾选「记住登录信息」时保存。'
-              '凭据使用 Android Keystore 加密，并与本服务、认证域绑定。',
+              '凭据使用系统安全存储加密，并按服务、主机和端口（网页登录域）分别绑定。',
               style: Theme.of(context).textTheme.bodySmall
                   ?.copyWith(color: scheme.onSurfaceVariant),
             ),

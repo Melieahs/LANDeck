@@ -15,6 +15,24 @@ abstract final class WebPasswordFill {
     return host.isEmpty ? null : host;
   }
 
+  /// Credential scope for a web origin: host plus a non-default port.
+  ///
+  /// A NAS often exposes several apps on the same IP but different ports
+  /// (e.g. CasaOS :80 and fnOS :5666). Web-form credentials must therefore be
+  /// keyed by origin, not by host alone.
+  static String? scopeHostOf(Uri? uri) {
+    final String host = uri?.host.trim().toLowerCase() ?? '';
+    if (host.isEmpty) return null;
+    final int? port = uri?.hasPort == true ? uri!.port : null;
+    if (port == null) return host;
+    final String scheme = uri!.scheme.toLowerCase();
+    if ((scheme == 'http' && port == 80) ||
+        (scheme == 'https' && port == 443)) {
+      return host;
+    }
+    return '$host:$port';
+  }
+
   /// DOM helpers shared by the capture/fill scripts.
   ///
   /// They deliberately walk open shadow roots and same-origin iframes because
@@ -119,7 +137,7 @@ abstract final class WebPasswordFill {
     if (!username || !username.value) return null;
     return {
       type: 'credentials',
-      host: location.hostname,
+      host: location.host,
       username: username.value,
       password: password.value
     };
@@ -144,7 +162,7 @@ abstract final class WebPasswordFill {
   return JSON.stringify({
     ok: true,
     username: !!usernameInput,
-    host: location.hostname
+    host: location.host
   });
 })();
 ''';
@@ -159,7 +177,7 @@ abstract final class WebPasswordFill {
   const username = findUsername(password);
   return JSON.stringify({
     ok: true,
-    host: location.hostname,
+    host: location.host,
     username: username ? username.value : '',
     password: password.value || ''
   });
@@ -254,7 +272,7 @@ abstract final class WebPasswordFill {
     observer.observe(document.documentElement, { childList: true, subtree: true });
     window.setTimeout(() => observer.disconnect(), 30000);
   } catch (e) {}
-  return JSON.stringify({ok: true, host: location.hostname});
+  return JSON.stringify({ok: true, host: location.host});
 })();
 ''';
   }
