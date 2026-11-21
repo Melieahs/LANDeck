@@ -35,6 +35,7 @@ class Service {
     this.icon,
     this.isFavorite = false,
     this.sortOrder = 0,
+    this.favoriteSortOrder,
     this.healthCheckEnabled = false,
     this.lastStatus,
     this.lastCheckedAt,
@@ -65,6 +66,10 @@ class Service {
   final ServiceGlyph? icon;
   final bool isFavorite;
   final int sortOrder;
+
+  /// Manual position inside the home favorites grid, or null when the user
+  /// has never reordered the favorites.
+  final int? favoriteSortOrder;
   final bool healthCheckEnabled;
   final ServiceStatus? lastStatus;
   final DateTime? lastCheckedAt;
@@ -155,6 +160,7 @@ class Service {
     ServiceGlyph? Function()? icon,
     bool? isFavorite,
     int? sortOrder,
+    int? Function()? favoriteSortOrder,
     bool? healthCheckEnabled,
     ServiceStatus? Function()? lastStatus,
     DateTime? Function()? lastCheckedAt,
@@ -179,6 +185,9 @@ class Service {
       icon: icon == null ? this.icon : icon(),
       isFavorite: isFavorite ?? this.isFavorite,
       sortOrder: sortOrder ?? this.sortOrder,
+      favoriteSortOrder: favoriteSortOrder == null
+          ? this.favoriteSortOrder
+          : favoriteSortOrder(),
       healthCheckEnabled: healthCheckEnabled ?? this.healthCheckEnabled,
       lastStatus: lastStatus == null ? this.lastStatus : lastStatus(),
       lastCheckedAt: lastCheckedAt == null
@@ -207,6 +216,7 @@ class Service {
       'icon': icon?.name,
       'isFavorite': isFavorite,
       'sortOrder': sortOrder,
+      'favoriteSortOrder': favoriteSortOrder,
       'healthCheckEnabled': healthCheckEnabled,
       'lastStatus': lastStatus?.name,
       'lastCheckedAt': lastCheckedAt?.toIso8601String(),
@@ -249,6 +259,7 @@ class Service {
             ),
       isFavorite: map['isFavorite'] as bool? ?? false,
       sortOrder: (map['sortOrder'] as num?)?.toInt() ?? 0,
+      favoriteSortOrder: (map['favoriteSortOrder'] as num?)?.toInt(),
       healthCheckEnabled: map['healthCheckEnabled'] as bool? ?? false,
       lastStatus: statusName == null
           ? null

@@ -3,11 +3,9 @@ import 'package:material_ui/material_ui.dart';
 import '../../../models/service.dart';
 import '../../../widgets/section_header.dart';
 import '../../../widgets/service_icon.dart';
-import '../../../widgets/sort_menu.dart';
 import '../../../widgets/status_dot.dart';
 
-enum _FavoriteSort { name, status, device }
-
+/// Home favorites grid with a manual order the user controls by dragging.
 class FavoritesSection extends StatefulWidget {
   const FavoritesSection({
     super.key,
@@ -15,77 +13,66 @@ class FavoritesSection extends StatefulWidget {
     required this.deviceNameFor,
     required this.onOpenService,
     required this.onAddService,
+    required this.onReorder,
   });
 
   final List<Service> services;
   final String Function(Service service) deviceNameFor;
   final ValueChanged<Service> onOpenService;
   final VoidCallback onAddService;
+  final ValueChanged<List<Service>> onReorder;
 
   @override
   State<FavoritesSection> createState() => _FavoritesSectionState();
 }
 
 class _FavoritesSectionState extends State<FavoritesSection> {
-  _FavoriteSort _sort = _FavoriteSort.name;
+  late List<Service> _services = widget.services;
 
-  List<Service> get _sorted {
-    final List<Service> list = List<Service>.of(widget.services);
-    switch (_sort) {
-      case _FavoriteSort.name:
-        list.sort(
-          (Service a, Service b) =>
-              a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-        );
-      case _FavoriteSort.status:
-        list.sort((Service a, Service b) {
-          if (a.isOnline != b.isOnline) return a.isOnline ? -1 : 1;
-          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-        });
-      case _FavoriteSort.device:
-        list.sort((Service a, Service b) {
-          final int byDevice = widget
-              .deviceNameFor(a)
-              .toLowerCase()
-              .compareTo(widget.deviceNameFor(b).toLowerCase());
-          return byDevice != 0
-              ? byDevice
-              : a.name.toLowerCase().compareTo(b.name.toLowerCase());
-        });
+  @override
+  void didUpdateWidget(FavoritesSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final List<String> next = widget.services
+        .map((Service service) => service.id)
+        .toList();
+    final List<String> shown = _services
+        .map((Service service) => service.id)
+        .toList();
+    final bool changed =
+        next.length != shown.length ||
+        Iterable<int>.generate(
+          next.length,
+        ).any((int index) => next[index] != shown[index]);
+    if (changed) {
+      _services = widget.services;
     }
-    return list;
+  }
+
+  void _move(Service dragged, int targetIndex) {
+    final int from = _services.indexWhere(
+      (Service service) => service.id == dragged.id,
+    );
+    if (from < 0 || from == targetIndex) {
+      return;
+    }
+    final List<Service> next = List<Service>.of(_services);
+    final Service item = next.removeAt(from);
+    next.insert(targetIndex.clamp(0, next.length), item);
+    setState(() => _services = next);
+    widget.onReorder(next);
   }
 
   @override
   Widget build(BuildContext context) {
-    final List<Service> services = _sorted;
+    final List<Service> services = _services;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         SectionHeader(
           title: '收藏',
-          trailing: services.isEmpty ? null : '${services.length} 个常用服务',
-          action: services.isEmpty
+          trailing: services.isEmpty
               ? null
-              : SortMenu<_FavoriteSort>(
-                  current: _sort,
-                  onSelected: (_FavoriteSort value) =>
-                      setState(() => _sort = value),
-                  choices: const <SortChoice<_FavoriteSort>>[
-                    SortChoice<_FavoriteSort>(
-                      value: _FavoriteSort.name,
-                      label: '按名称',
-                    ),
-                    SortChoice<_FavoriteSort>(
-                      value: _FavoriteSort.status,
-                      label: '按在线状态',
-                    ),
-                    SortChoice<_FavoriteSort>(
-                      value: _FavoriteSort.device,
-                      label: '按设备',
-                    ),
-                  ],
-                ),
+              : '${services.length} 个常用服务 · 长按拖动排序',
         ),
         if (services.isEmpty)
           _EmptyFavorites(onAddService: widget.onAddService)
@@ -103,10 +90,40 @@ class _FavoritesSectionState extends State<FavoritesSection> {
             ),
             itemBuilder: (BuildContext context, int index) {
               final Service service = services[index];
-              return _FavoriteCard(
+              final Widget card = _FavoriteCard(
                 key: ValueKey<String>('favorite-${service.id}'),
                 service: service,
                 onTap: () => widget.onOpenService(service),
+              );
+              return DragTarget<Service>(
+                onWillAcceptWithDetails: (DragTargetDetails<Service> details) =>
+                    details.data.id != service.id,
+                onAcceptWithDetails: (DragTargetDetails<Service> details) =>
+                    _move(details.data, index),
+                builder:
+                    (
+                      BuildContext context,
+                      List<Service?> candidate,
+                      List<Object?> rejected,
+                    ) {
+                      return LongPressDraggable<Service>(
+                        data: service,
+                        dragAnchorStrategy: pointerDragAnchorStrategy,
+                        feedback: SizedBox(
+                          width: MediaQuery.sizeOf(context).width * 0.42,
+                          child: card,
+                        ),
+                        childWhenDragging: Opacity(
+                          opacity: 0.35,
+                          child: card,
+                        ),
+                        child: AnimatedScale(
+                          scale: candidate.isNotEmpty ? 0.96 : 1,
+                          duration: const Duration(milliseconds: 120),
+                          child: card,
+                        ),
+                      );
+                    },
               );
             },
           ),

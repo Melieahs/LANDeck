@@ -226,6 +226,7 @@ device.primaryAddress + protocol + port + path
 ### 7.1 首页 / 搜索 / 设备
 
 - 首页：`lib/pages/home/home_page.dart`
+- 收藏网格手动排序：长按卡片拖动即可重排，顺序存 `Service.favoriteSortOrder`
 - 统计可点击：服务数 → 全部服务页；设备数 → 设备页
 - 搜索入口 → `lib/pages/search/search_page.dart`
 - 设备分类已并入设备模块，按 `DeviceType` 统计设备数

@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:landeck/app.dart';
 import 'package:landeck/core/theme/theme_controller.dart';
 import 'package:landeck/models/device.dart';
+import 'package:landeck/models/service.dart';
 import 'package:landeck/repositories/service_repository.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -259,4 +260,45 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('按名称'), findsAtLeastNWidgets(1));
   });
+  testWidgets('dragging a favorite card changes its order', (
+    WidgetTester tester,
+  ) async {
+    late Service first;
+    late Service second;
+    await tester.runAsync(() async {
+      first = await repository.addService(
+        name: 'A 服务',
+        customUrl: 'http://192.168.1.21',
+        isFavorite: true,
+      );
+      second = await repository.addService(
+        name: 'B 服务',
+        customUrl: 'http://192.168.1.22',
+        isFavorite: true,
+      );
+    });
+
+    await tester.pumpWidget(LanDeckApp(repository: repository));
+    await tester.pumpAndSettle();
+
+    final Finder firstCard = find.byKey(Key('favorite-${first.id}'));
+    final Finder secondCard = find.byKey(Key('favorite-${second.id}'));
+    expect(firstCard, findsOneWidget);
+    expect(secondCard, findsOneWidget);
+
+    final Offset start = tester.getCenter(firstCard);
+    final Offset target = tester.getCenter(secondCard);
+    final TestGesture gesture = await tester.startGesture(start);
+    await tester.pump(const Duration(milliseconds: 700));
+    await gesture.moveTo(target);
+    await tester.pump(const Duration(milliseconds: 300));
+    await gesture.up();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(
+      repository.favorites.map((Service service) => service.id),
+      <String>[second.id, first.id],
+    );
+  });
+
 }

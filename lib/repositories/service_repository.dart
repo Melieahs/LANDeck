@@ -54,8 +54,63 @@ class LanDeckRepository extends ChangeNotifier {
   int get activeDownloadCount =>
       _downloads.where((DownloadTask task) => task.isActive).length;
 
-  List<Service> get favorites =>
-      _services.where((Service service) => service.isFavorite).toList();
+  List<Service> get favorites {
+    final List<Service> list = _services
+        .where((Service service) => service.isFavorite)
+        .toList();
+    list.sort((Service a, Service b) {
+      final int? orderA = a.favoriteSortOrder;
+      final int? orderB = b.favoriteSortOrder;
+      if (orderA != null && orderB != null) {
+        final int order = orderA.compareTo(orderB);
+        if (order != 0) {
+          return order;
+        }
+      } else if (orderA != null) {
+        return -1;
+      } else if (orderB != null) {
+        return 1;
+      }
+      return _compareServices(a, b);
+    });
+    return list;
+  }
+
+  /// Persists the manual order of the favorites grid.
+  ///
+  /// The in-memory order updates before the write completes so the grid reacts
+  /// immediately; storage follows right after.
+  Future<void> reorderFavorites(List<Service> ordered) async {
+    final Map<String, Service> updates = <String, Service>{};
+    for (int index = 0; index < ordered.length; index++) {
+      final Service? current = serviceById(ordered[index].id);
+      if (current == null || current.favoriteSortOrder == index) {
+        continue;
+      }
+      updates[current.id] = current.copyWith(
+        favoriteSortOrder: () => index,
+        updatedAt: DateTime.now(),
+      );
+    }
+    if (updates.isEmpty) {
+      return;
+    }
+    for (final MapEntry<String, Service> entry in updates.entries) {
+      final int position = _services.indexWhere(
+        (Service item) => item.id == entry.key,
+      );
+      if (position >= 0) {
+        _services[position] = entry.value;
+      }
+    }
+    _services.sort(_compareServices);
+    notifyListeners();
+    for (final Service service in updates.values) {
+      await AppDatabase.serviceStore
+          .record(service.id)
+          .put(_appDatabase.db, service.toMap());
+    }
+  }
 
   int get onlineCount =>
       _services.where((Service service) => service.isOnline).length;

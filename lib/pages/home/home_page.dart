@@ -171,6 +171,7 @@ class _HomePageState extends State<HomePage> {
                     deviceNameFor: repository.deviceNameFor,
                     onOpenService: _openService,
                     onAddService: _handleAddService,
+                    onReorder: repository.reorderFavorites,
                   ),
                   const SizedBox(height: AppSpacing.sectionGap),
                   DevicesSection(

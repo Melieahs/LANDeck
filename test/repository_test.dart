@@ -22,6 +22,41 @@ void main() {
     expect(normalizeForTest('ftp://nas.local'), isNull);
   });
 
+
+  test('favorites keep a manual order', () async {
+    final LanDeckRepository repository = await createTestRepository();
+    final Service first = await repository.addService(
+      name: 'A 服务',
+      customUrl: 'http://192.168.1.21',
+      isFavorite: true,
+    );
+    final Service second = await repository.addService(
+      name: 'B 服务',
+      customUrl: 'http://192.168.1.22',
+      isFavorite: true,
+    );
+
+    expect(
+      repository.favorites.map((Service service) => service.id),
+      <String>[first.id, second.id],
+    );
+
+    await repository.reorderFavorites(<Service>[
+      repository.favorites[1],
+      repository.favorites[0],
+    ]);
+    expect(
+      repository.favorites.map((Service service) => service.id),
+      <String>[second.id, first.id],
+    );
+
+    await repository.load();
+    expect(
+      repository.favorites.map((Service service) => service.id),
+      <String>[second.id, first.id],
+    );
+  });
+
   test('service and device counters come from persisted data', () async {
     final LanDeckRepository repository = await createTestRepository();
     final Device device = await repository.addDevice(
