@@ -142,6 +142,60 @@ void main() {
     expect(controller.mode, ThemeMode.dark);
   });
 
+  testWidgets('home stats open services and devices', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(LanDeckApp(repository: repository));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey<String>('home-stat-services')));
+    await tester.pumpAndSettle();
+    expect(find.text('全部服务'), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('home-stat-devices')));
+    await tester.pumpAndSettle();
+    expect(find.text('设备管理'), findsOneWidget);
+  });
+
+  testWidgets('data storage opens backup, import and password manager', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(LanDeckApp(repository: repository));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey<String>('nav-destination-2')));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('数据存储'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('数据存储'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('FTP 数据互通'), findsOneWidget);
+    expect(find.text('导出配置'), findsOneWidget);
+    expect(find.text('导入配置'), findsOneWidget);
+    expect(find.text('密码管理'), findsOneWidget);
+  });
+
+  testWidgets('theme segments fit a narrow phone', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 568));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(LanDeckApp(repository: repository));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey<String>('nav-destination-2')));
+    await tester.pumpAndSettle();
+    expect(find.text('系统'), findsOneWidget);
+    expect(find.text('浅色'), findsOneWidget);
+    expect(find.text('深色'), findsOneWidget);
+  });
+
   testWidgets('bottom navigation switches between tabs', (
     WidgetTester tester,
   ) async {

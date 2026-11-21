@@ -9,6 +9,7 @@ import '../../pages/devices/device_detail_page.dart';
 import '../../pages/devices/device_editor_page.dart';
 import '../../pages/devices/devices_page.dart';
 import '../../pages/services/service_editor_page.dart';
+import '../../pages/services/services_page.dart';
 import '../../repositories/service_repository.dart';
 import '../../routes/app_router.dart';
 import 'widgets/all_services_section.dart';
@@ -62,6 +63,14 @@ class _HomePageState extends State<HomePage> {
       MaterialPageRoute<void>(
         builder: (BuildContext context) =>
             DeviceDetailPage(deviceId: device.id),
+      ),
+    );
+  }
+
+  void _openServices() {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => const ServicesPage(),
       ),
     );
   }
@@ -148,6 +157,8 @@ class _HomePageState extends State<HomePage> {
                     serviceCount: repository.services.length,
                     deviceCount: repository.devices.length,
                     onlineCount: repository.onlineCount,
+                    onOpenServices: _openServices,
+                    onOpenDevices: _openDevices,
                   ),
                   const SizedBox(height: 24),
                   FavoritesSection(

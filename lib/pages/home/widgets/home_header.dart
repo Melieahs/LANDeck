@@ -7,11 +7,15 @@ class HomeHeader extends StatelessWidget {
     required this.serviceCount,
     required this.deviceCount,
     required this.onlineCount,
+    required this.onOpenServices,
+    required this.onOpenDevices,
   });
 
   final int serviceCount;
   final int deviceCount;
   final int onlineCount;
+  final VoidCallback onOpenServices;
+  final VoidCallback onOpenDevices;
 
   @override
   Widget build(BuildContext context) {
@@ -27,11 +31,6 @@ class HomeHeader extends StatelessWidget {
             color: scheme.onSurface,
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          '本地优先，不经过云端',
-          style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-        ),
         const SizedBox(height: 14),
         Card(
           color: scheme.surfaceContainer,
@@ -41,17 +40,21 @@ class HomeHeader extends StatelessWidget {
               children: <Widget>[
                 Expanded(
                   child: _Stat(
+                    key: const ValueKey<String>('home-stat-services'),
                     value: '$serviceCount',
                     label: '服务',
                     icon: Icons.dns_outlined,
+                    onTap: onOpenServices,
                   ),
                 ),
                 _Divider(color: scheme.outlineVariant),
                 Expanded(
                   child: _Stat(
+                    key: const ValueKey<String>('home-stat-devices'),
                     value: '$deviceCount',
                     label: '设备',
                     icon: Icons.devices_other_outlined,
+                    onTap: onOpenDevices,
                   ),
                 ),
                 _Divider(color: scheme.outlineVariant),
@@ -74,22 +77,25 @@ class HomeHeader extends StatelessWidget {
 
 class _Stat extends StatelessWidget {
   const _Stat({
+    super.key,
     required this.value,
     required this.label,
     required this.icon,
     this.highlight = false,
+    this.onTap,
   });
 
   final String value;
   final String label;
   final IconData icon;
   final bool highlight;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final TextTheme text = Theme.of(context).textTheme;
-    return Row(
+    final Widget content = Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         Icon(
@@ -116,6 +122,17 @@ class _Stat extends StatelessWidget {
           ],
         ),
       ],
+    );
+    if (onTap == null) {
+      return content;
+    }
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: content,
+      ),
     );
   }
 }

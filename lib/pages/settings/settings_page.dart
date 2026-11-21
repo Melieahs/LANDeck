@@ -8,7 +8,7 @@ import '../../core/utils/feedback.dart';
 import '../../repositories/service_repository.dart';
 import '../devices/devices_page.dart';
 import '../downloads/downloads_page.dart';
-import 'ftp_backup_page.dart';
+import 'storage_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key, required this.onOpenDiscover});
@@ -30,12 +30,6 @@ class SettingsPage extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
             children: <Widget>[
               Text('设置', style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: 4),
-              Text(
-                '本地优先 · 无账号 · 无云端',
-                style: Theme.of(context).textTheme.bodyMedium
-                    ?.copyWith(color: scheme.onSurfaceVariant),
-              ),
               const SizedBox(height: 20),
               const _SectionLabel('外观'),
               Card.outlined(
@@ -56,18 +50,15 @@ class SettingsPage extends StatelessWidget {
                           segments: const <ButtonSegment<ThemeMode>>[
                             ButtonSegment<ThemeMode>(
                               value: ThemeMode.system,
-                              label: Text('跟随系统'),
-                              icon: Icon(Icons.brightness_auto_outlined),
+                              label: Text('系统'),
                             ),
                             ButtonSegment<ThemeMode>(
                               value: ThemeMode.light,
                               label: Text('浅色'),
-                              icon: Icon(Icons.light_mode_outlined),
                             ),
                             ButtonSegment<ThemeMode>(
                               value: ThemeMode.dark,
                               label: Text('深色'),
-                              icon: Icon(Icons.dark_mode_outlined),
                             ),
                           ],
                           selected: <ThemeMode>{themeController.mode},
@@ -152,12 +143,13 @@ class SettingsPage extends StatelessWidget {
                         '${repository.services.length} 个服务 · '
                         '${repository.devices.length} 台设备',
                       ),
-                      trailing: const Chip(
-                        label: Text('本机'),
-                        visualDensity: VisualDensity.compact,
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => Navigator.of(context).push<void>(
+                        MaterialPageRoute<void>(
+                          builder: (BuildContext context) =>
+                              const StoragePage(),
+                        ),
                       ),
-                      onTap: () =>
-                          showAppSnackBar(context, '服务、设备与凭据都保存在本机，不使用云端。'),
                     ),
                     const Divider(height: 1),
                     ListTile(
@@ -173,19 +165,6 @@ class SettingsPage extends StatelessWidget {
                         MaterialPageRoute<void>(
                           builder: (BuildContext context) =>
                               const DownloadsPage(),
-                        ),
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.swap_horiz_rounded),
-                      title: const Text('FTP 数据互通'),
-                      subtitle: const Text('设备与服务配置的备份与恢复'),
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () => Navigator.of(context).push<void>(
-                        MaterialPageRoute<void>(
-                          builder: (BuildContext context) =>
-                              const FtpBackupPage(),
                         ),
                       ),
                     ),
@@ -207,12 +186,12 @@ class SettingsPage extends StatelessWidget {
                 child: ListTile(
                   leading: const Icon(Icons.info_outline_rounded),
                   title: const Text('LANDeck'),
-                  subtitle: const Text('v0.8.3 · 自动填充 · 本地优先'),
+                  subtitle: const Text('v0.8.4 · 自动填充 · 本地优先'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => showAboutDialog(
                     context: context,
                     applicationName: 'LANDeck',
-                    applicationVersion: '0.8.3',
+                    applicationVersion: '0.8.4',
                     applicationLegalese: 'Local-first. No account. No cloud.',
                     children: const <Widget>[
                       SizedBox(height: 12),

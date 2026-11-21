@@ -21,6 +21,9 @@
 - 真实 WebView 下载：拦截下载链接 / Content-Disposition，M3 确认后经 SAF 选择保存位置，前台服务流式写入
 - 下载继承当前网页 Cookie、会话和可用的 HTTP Basic 凭据；下载管理支持进度、取消、重试、打开、分享、删除记录
 - 真实网页上传：系统文件选择器支持单文件/多文件、MIME/扩展名与取消，URI 直接回传 WebView
+- 首页统计可直接进入「全部服务」和「设备管理」；设备分类按真实设备数量统计
+- 设置「数据存储」二级页：FTP 备份、JSON 导入/导出、密码管理
+- 密码按主机 + 端口隔离，网页登录与 HTTP 认证凭据统一查看/删除
 - 手机优先的现代 Android 原生观感
 
 ## 技术栈
@@ -62,9 +65,9 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 
 产物：
 
-- `dist/LANDeck-0.8.3.apk`（约 56 MB，含 arm64-v8a / armeabi-v7a / x86_64）
+- `dist/LANDeck-0.8.4.apk`（约 56 MB，含 arm64-v8a / armeabi-v7a / x86_64）
 - 构建产物：`build/app/outputs/flutter-apk/app-release.apk`
-- 包名 `com.example.landeck`，版本 `0.8.3+20`
+- 包名 `com.example.landeck`，版本 `0.8.4+21`
 - SHA-256：以最终构建产物为准
 - 当前使用 Flutter 默认 debug 签名，可直接安装测试，不适合直接上架
 
