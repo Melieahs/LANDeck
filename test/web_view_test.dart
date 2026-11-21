@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:landeck/app.dart';
+import 'package:landeck/models/service.dart';
 import 'package:landeck/pages/webview/widgets/web_view_toolbar.dart';
 import 'package:landeck/repositories/service_repository.dart';
 import 'package:material_ui/material_ui.dart';
@@ -105,5 +106,42 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('quick-action-wheel')), findsNothing);
     expect(refreshCount, 1);
+  });
+
+  testWidgets('service switcher is recent-first and searchable', (
+    WidgetTester tester,
+  ) async {
+    await tester.runAsync(() async {
+      final Service recent = await repository.addService(
+        name: '最近服务',
+        customUrl: 'http://192.168.1.11:8080',
+      );
+      final Service older = await repository.addService(
+        name: '较早服务',
+        customUrl: 'http://192.168.1.12:8080',
+      );
+      await repository.markServiceOpened(older.id);
+      await repository.markServiceOpened(recent.id);
+    });
+
+    await tester.pumpWidget(LanDeckApp(repository: repository));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(Key('favorite-${repository.services.firstWhere((Service s) => s.name == '测试服务').id}')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('webview-handle')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('webview-service-switch')));
+    await tester.pumpAndSettle();
+
+    final double recentY = tester.getTopLeft(find.text('最近服务')).dy;
+    final double olderY = tester.getTopLeft(find.text('较早服务')).dy;
+    expect(recentY, lessThan(olderY));
+
+    await tester.enterText(find.byKey(const Key('service-switcher-search')), '较早');
+    await tester.pump();
+    expect(find.text('较早服务'), findsOneWidget);
+    expect(find.text('最近服务'), findsNothing);
   });
 }

@@ -186,12 +186,12 @@ class SettingsPage extends StatelessWidget {
                 child: ListTile(
                   leading: const Icon(Icons.info_outline_rounded),
                   title: const Text('LANDeck'),
-                  subtitle: const Text('v0.8.6 · 自动填充 · 本地优先'),
+                  subtitle: const Text('v0.8.7 · 自动填充 · 本地优先'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => showAboutDialog(
                     context: context,
                     applicationName: 'LANDeck',
-                    applicationVersion: '0.8.6',
+                    applicationVersion: '0.8.7',
                     applicationLegalese: 'Local-first. No account. No cloud.',
                     children: const <Widget>[
                       SizedBox(height: 12),

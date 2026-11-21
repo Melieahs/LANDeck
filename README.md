@@ -66,9 +66,9 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 
 产物：
 
-- `dist/LANDeck-0.8.6.apk`（约 56 MB，含 arm64-v8a / armeabi-v7a / x86_64）
+- `dist/LANDeck-0.8.7.apk`（约 56 MB，含 arm64-v8a / armeabi-v7a / x86_64）
 - 构建产物：`build/app/outputs/flutter-apk/app-release.apk`
-- 包名 `com.example.landeck`，版本 `0.8.6+23`
+- 包名 `com.example.landeck`，版本 `0.8.7+24`
 - SHA-256：以最终构建产物为准
 - 当前使用 Flutter 默认 debug 签名，可直接安装测试，不适合直接上架
 

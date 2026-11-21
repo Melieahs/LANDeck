@@ -62,11 +62,13 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
   }
 
   List<Service> get _filtered {
+    final List<Service> sorted = List<Service>.of(widget.services)
+      ..sort(_compareRecent);
     final String query = _query.trim().toLowerCase();
     if (query.isEmpty) {
-      return widget.services;
+      return sorted;
     }
-    return widget.services
+    return sorted
         .where((Service service) {
           final String haystack = <String>[
             service.name,
@@ -80,6 +82,24 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
         .toList(growable: false);
   }
 
+  static int _compareRecent(Service a, Service b) {
+    final DateTime? left = a.lastOpenedAt;
+    final DateTime? right = b.lastOpenedAt;
+    if (left != null || right != null) {
+      if (left == null) {
+        return 1;
+      }
+      if (right == null) {
+        return -1;
+      }
+      final int byTime = right.compareTo(left);
+      if (byTime != 0) {
+        return byTime;
+      }
+    }
+    return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  }
+
   @override
   Widget build(BuildContext context) {
     final MediaQueryData media = MediaQuery.of(context);
@@ -87,13 +107,6 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
     final double available = media.size.height - media.padding.top - inset - 12;
     final double height = math.min(640.0, available * 0.94);
     final List<Service> filtered = _filtered;
-
-    final Map<String, List<Service>> grouped = <String, List<Service>>{};
-    for (final Service service in filtered) {
-      grouped
-          .putIfAbsent(widget.deviceNameFor(service), () => <Service>[])
-          .add(service);
-    }
 
     return Padding(
       padding: EdgeInsets.only(bottom: inset),
@@ -141,7 +154,7 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '同一局域网 · ${widget.services.length} 个服务',
+                              '最近使用 · ${widget.services.length} 个服务',
                               style: TextStyle(
                                 fontSize: 10.5,
                                 color: Theme.of(context)
@@ -167,52 +180,41 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
-                  child: Container(
-                    height: 44,
-                    padding: const EdgeInsets.only(left: 13, right: 6),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(13),
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.outlineVariant,
+                  child: SizedBox(
+                    height: 46,
+                    child: TextField(
+                      key: const Key('service-switcher-search'),
+                      controller: _controller,
+                      onChanged: (String value) =>
+                          setState(() => _query = value),
+                      textInputAction: TextInputAction.search,
+                      textAlignVertical: TextAlignVertical.center,
+                      cursorColor: Theme.of(context).colorScheme.primary,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
-                    ),
-                    child: Row(
-                      children: <Widget>[
-                        Icon(
+                      decoration: InputDecoration(
+                        isDense: true,
+                        filled: true,
+                        fillColor: Theme.of(context).colorScheme.surface,
+                        hintText: '搜索名称、设备或 IP',
+                        hintStyle: TextStyle(
+                          fontSize: 12.5,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        prefixIcon: Icon(
                           Icons.search_rounded,
-                          size: 18,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          size: 19,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextField(
-                            controller: _controller,
-                            onChanged: (String value) =>
-                                setState(() => _query = value),
-                            textInputAction: TextInputAction.search,
-                            cursorColor: Theme.of(context).colorScheme.primary,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                            decoration: InputDecoration(
-                              isDense: true,
-                              hintText: '搜索名称、设备或 IP',
-                              hintStyle: TextStyle(
-                                fontSize: 12,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                vertical: 12,
-                              ),
-                            ),
-                          ),
+                        prefixIconConstraints: const BoxConstraints(
+                          minWidth: 44,
+                          minHeight: 44,
                         ),
-                        ValueListenableBuilder<TextEditingValue>(
+                        suffixIcon: ValueListenableBuilder<TextEditingValue>(
                           valueListenable: _controller,
                           builder:
                               (
@@ -221,7 +223,7 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                                 Widget? child,
                               ) {
                                 if (value.text.isEmpty) {
-                                  return const SizedBox(width: 4);
+                                  return const SizedBox.shrink();
                                 }
                                 return IconButton(
                                   onPressed: _clearSearch,
@@ -229,7 +231,7 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                                   visualDensity: VisualDensity.compact,
                                   icon: Icon(
                                     Icons.close_rounded,
-                                    size: 16,
+                                    size: 17,
                                     color: Theme.of(context)
                                         .colorScheme
                                         .onSurfaceVariant,
@@ -237,7 +239,38 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                                 );
                               },
                         ),
-                      ],
+                        suffixIconConstraints: const BoxConstraints(
+                          minWidth: 40,
+                          minHeight: 44,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 0,
+                          vertical: 13,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .outlineVariant,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .outlineVariant,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: Theme.of(context).colorScheme.primary,
+                            width: 1.4,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -246,7 +279,7 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                   child: Row(
                     children: <Widget>[
                       Text(
-                        '按设备分组',
+                        '最近使用',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w500,
@@ -271,20 +304,14 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                       : ListView(
                           padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
                           children: <Widget>[
-                            for (final MapEntry<String, List<Service>> group
-                                in grouped.entries) ...<Widget>[
-                              _GroupHeader(
-                                deviceName: group.key,
-                                count: group.value.length,
+                            for (final Service service in filtered)
+                              _ServiceRow(
+                                service: service,
+                                deviceName: widget.deviceNameFor(service),
+                                selected: service.id == widget.current.id,
+                                onTap: () =>
+                                    Navigator.of(context).pop(service),
                               ),
-                              for (final Service service in group.value)
-                                _ServiceRow(
-                                  service: service,
-                                  selected: service.id == widget.current.id,
-                                  onTap: () =>
-                                      Navigator.of(context).pop(service),
-                                ),
-                            ],
                           ],
                         ),
                 ),
@@ -297,57 +324,16 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
   }
 }
 
-class _GroupHeader extends StatelessWidget {
-  const _GroupHeader({required this.deviceName, required this.count});
-
-  final String deviceName;
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(2, 12, 2, 6),
-      child: Row(
-        children: <Widget>[
-          Icon(
-            Icons.devices_rounded,
-            size: 12,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 5),
-          Expanded(
-            child: Text(
-              deviceName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w500,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          Text(
-            '$count',
-            style: TextStyle(
-              fontSize: 9.5,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ServiceRow extends StatelessWidget {
   const _ServiceRow({
     required this.service,
+    required this.deviceName,
     required this.selected,
     required this.onTap,
   });
 
   final Service service;
+  final String deviceName;
   final bool selected;
   final VoidCallback onTap;
 
@@ -397,7 +383,7 @@ class _ServiceRow extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        service.address,
+                        '$deviceName · ${service.address}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(

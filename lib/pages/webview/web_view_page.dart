@@ -95,10 +95,13 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     super.didChangeDependencies();
     final LanDeckRepository repository = AppScope.of(context);
     _repository = repository;
-    final Service? latest = repository.serviceById(widget.serviceId);
+    final Service? latest = repository.serviceById(_service?.id ?? widget.serviceId);
     if (!_initialized) {
       _initialized = true;
       _service = latest;
+      if (latest != null) {
+        unawaited(repository.markServiceOpened(latest.id));
+      }
       if (latest != null && _nativeWebView) {
         _controller = _createController();
         unawaited(_configureFileChooser(_controller!));
@@ -1187,6 +1190,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       return;
     }
     _resetAuthState();
+    unawaited(repository.markServiceOpened(picked.id));
     setState(() {
       _service = picked;
       _hasError = false;

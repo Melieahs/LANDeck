@@ -414,6 +414,24 @@ class LanDeckRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Records that the user opened a service. Persisted for recent-first
+  /// ordering without notifying listeners (avoids rebuilding an open WebView).
+  Future<void> markServiceOpened(String id) async {
+    final Service? service = serviceById(id);
+    if (service == null) {
+      return;
+    }
+    final DateTime now = DateTime.now();
+    final Service updated = service.copyWith(lastOpenedAt: () => now);
+    await AppDatabase.serviceStore
+        .record(id)
+        .put(_appDatabase.db, updated.toMap());
+    final int index = _services.indexWhere((Service item) => item.id == id);
+    if (index >= 0) {
+      _services[index] = updated;
+    }
+  }
+
   /// Records a real reachability result from scanning or the WebView.
   Future<void> recordHealth(String id, ServiceStatus status) async {
     final Service? service = serviceById(id);

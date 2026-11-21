@@ -37,6 +37,7 @@ class Service {
     this.healthCheckEnabled = false,
     this.lastStatus,
     this.lastCheckedAt,
+    this.lastOpenedAt,
   });
 
   final String id;
@@ -64,6 +65,9 @@ class Service {
   final bool healthCheckEnabled;
   final ServiceStatus? lastStatus;
   final DateTime? lastCheckedAt;
+
+  /// Last time the user opened this service; used for recent-first ordering.
+  final DateTime? lastOpenedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -142,6 +146,7 @@ class Service {
     bool? healthCheckEnabled,
     ServiceStatus? Function()? lastStatus,
     DateTime? Function()? lastCheckedAt,
+    DateTime? Function()? lastOpenedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -165,6 +170,7 @@ class Service {
       lastCheckedAt: lastCheckedAt == null
           ? this.lastCheckedAt
           : lastCheckedAt(),
+      lastOpenedAt: lastOpenedAt == null ? this.lastOpenedAt : lastOpenedAt(),
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -186,6 +192,7 @@ class Service {
       'healthCheckEnabled': healthCheckEnabled,
       'lastStatus': lastStatus?.name,
       'lastCheckedAt': lastCheckedAt?.toIso8601String(),
+      'lastOpenedAt': lastOpenedAt?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -230,6 +237,7 @@ class Service {
               orElse: () => ServiceStatus.offline,
             ),
       lastCheckedAt: DateTime.tryParse(map['lastCheckedAt'] as String? ?? ''),
+      lastOpenedAt: DateTime.tryParse(map['lastOpenedAt'] as String? ?? ''),
       createdAt:
           DateTime.tryParse(map['createdAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),

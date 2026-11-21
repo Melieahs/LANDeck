@@ -244,6 +244,24 @@ void main() {
     await second.close();
     await directory.delete(recursive: true);
   });
+
+  test('opening a service records recency and persists it', () async {
+    final LanDeckRepository repository = await createTestRepository();
+    final Service service = await repository.addService(
+      name: 'Jellyfin',
+      customUrl: 'http://192.168.1.10:8096',
+    );
+
+    expect(repository.serviceById(service.id)!.lastOpenedAt, isNull);
+    await repository.markServiceOpened(service.id);
+
+    final Service updated = repository.serviceById(service.id)!;
+    expect(updated.lastOpenedAt, isNotNull);
+    expect(
+      Service.fromMap(updated.toMap()).lastOpenedAt,
+      updated.lastOpenedAt,
+    );
+  });
 }
 
 String? normalizeForTest(String input) => normalizeHttpUrl(input);
