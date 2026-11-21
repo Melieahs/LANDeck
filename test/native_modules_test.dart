@@ -73,8 +73,7 @@ void main() {
     expect(find.text('服务概览'), findsOneWidget);
     expect(find.text('访问地址'), findsOneWidget);
     expect(find.text('http://192.168.1.10:8080'), findsOneWidget);
-    expect(find.text('Web'), findsOneWidget);
-    expect(find.text('原生'), findsOneWidget);
+    expect(find.byKey(const Key('native-service-switcher')), findsOneWidget);
   });
 
   testWidgets('switcher exposes Web and native modes for a linked service', (

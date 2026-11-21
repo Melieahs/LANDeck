@@ -138,33 +138,6 @@ class _NativeServicePageState extends State<NativeServicePage> {
             icon: const Icon(Icons.swap_horiz_rounded),
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: SegmentedButton<ServiceMode>(
-              segments: const <ButtonSegment<ServiceMode>>[
-                ButtonSegment<ServiceMode>(
-                  value: ServiceMode.web,
-                  icon: Icon(Icons.language_rounded, size: 16),
-                  label: Text('Web'),
-                ),
-                ButtonSegment<ServiceMode>(
-                  value: ServiceMode.native,
-                  icon: Icon(Icons.widgets_rounded, size: 16),
-                  label: Text('原生'),
-                ),
-              ],
-              selected: const <ServiceMode>{ServiceMode.native},
-              showSelectedIcon: false,
-              onSelectionChanged: (Set<ServiceMode> value) {
-                if (value.contains(ServiceMode.web)) {
-                  _switchToWeb(service);
-                }
-              },
-            ),
-          ),
-        ),
       ),
       body: module.buildPage(context, service),
     );

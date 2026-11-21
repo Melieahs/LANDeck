@@ -31,7 +31,9 @@ void main() {
 
     expect(find.byKey(const Key('webview-exit')), findsOneWidget);
     expect(find.byKey(const Key('webview-service-switch')), findsOneWidget);
+    expect(find.byKey(const Key('webview-forward')), findsOneWidget);
     expect(find.byKey(const Key('webview-more')), findsOneWidget);
+    expect(find.text('原生'), findsNothing);
     expect(find.text('当前平台没有系统 WebView'), findsOneWidget);
     expect(find.text('http://192.168.1.10:8080'), findsOneWidget);
   });
@@ -53,6 +55,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('切换服务'), findsWidgets);
     expect(find.text('测试服务'), findsWidgets);
+  });
+
+  testWidgets('more sheet hosts refresh and forward', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(LanDeckApp(repository: repository));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(Key('favorite-${repository.services.single.id}')),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('webview-more')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('刷新'), findsOneWidget);
+    expect(find.text('前进'), findsOneWidget);
   });
 
   testWidgets('service switcher is recent-first and searchable', (

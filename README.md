@@ -19,7 +19,7 @@
 - 真实 Android 系统 WebView，加载数据库中的 URL；Cookie 由系统 WebView 持久化
 - HTTP Authentication（Basic 及系统 WebView 支持的方案）：应用内凭据弹窗、失败重试、取消不循环、可选 Keystore 加密记住
 - Material 3 全局视觉体系：浅色 / 深色 / 跟随系统，支持 Material You 动态取色与品牌色回退
-- WebView 与原生模块页共用顶栏：返回、服务名 + 模块名/主机副标题、后退、刷新、服务切换、更多；底部同一组 Web/原生 切换，沉浸模式从「更多」进入
+- WebView 与原生模块页共用顶栏：左上角退出、服务名 + 模块名/主机副标题、后退、前进、更多、最右侧切换服务；刷新在「更多」菜单里，沉浸模式也从「更多」进入
 - 真实 WebView 下载：拦截下载链接 / Content-Disposition，M3 确认后经 SAF 选择保存位置，前台服务流式写入
 - 下载继承当前网页 Cookie、会话和可用的 HTTP Basic 凭据；下载管理支持进度、取消、重试、打开、分享、删除记录
 - 真实网页上传：系统文件选择器支持单文件/多文件、MIME/扩展名与取消，URI 直接回传 WebView

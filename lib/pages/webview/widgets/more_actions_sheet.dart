@@ -6,6 +6,7 @@ import '../../../widgets/service_icon.dart';
 import '../../../widgets/status_dot.dart';
 
 enum MoreAction {
+  refresh,
   goForward,
   openExternal,
   copyAddress,
@@ -146,6 +147,14 @@ class _MoreActionsSheet extends StatelessWidget {
                   clipBehavior: Clip.antiAlias,
                   child: Column(
                     children: <Widget>[
+                      _ActionRow(
+                        icon: Icons.refresh_rounded,
+                        title: '刷新',
+                        subtitle: '重新加载当前页面',
+                        onTap: () =>
+                            Navigator.of(context).pop(MoreAction.refresh),
+                      ),
+                      const _ActionDivider(),
                       _ActionRow(
                         icon: Icons.arrow_forward_rounded,
                         title: '前进',

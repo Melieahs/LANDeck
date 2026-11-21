@@ -1346,6 +1346,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       return;
     }
     switch (action) {
+      case MoreAction.refresh:
+        await _handleRefresh();
+        return;
       case MoreAction.goForward:
         await _goForward();
         return;
@@ -1470,9 +1473,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     return AppBar(
       leading: IconButton(
         key: const Key('webview-exit'),
-        tooltip: '返回',
+        tooltip: '退出',
         icon: const Icon(Icons.arrow_back_rounded),
-        onPressed: _handleSystemBack,
+        onPressed: () => Navigator.of(context).maybePop(),
       ),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1497,16 +1500,10 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           icon: const Icon(Icons.undo_rounded),
         ),
         IconButton(
-          key: const Key('webview-refresh'),
-          tooltip: '刷新',
-          onPressed: _handleRefresh,
-          icon: const Icon(Icons.refresh_rounded),
-        ),
-        IconButton(
-          key: const Key('webview-service-switch'),
-          tooltip: '切换服务',
-          onPressed: _openServiceSwitcher,
-          icon: const Icon(Icons.dashboard_customize_rounded),
+          key: const Key('webview-forward'),
+          tooltip: '前进',
+          onPressed: _nativeWebView && _canGoForward ? _goForward : null,
+          icon: const Icon(Icons.redo_rounded),
         ),
         IconButton(
           key: const Key('webview-more'),
@@ -1514,56 +1511,13 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           onPressed: _openMore,
           icon: const Icon(Icons.more_horiz_rounded),
         ),
+        IconButton(
+          key: const Key('webview-service-switch'),
+          tooltip: '切换服务',
+          onPressed: _openServiceSwitcher,
+          icon: const Icon(Icons.dashboard_customize_rounded),
+        ),
       ],
-      bottom: _buildModeBar(service),
-    );
-  }
-
-  PreferredSize _buildModeBar(Service service) {
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(48),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-        child: SegmentedButton<ServiceMode>(
-          segments: const <ButtonSegment<ServiceMode>>[
-            ButtonSegment<ServiceMode>(
-              value: ServiceMode.web,
-              icon: Icon(Icons.language_rounded, size: 16),
-              label: Text('Web'),
-            ),
-            ButtonSegment<ServiceMode>(
-              value: ServiceMode.native,
-              icon: Icon(Icons.widgets_rounded, size: 16),
-              label: Text('原生'),
-            ),
-          ],
-          selected: const <ServiceMode>{ServiceMode.web},
-          showSelectedIcon: false,
-          onSelectionChanged: (Set<ServiceMode> value) {
-            if (value.contains(ServiceMode.native)) {
-              _switchToNative(service);
-            }
-          },
-        ),
-      ),
-    );
-  }
-
-  Future<void> _switchToNative(Service service) async {
-    final NativeModule? module = NativeModuleRegistry.instance.linkedModule(
-      service,
-    );
-    if (module == null) {
-      showAppSnackBar(context, '未安装可用的原生模块');
-      return;
-    }
-    await Navigator.of(context).pushReplacement<void, void>(
-      MaterialPageRoute<void>(
-        builder: (BuildContext context) => ServiceViewerPage(
-          serviceId: service.id,
-          initialMode: ServiceMode.native,
-        ),
-      ),
     );
   }
 
