@@ -17,7 +17,7 @@
 - 真实 Android 系统 WebView，加载数据库中的 URL；Cookie 由系统 WebView 持久化
 - HTTP Authentication（Basic 及系统 WebView 支持的方案）：应用内凭据弹窗、失败重试、取消不循环、可选 Keystore 加密记住
 - Material 3 全局视觉体系：浅色 / 深色 / 跟随系统，支持 Material You 动态取色与品牌色回退
-- 沉浸式 WebView 工具栏含独立「退出」按钮，与网页后退语义分离
+- 沉浸式 WebView 工具栏含独立「退出」按钮，与网页后退语义分离；圆形手柄长按可呼出后退/刷新/服务/更多/退出快捷轮盘
 - 真实 WebView 下载：拦截下载链接 / Content-Disposition，M3 确认后经 SAF 选择保存位置，前台服务流式写入
 - 下载继承当前网页 Cookie、会话和可用的 HTTP Basic 凭据；下载管理支持进度、取消、重试、打开、分享、删除记录
 - 真实网页上传：系统文件选择器支持单文件/多文件、MIME/扩展名与取消，URI 直接回传 WebView
@@ -66,9 +66,9 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 
 产物：
 
-- `dist/LANDeck-0.8.5.apk`（约 56 MB，含 arm64-v8a / armeabi-v7a / x86_64）
+- `dist/LANDeck-0.8.6.apk`（约 56 MB，含 arm64-v8a / armeabi-v7a / x86_64）
 - 构建产物：`build/app/outputs/flutter-apk/app-release.apk`
-- 包名 `com.example.landeck`，版本 `0.8.5+22`
+- 包名 `com.example.landeck`，版本 `0.8.6+23`
 - SHA-256：以最终构建产物为准
 - 当前使用 Flutter 默认 debug 签名，可直接安装测试，不适合直接上架
 
