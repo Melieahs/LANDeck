@@ -224,6 +224,7 @@ class LanDeckRepository extends ChangeNotifier {
     ServiceStatus? lastStatus,
     DateTime? lastCheckedAt,
     String? nativeModuleId,
+    ServiceMode defaultMode = ServiceMode.web,
   }) async {
     final String trimmedName = name.trim();
     if (trimmedName.isEmpty) {
@@ -262,6 +263,7 @@ class LanDeckRepository extends ChangeNotifier {
       lastCheckedAt: lastCheckedAt,
       healthCheckEnabled: false,
       nativeModuleId: nativeModuleId,
+      defaultMode: defaultMode,
       createdAt: now,
       updatedAt: now,
     );
@@ -440,17 +442,17 @@ class LanDeckRepository extends ChangeNotifier {
     }
   }
 
-  /// Persists the user's last-used presentation mode for this service.
+  /// Persists the configured default presentation mode for this service.
   ///
-  /// This intentionally does not notify listeners: the WebView should not be
-  /// rebuilt just because its mode preference changed.
-  Future<void> setServiceMode(String id, ServiceMode mode) async {
+  /// This intentionally does not notify listeners: changing the default in
+  /// settings should not rebuild an already-open viewer.
+  Future<void> setDefaultMode(String id, ServiceMode mode) async {
     final Service? service = serviceById(id);
-    if (service == null || service.lastMode == mode) {
+    if (service == null || service.defaultMode == mode) {
       return;
     }
     final Service updated = service.copyWith(
-      lastMode: mode,
+      defaultMode: mode,
       updatedAt: DateTime.now(),
     );
     await AppDatabase.serviceStore

@@ -1195,7 +1195,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     final Service picked = selection.service;
     final ServiceMode mode = selection.mode;
     unawaited(repository.markServiceOpened(picked.id));
-    unawaited(repository.setServiceMode(picked.id, mode));
     if (mode == ServiceMode.native) {
       await Navigator.of(context).pushReplacement<void, void>(
         MaterialPageRoute<void>(

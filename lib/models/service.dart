@@ -40,7 +40,7 @@ class Service {
     this.lastCheckedAt,
     this.lastOpenedAt,
     this.nativeModuleId,
-    this.lastMode = ServiceMode.web,
+    this.defaultMode = ServiceMode.web,
   });
 
   final String id;
@@ -75,8 +75,11 @@ class Service {
   /// Explicitly linked native module, if the user chose one.
   final String? nativeModuleId;
 
-  /// Last mode the user opened this service in. Defaults to Web.
-  final ServiceMode lastMode;
+  /// Mode used when the service is opened from any entry point.
+  ///
+  /// Changing mode inside a viewer is temporary; this value is only changed
+  /// from the service settings so opening behaviour stays predictable.
+  final ServiceMode defaultMode;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -157,7 +160,7 @@ class Service {
     DateTime? Function()? lastCheckedAt,
     DateTime? Function()? lastOpenedAt,
     String? Function()? nativeModuleId,
-    ServiceMode? lastMode,
+    ServiceMode? defaultMode,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -185,7 +188,7 @@ class Service {
       nativeModuleId: nativeModuleId == null
           ? this.nativeModuleId
           : nativeModuleId(),
-      lastMode: lastMode ?? this.lastMode,
+      defaultMode: defaultMode ?? this.defaultMode,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -209,7 +212,7 @@ class Service {
       'lastCheckedAt': lastCheckedAt?.toIso8601String(),
       'lastOpenedAt': lastOpenedAt?.toIso8601String(),
       'nativeModuleId': nativeModuleId,
-      'lastMode': lastMode.name,
+      'defaultMode': defaultMode.name,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -256,7 +259,8 @@ class Service {
       lastCheckedAt: DateTime.tryParse(map['lastCheckedAt'] as String? ?? ''),
       lastOpenedAt: DateTime.tryParse(map['lastOpenedAt'] as String? ?? ''),
       nativeModuleId: map['nativeModuleId'] as String?,
-      lastMode: switch (map['lastMode'] as String?) {
+      defaultMode: switch (map['defaultMode'] as String? ??
+          map['lastMode'] as String?) {
         'native' => ServiceMode.native,
         _ => ServiceMode.web,
       },

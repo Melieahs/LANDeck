@@ -331,7 +331,7 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                                 nativeAvailable:
                                     widget.registry.linkedModule(service) !=
                                     null,
-                                lastMode: service.lastMode,
+                                defaultMode: service.defaultMode,
                                 onSelect: (ServiceMode mode) =>
                                     Navigator.of(context).pop(
                                       ServiceSelection(
@@ -359,7 +359,7 @@ class _ServiceRow extends StatelessWidget {
     required this.selected,
     required this.selectedMode,
     required this.nativeAvailable,
-    required this.lastMode,
+    required this.defaultMode,
     required this.onSelect,
   });
 
@@ -368,13 +368,13 @@ class _ServiceRow extends StatelessWidget {
   final bool selected;
   final ServiceMode selectedMode;
   final bool nativeAvailable;
-  final ServiceMode lastMode;
+  final ServiceMode defaultMode;
   final ValueChanged<ServiceMode> onSelect;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
-    final ServiceMode openMode = nativeAvailable ? lastMode : ServiceMode.web;
+    final ServiceMode openMode = nativeAvailable ? defaultMode : ServiceMode.web;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(

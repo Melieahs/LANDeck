@@ -40,13 +40,13 @@ void main() {
   });
 
   test('service mode is persisted and defaults to web', () async {
-    expect(service.lastMode, ServiceMode.web);
-    await repository.setServiceMode(service.id, ServiceMode.native);
-    expect(repository.serviceById(service.id)!.lastMode, ServiceMode.native);
+    expect(service.defaultMode, ServiceMode.web);
+    await repository.setDefaultMode(service.id, ServiceMode.native);
+    expect(repository.serviceById(service.id)!.defaultMode, ServiceMode.native);
     expect(
       (Service.fromMap(
         repository.serviceById(service.id)!.toMap(),
-      )).lastMode,
+      )).defaultMode,
       ServiceMode.native,
     );
   });
@@ -81,7 +81,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.runAsync(() async {
-      await repository.setServiceMode(service.id, ServiceMode.native);
+      await repository.setDefaultMode(service.id, ServiceMode.native);
       await repository.markServiceOpened(service.id);
     });
     await tester.pumpWidget(
@@ -195,6 +195,14 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('服务概览 · v1.0.0').last);
     await tester.pumpAndSettle();
+    final Finder defaultMode = find.byKey(
+      const ValueKey<String>('service-default-mode'),
+    );
+    await tester.ensureVisible(defaultMode);
+    await tester.tap(
+      find.descendant(of: defaultMode, matching: find.text('原生')),
+    );
+    await tester.pumpAndSettle();
     final Finder save = find.byKey(
       const ValueKey<String>('service-save-button'),
     );
@@ -205,6 +213,7 @@ void main() {
     final Service saved = repo.services
         .firstWhere((Service item) => item.name == '原生测试服务');
     expect(saved.nativeModuleId, ServiceOverviewNativeModule.moduleId);
+    expect(saved.defaultMode, ServiceMode.native);
   });
 
 
@@ -217,7 +226,7 @@ void main() {
         customUrl: 'http://192.168.1.40:8080',
         nativeModuleId: ServiceOverviewNativeModule.moduleId,
       );
-      await repository.setServiceMode(created.id, ServiceMode.native);
+      await repository.setDefaultMode(created.id, ServiceMode.native);
       return created;
     });
     expect(linked, isNotNull);

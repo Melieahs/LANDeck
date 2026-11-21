@@ -10,6 +10,7 @@ import '../../models/device_category.dart';
 import '../../models/http_credential.dart';
 import '../../models/scan_candidate.dart';
 import '../../models/service.dart';
+import '../../models/service_mode.dart';
 import '../../native/native_module.dart';
 import '../../native/native_module_registry.dart';
 import '../../repositories/service_repository.dart';
@@ -75,6 +76,7 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
   ServiceGlyph? _icon;
   bool _favorite = false;
   String? _nativeModuleId;
+  ServiceMode _defaultMode = ServiceMode.web;
   bool _useCustomUrl = false;
   bool _saving = false;
   bool _autoName = false;
@@ -95,6 +97,7 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
     _icon = service?.icon;
     _favorite = service?.isFavorite ?? false;
     _nativeModuleId = service?.nativeModuleId;
+    _defaultMode = service?.defaultMode ?? ServiceMode.web;
 
     final Uri? candidateUri = candidate == null
         ? null
@@ -274,6 +277,12 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
         : null;
     final DateTime? scannedAt = scannedStatus == null ? null : DateTime.now();
 
+    final bool nativeAvailable = _nativeModuleId != null &&
+        _compatibleModules().any(
+          (NativeModule module) => module.id == _nativeModuleId,
+        );
+    final ServiceMode defaultMode =
+        nativeAvailable ? _defaultMode : ServiceMode.web;
     setState(() {
       _saving = true;
       _formError = null;
@@ -293,6 +302,7 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
             icon: () => _icon,
             isFavorite: _favorite,
             nativeModuleId: () => _nativeModuleId,
+            defaultMode: defaultMode,
             lastStatus: () => scannedStatus ?? widget.service!.lastStatus,
             lastCheckedAt: () => scannedAt ?? widget.service!.lastCheckedAt,
           ),
@@ -309,6 +319,7 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
           icon: _icon,
           isFavorite: _favorite,
           nativeModuleId: _nativeModuleId,
+          defaultMode: defaultMode,
           lastStatus: scannedStatus,
           lastCheckedAt: scannedAt,
         );
@@ -638,8 +649,23 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
                   _NativeModuleCard(
                     value: _nativeModuleId,
                     modules: _compatibleModules(),
-                    onChanged: (String? value) =>
-                        setState(() => _nativeModuleId = value),
+                    onChanged: (String? value) => setState(() {
+                      _nativeModuleId = value;
+                      if (value == null) {
+                        _defaultMode = ServiceMode.web;
+                      }
+                    }),
+                  ),
+                  const SizedBox(height: 12),
+                  _DefaultModeCard(
+                    value: _defaultMode,
+                    nativeAvailable: _nativeModuleId != null &&
+                        _compatibleModules().any(
+                          (NativeModule module) =>
+                              module.id == _nativeModuleId,
+                        ),
+                    onChanged: (ServiceMode value) =>
+                        setState(() => _defaultMode = value),
                   ),
                   if (widget.isEditing) ...<Widget>[
                     const SizedBox(height: 12),
@@ -871,6 +897,73 @@ class _ScanContextCard extends StatelessWidget {
   }
 }
 
+
+class _DefaultModeCard extends StatelessWidget {
+  const _DefaultModeCard({
+    required this.value,
+    required this.nativeAvailable,
+    required this.onChanged,
+  });
+
+  final ServiceMode value;
+  final bool nativeAvailable;
+  final ValueChanged<ServiceMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ServiceMode effective = nativeAvailable ? value : ServiceMode.web;
+    return Card.outlined(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text('默认打开方式', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 4),
+            Text(
+              '从首页、搜索或设备页打开这个服务时使用。'
+              '在服务内切换 Web / 原生只影响当前页面，不会改这里。',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 10),
+            SegmentedButton<ServiceMode>(
+              key: const ValueKey<String>('service-default-mode'),
+              segments: const <ButtonSegment<ServiceMode>>[
+                ButtonSegment<ServiceMode>(
+                  value: ServiceMode.web,
+                  icon: Icon(Icons.language_rounded),
+                  label: Text('Web'),
+                ),
+                ButtonSegment<ServiceMode>(
+                  value: ServiceMode.native,
+                  icon: Icon(Icons.widgets_rounded),
+                  label: Text('原生'),
+                ),
+              ],
+              selected: <ServiceMode>{effective},
+              onSelectionChanged: nativeAvailable
+                  ? (Set<ServiceMode> selected) => onChanged(selected.first)
+                  : null,
+            ),
+            if (!nativeAvailable)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  '关联一个可用的原生模块后，才能把原生设为默认。',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _NativeModuleCard extends StatelessWidget {
   const _NativeModuleCard({

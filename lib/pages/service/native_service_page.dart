@@ -36,7 +36,6 @@ class _NativeServicePageState extends State<NativeServicePage> {
     }
     _marked = true;
     final LanDeckRepository repository = AppScope.of(context);
-    repository.setServiceMode(widget.serviceId, ServiceMode.native);
     repository.markServiceOpened(widget.serviceId);
   }
 
@@ -53,7 +52,6 @@ class _NativeServicePageState extends State<NativeServicePage> {
       return;
     }
     await repository.markServiceOpened(selection.service.id);
-    await repository.setServiceMode(selection.service.id, selection.mode);
     if (!mounted) {
       return;
     }
@@ -68,8 +66,6 @@ class _NativeServicePageState extends State<NativeServicePage> {
   }
 
   Future<void> _switchToWeb(Service service) async {
-    final LanDeckRepository repository = AppScope.of(context);
-    await repository.setServiceMode(service.id, ServiceMode.web);
     if (!mounted) {
       return;
     }

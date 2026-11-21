@@ -234,28 +234,8 @@ class _PadavanNativePageState extends State<PadavanNativePage> {
     }
   }
 
-  Future<void> _runAction(String action, String title, String body) async {
+  Future<void> _runAction(String action, String label) async {
     if (_busy || !_authenticated || _client == null) {
-      return;
-    }
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) => AlertDialog(
-        title: Text(title),
-        content: Text(body),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('继续'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) {
       return;
     }
     setState(() {
@@ -269,7 +249,7 @@ class _PadavanNativePageState extends State<PadavanNativePage> {
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$title已提交，${result.reloadSeconds} 秒后刷新状态'),
+          content: Text('$label已提交，${result.reloadSeconds} 秒后刷新状态'),
         ),
       );
       await Future<void>.delayed(
@@ -525,7 +505,6 @@ class _PadavanNativePageState extends State<PadavanNativePage> {
                         : () => _runAction(
                             PadavanClient.wanReconnect,
                             '重连 WAN',
-                            '将停止并重新启动 WAN 连接，现有网络会短暂中断。继续？',
                           ),
                     child: const Text('重连 WAN'),
                   ),
@@ -542,7 +521,6 @@ class _PadavanNativePageState extends State<PadavanNativePage> {
                         : () => _runAction(
                             PadavanClient.wanDisconnect,
                             '断开 WAN',
-                            '将停止 WAN 连接，当前网络会中断，需要重新连接才能恢复。继续？',
                           ),
                     child: const Text('断开 WAN'),
                   ),
@@ -559,8 +537,6 @@ class _PadavanNativePageState extends State<PadavanNativePage> {
                     : () => _runAction(
                         PadavanClient.wispReassoc,
                         '重新关联中继',
-                        '将强制无线中继重新关联上级 AP，可能短暂断网。'
-                        '这不是状态刷新，也不会扫描 Wi-Fi。继续？',
                       ),
                 icon: const Icon(Icons.wifi_find_rounded),
                 label: const Text('重新关联无线中继'),

@@ -22,7 +22,7 @@
 - 下载继承当前网页 Cookie、会话和可用的 HTTP Basic 凭据；下载管理支持进度、取消、重试、打开、分享、删除记录
 - 真实网页上传：系统文件选择器支持单文件/多文件、MIME/扩展名与取消，URI 直接回传 WebView
 - 首页搜索提交后进入独立搜索页，同时检索设备与服务
-- 双模式服务：服务可关联已安装的原生模块，在 WebView 与 Flutter 原生页面间切换；未关联时仍为 Web 模式，不复制服务记录
+- 双模式服务：服务可关联已安装的原生模块；在服务设置中选择「默认打开方式」（Web / 原生）。服务内切换只影响当前页面，重新打开仍按默认方式；未关联模块时只能使用 Web，不复制服务记录
 - Padavan 原生模块：真实读取 WAN 状态，支持 WAN 重连、断开和无线中继重新关联（接口来自 Padavan `wan_action.asp`）
 - WebView「切换服务」按最近使用排序，支持搜索和同名设备上下文
 - 首页统计可直接进入「全部服务」和「设备管理」；设备分类按真实设备数量统计
@@ -69,9 +69,9 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 
 产物：
 
-- `dist/LANDeck-0.9.1.apk`（约 56 MB，含 arm64-v8a / armeabi-v7a / x86_64）
+- `dist/LANDeck-0.9.2.apk`（约 56 MB，含 arm64-v8a / armeabi-v7a / x86_64）
 - 构建产物：`build/app/outputs/flutter-apk/app-release.apk`
-- 包名 `com.example.landeck`，版本 `0.9.1+26`
+- 包名 `com.example.landeck`，版本 `0.9.2+27`
 - SHA-256：以最终构建产物为准
 - 当前使用 Flutter 默认 debug 签名，可直接安装测试，不适合直接上架
 
@@ -218,7 +218,7 @@ Service.protocol = http, port = 8096, path = /web
 
 - `flutter analyze`：No issues found
 - `flutter test`：62 tests passed
-- `flutter build apk --release`：成功，约 56.9 MB（0.9.1+26）
+- `flutter build apk --release`：成功，约 57.5 MB（0.9.2+27）
 - Android 模拟器（Android 36 x86_64，1080×2400）实测：
   - 首次安装 0 服务、0 收藏、0 设备，空状态正常
   - 手动添加 → 首页计数/分类/收藏更新 → 强制停止再启动仍存在

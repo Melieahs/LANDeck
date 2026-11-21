@@ -34,7 +34,7 @@ class ServiceViewerPage extends StatelessWidget {
     final NativeModule? module = NativeModuleRegistry.instance.linkedModule(
       service,
     );
-    final ServiceMode mode = initialMode ?? service.lastMode;
+    final ServiceMode mode = initialMode ?? service.defaultMode;
     if (mode == ServiceMode.native && module != null) {
       return NativeServicePage(
         serviceId: service.id,
