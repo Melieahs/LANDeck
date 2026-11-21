@@ -3,7 +3,8 @@
 > 交接时间：2026-11-21  
 > 当前分支：`feature/native-modules`  
 > 当前版本：`0.9.3+28`  
-> 当前 HEAD：`d522c33 test(native): cover imported module rendering`  
+> 代码 HEAD：`d522c33 test(native): cover imported module rendering`  
+> 本文档提交：`d71ed42 docs: add development handoff`  
 > 工作区：干净（本文档提交前）  
 > 远端：`git@github.com:Melieahs/LANDeck.git`
 
