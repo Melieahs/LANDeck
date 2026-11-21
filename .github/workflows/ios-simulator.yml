@@ -5,7 +5,7 @@ permissions:
 
 on:
   push:
-    branches: [feature/ios, main]
+    branches: [feature/ios, feature/ios-settings-cleanup, main]
   workflow_dispatch:
 
 concurrency:
