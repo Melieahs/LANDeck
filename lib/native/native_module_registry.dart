@@ -24,6 +24,16 @@ class NativeModuleRegistry {
     _modules.add(module);
   }
 
+  /// Registers [module], replacing an imported module with the same id.
+  void replace(NativeModule module) {
+    _modules.removeWhere((NativeModule item) => item.id == module.id && !item.isBuiltin);
+    register(module);
+  }
+
+  void unregister(String id) {
+    _modules.removeWhere((NativeModule item) => item.id == id && !item.isBuiltin);
+  }
+
   NativeModule? byId(String? id) {
     if (id == null) {
       return null;

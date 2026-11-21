@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "plugin.http-title",
+  "name": "网页标题",
+  "version": "1.0.0",
+  "description": "读取服务首页的 HTML 标题，只读，不发送任何修改请求。",
+  "author": "LANDeck",
+  "permissions": ["http"],
+  "match": {
+    "hostPatterns": ["*"]
+  },
+  "basicAuth": false,
+  "status": {
+    "method": "GET",
+    "path": "/",
+    "fields": [
+      {
+        "label": "标题",
+        "pattern": "<title[^>]*>(.*?)</title>",
+        "group": 1
+      },
+    ]
+  },
+  "actions": []
+}

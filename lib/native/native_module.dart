@@ -15,6 +15,9 @@ abstract class NativeModule {
   String get version;
   String get description;
 
+  /// Built-in modules ship with the app; imported modules can be removed.
+  bool get isBuiltin => true;
+
   /// Whether this module can control [service]. Compatibility is explicit and
   /// never inferred from a service name or address.
   bool supports(Service service);
