@@ -62,9 +62,9 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 
 产物：
 
-- `dist/LANDeck-0.8.1.apk`（约 56 MB，含 arm64-v8a / armeabi-v7a / x86_64）
+- `dist/LANDeck-0.8.2.apk`（约 56 MB，含 arm64-v8a / armeabi-v7a / x86_64）
 - 构建产物：`build/app/outputs/flutter-apk/app-release.apk`
-- 包名 `com.example.landeck`，版本 `0.8.1+18`
+- 包名 `com.example.landeck`，版本 `0.8.2+19`
 - SHA-256：以最终构建产物为准
 - 当前使用 Flutter 默认 debug 签名，可直接安装测试，不适合直接上架
 
@@ -185,7 +185,8 @@ Service.protocol = http, port = 8096, path = /web
 - 填充时按「服务 + host」匹配已保存凭据，支持多个账号时选择；只填充输入框，不点击登录按钮。
 - 网页登录凭据与 HTTP Basic 凭据共用加密存储，但使用独立 scope（`web-form`），在「编辑服务 → 已保存的登录信息」中会显示为「网页登录」，可单独删除。
 - HTTP 认证对话框同时开启了系统密码管理器 Autofill 提示（用户名/密码），可使用系统保存的密码填充。
-- 限制：只处理顶层页面，不处理跨域 iframe 内的登录表单；同一 host 下不同端口的页面共享凭据，适合局域网服务场景。
+- 支持未使用 `<form>` 的 SPA 登录页（例如 CasaOS）、开放式 Shadow DOM 和同源 iframe；页面异步渲染后会继续尝试填充。
+- 限制：不处理跨域 iframe 内的登录表单；同一 host 下不同端口的页面共享凭据；同一 host 只保留一个网页登录账号。
 
 ## WebView 下载与上传
 
