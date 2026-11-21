@@ -29,23 +29,14 @@ class DevicesSection extends StatefulWidget {
 }
 
 class _DevicesSectionState extends State<DevicesSection> {
-  DeviceType? _selected;
-
   List<Device> get _visible {
-    final List<Device> list = _selected == null
-        ? List<Device>.of(widget.devices)
-        : widget.devices
-              .where((Device device) => device.deviceType == _selected)
-              .toList();
+    final List<Device> list = List<Device>.of(widget.devices);
     list.sort(
       (Device a, Device b) =>
           a.name.toLowerCase().compareTo(b.name.toLowerCase()),
     );
     return list;
   }
-
-  int _countFor(DeviceType type) =>
-      widget.devices.where((Device device) => device.deviceType == type).length;
 
   @override
   Widget build(BuildContext context) {
@@ -57,45 +48,12 @@ class _DevicesSectionState extends State<DevicesSection> {
           title: '设备',
           trailing: widget.devices.isEmpty
               ? null
-              : _selected == null
-              ? '${widget.devices.length} 台'
-              : '${visible.length} / ${widget.devices.length} 台',
+              : '${widget.devices.length} 台',
           action: TextButton(
             onPressed: widget.devices.isEmpty
                 ? widget.onAddDevice
                 : widget.onManage,
             child: Text(widget.devices.isEmpty ? '添加设备' : '管理'),
-          ),
-        ),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Row(
-            children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  key: const ValueKey<String>('device-filter-all'),
-                  selected: _selected == null,
-                  avatar: const Icon(Icons.grid_view_rounded, size: 18),
-                  label: Text('全部设备 ${widget.devices.length}'),
-                  onSelected: (_) => setState(() => _selected = null),
-                ),
-              ),
-              for (final DeviceType type in DeviceType.values)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    key: ValueKey<String>('device-filter-${type.name}'),
-                    selected: _selected == type,
-                    avatar: Icon(iconForDeviceType(type), size: 18),
-                    label: Text('${type.label} ${_countFor(type)}'),
-                    onSelected: (_) => setState(
-                      () => _selected = _selected == type ? null : type,
-                    ),
-                  ),
-                ),
-            ],
           ),
         ),
         if (widget.devices.isEmpty)
@@ -107,18 +65,6 @@ class _DevicesSectionState extends State<DevicesSection> {
               trailing: FilledButton.tonal(
                 onPressed: widget.onAddDevice,
                 child: const Text('添加'),
-              ),
-            ),
-          )
-        else if (visible.isEmpty)
-          Card.outlined(
-            child: ListTile(
-              leading: const Icon(Icons.filter_alt_off_outlined),
-              title: const Text('该分类下暂无设备'),
-              subtitle: const Text('可以切换分类，或添加一台新的设备。'),
-              trailing: TextButton(
-                onPressed: () => setState(() => _selected = null),
-                child: const Text('查看全部'),
               ),
             ),
           )
@@ -186,7 +132,7 @@ class _DeviceCard extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       device.name,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: text.titleSmall?.copyWith(
                         color: scheme.onSurface,

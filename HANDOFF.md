@@ -228,7 +228,7 @@ device.primaryAddress + protocol + port + path
 - 首页：`lib/pages/home/home_page.dart`
 - 收藏网格手动排序：点「编辑」进入编辑状态后拖动卡片重排，点「完成」退出，顺序存 `Service.favoriteSortOrder`
 - 统计可点击：服务数 → 全部服务页；设备数 → 设备页
-- 首页不再提供排序菜单：服务与设备列表固定按名称排列，设备分类筛选保留
+- 首页不再提供排序菜单与分类筛选 chips：服务与设备列表固定按名称排列；收藏与设备卡片名称最多两行，超出才省略
 - 界面不再展示在线/离线状态（扫描结果不准）；`Service.lastStatus` 仅用于排序与插件字段，切换服务列表的绿点表示「有后台页面」
 - 搜索入口 → `lib/pages/search/search_page.dart`
 - 设备分类已并入设备模块，按 `DeviceType` 统计设备数
@@ -504,7 +504,7 @@ PS5 Web File Manager：`192.168.1.50:8888`。
 
 ### 其它
 
-- 排序/筛选状态是内存态，重启不保留（用户尚未要求持久化）。
+- 首页不再有排序/筛选状态（已移除），分类页面独立保留分类入口。
 - FTP 只做备份/恢复，不是文件浏览器；路径已针对 NAS FTP 根目录做兼容，但仍建议用真实 NAS 复测。
 - `dist/` 和 `screenshots/` 在 `.gitignore` 中。
 

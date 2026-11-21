@@ -186,7 +186,7 @@ class _FavoriteCard extends StatelessWidget {
                   children: <Widget>[
                     Text(
                       service.name,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: text.titleSmall?.copyWith(
                         color: scheme.onSurface,

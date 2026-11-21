@@ -186,7 +186,6 @@ class _HomePageState extends State<HomePage> {
                     services: visible,
                     query: '',
                     deviceNameFor: repository.deviceNameFor,
-                    devices: repository.devices,
                     onOpenService: _openService,
                     onClearSearch: _clearSearch,
                     onAddService: _handleAddService,

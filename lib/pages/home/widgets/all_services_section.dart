@@ -1,17 +1,15 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../../../models/device.dart';
 import '../../../models/service.dart';
 import '../../../widgets/section_header.dart';
-import '../../../widgets/service_icon.dart';
 import '../../../widgets/service_list_tile.dart';
+
 class AllServicesSection extends StatefulWidget {
   const AllServicesSection({
     super.key,
     required this.services,
     required this.query,
     required this.deviceNameFor,
-    required this.devices,
     required this.onOpenService,
     required this.onClearSearch,
     required this.onAddService,
@@ -21,7 +19,6 @@ class AllServicesSection extends StatefulWidget {
   final List<Service> services;
   final String query;
   final String Function(Service service) deviceNameFor;
-  final List<Device> devices;
   final ValueChanged<Service> onOpenService;
   final VoidCallback onClearSearch;
   final VoidCallback onAddService;
@@ -32,40 +29,15 @@ class AllServicesSection extends StatefulWidget {
 }
 
 class _AllServicesSectionState extends State<AllServicesSection> {
-  String? _deviceId;
-  bool _onlyUnassigned = false;
-
   bool get _isSearching => widget.query.trim().isNotEmpty;
 
   List<Service> get _visible {
-    final List<Service> list = widget.services.where((Service service) {
-      if (_onlyUnassigned) return service.deviceId == null;
-      if (_deviceId != null) return service.deviceId == _deviceId;
-      return true;
-    }).toList();
-
+    final List<Service> list = List<Service>.of(widget.services);
     list.sort(
       (Service a, Service b) =>
           a.name.toLowerCase().compareTo(b.name.toLowerCase()),
     );
     return list;
-  }
-
-  int _countForDevice(String deviceId) => widget.services
-      .where((Service service) => service.deviceId == deviceId)
-      .length;
-
-  int get _unassignedCount => widget.services
-      .where((Service service) => service.deviceId == null)
-      .length;
-
-  bool get _hasFilter => _deviceId != null || _onlyUnassigned;
-
-  void _clearFilter() {
-    setState(() {
-      _deviceId = null;
-      _onlyUnassigned = false;
-    });
   }
 
   @override
@@ -78,8 +50,6 @@ class _AllServicesSectionState extends State<AllServicesSection> {
           title: '全部服务',
           trailing: _isSearching
               ? '${visible.length} 个结果'
-              : _hasFilter
-              ? '${visible.length} / ${widget.services.length} 个'
               : '共 ${widget.services.length} 个',
           action: IconButton(
             key: const ValueKey<String>('all-services-add'),
@@ -88,52 +58,6 @@ class _AllServicesSectionState extends State<AllServicesSection> {
             icon: const Icon(Icons.add_rounded),
           ),
         ),
-        if (widget.services.isNotEmpty)
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Row(
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    key: const ValueKey<String>('service-filter-all'),
-                    selected: !_hasFilter,
-                    avatar: const Icon(Icons.devices_other_rounded, size: 18),
-                    label: Text('全部设备 ${widget.services.length}'),
-                    onSelected: (_) => _clearFilter(),
-                  ),
-                ),
-                for (final Device device in widget.devices)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      key: ValueKey<String>(
-                        'service-filter-device-${device.id}',
-                      ),
-                      selected: _deviceId == device.id && !_onlyUnassigned,
-                      avatar: Icon(iconForDevice(device), size: 18),
-                      label: Text(
-                        '${device.name} ${_countForDevice(device.id)}',
-                      ),
-                      onSelected: (_) => setState(() {
-                        _onlyUnassigned = false;
-                        _deviceId = _deviceId == device.id ? null : device.id;
-                      }),
-                    ),
-                  ),
-                ChoiceChip(
-                  key: const ValueKey<String>('service-filter-unassigned'),
-                  selected: _onlyUnassigned,
-                  label: Text('未分配 $_unassignedCount'),
-                  onSelected: (_) => setState(() {
-                    _deviceId = null;
-                    _onlyUnassigned = !_onlyUnassigned;
-                  }),
-                ),
-              ],
-            ),
-          ),
         if (widget.services.isEmpty)
           _isSearching
               ? _EmptySearchState(onClearSearch: widget.onClearSearch)
@@ -141,8 +65,6 @@ class _AllServicesSectionState extends State<AllServicesSection> {
                   onAddService: widget.onAddService,
                   onScan: widget.onScan,
                 )
-        else if (visible.isEmpty)
-          _EmptyFilteredState(onClear: _clearFilter)
         else
           Card(
             clipBehavior: Clip.antiAlias,
@@ -166,24 +88,6 @@ class _AllServicesSectionState extends State<AllServicesSection> {
             ),
           ),
       ],
-    );
-  }
-}
-
-class _EmptyFilteredState extends StatelessWidget {
-  const _EmptyFilteredState({required this.onClear});
-
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card.outlined(
-      child: ListTile(
-        leading: const Icon(Icons.filter_alt_off_outlined),
-        title: const Text('该设备分类下暂无服务'),
-        subtitle: const Text('切换一个设备分类，或查看全部服务。'),
-        trailing: TextButton(onPressed: onClear, child: const Text('查看全部')),
-      ),
     );
   }
 }
