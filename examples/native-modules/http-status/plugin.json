@@ -18,7 +18,7 @@
         "label": "标题",
         "pattern": "<title[^>]*>(.*?)</title>",
         "group": 1
-      },
+      }
     ]
   },
   "actions": []
