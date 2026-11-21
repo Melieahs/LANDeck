@@ -76,6 +76,53 @@ void main() {
     expect(find.byKey(const Key('native-service-switcher')), findsOneWidget);
   });
 
+  testWidgets('native exit pops the page without looping', (
+    WidgetTester tester,
+  ) async {
+    await tester.runAsync(() async {
+      await repository.setDefaultMode(service.id, ServiceMode.native);
+      await repository.markServiceOpened(service.id);
+    });
+    bool popped = false;
+    await tester.pumpWidget(
+      AppScope(
+        repository: repository,
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: Builder(
+            builder: (BuildContext context) => Scaffold(
+              body: Center(
+                child: FilledButton(
+                  onPressed: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (BuildContext context) => NativeServicePage(
+                          serviceId: service.id,
+                          moduleId: ServiceOverviewNativeModule.moduleId,
+                        ),
+                      ),
+                    );
+                    popped = true;
+                  },
+                  child: const Text('打开原生页'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('打开原生页'));
+    await tester.pumpAndSettle();
+    expect(find.text('服务概览'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('native-service-exit')));
+    await tester.pumpAndSettle();
+
+    expect(popped, isTrue);
+    expect(find.byKey(const Key('native-service-exit')), findsNothing);
+  });
+
   testWidgets('switcher exposes Web and native modes for a linked service', (
     WidgetTester tester,
   ) async {

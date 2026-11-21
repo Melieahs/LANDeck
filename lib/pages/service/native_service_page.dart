@@ -28,6 +28,7 @@ class NativeServicePage extends StatefulWidget {
 
 class _NativeServicePageState extends State<NativeServicePage> {
   bool _marked = false;
+  bool _allowExit = false;
 
   @override
   void didChangeDependencies() {
@@ -67,12 +68,17 @@ class _NativeServicePageState extends State<NativeServicePage> {
     );
   }
 
-  Future<void> _exitViewer() async {
-    WebViewSessionRegistry.instance.closeAll();
-    if (!mounted) {
+  void _exitViewer() {
+    if (_allowExit) {
       return;
     }
-    Navigator.of(context).maybePop();
+    WebViewSessionRegistry.instance.closeAll();
+    setState(() => _allowExit = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Navigator.of(context).maybePop();
+      }
+    });
   }
 
   Future<void> _switchToWeb(Service service) async {
@@ -135,7 +141,7 @@ class _NativeServicePageState extends State<NativeServicePage> {
     }
     final ThemeData theme = Theme.of(context);
     return PopScope<Object?>(
-      canPop: false,
+      canPop: _allowExit,
       onPopInvokedWithResult: (bool didPop, Object? result) {
         if (didPop) {
           return;
