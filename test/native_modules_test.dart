@@ -7,6 +7,7 @@ import 'package:landeck/native/builtin/service_overview_module.dart';
 import 'package:landeck/native/native_module_registry.dart';
 import 'package:landeck/pages/service/native_service_page.dart';
 import 'package:landeck/pages/services/service_editor_page.dart';
+import 'package:landeck/pages/service/service_viewer_page.dart';
 import 'package:landeck/pages/webview/widgets/service_switcher_sheet.dart';
 import 'package:landeck/repositories/service_repository.dart';
 import 'package:material_ui/material_ui.dart';
@@ -176,5 +177,34 @@ void main() {
     final Service saved = repo.services
         .firstWhere((Service item) => item.name == '原生测试服务');
     expect(saved.nativeModuleId, ServiceOverviewNativeModule.moduleId);
+  });
+
+
+  testWidgets('service viewer dispatches to the linked native module', (
+    WidgetTester tester,
+  ) async {
+    final Service? linked = await tester.runAsync<Service>(() async {
+      final Service created = await repository.addService(
+        name: '原生跳转服务',
+        customUrl: 'http://192.168.1.40:8080',
+        nativeModuleId: ServiceOverviewNativeModule.moduleId,
+      );
+      await repository.setServiceMode(created.id, ServiceMode.native);
+      return created;
+    });
+    expect(linked, isNotNull);
+    await tester.pumpWidget(
+      AppScope(
+        repository: repository,
+        child: MaterialApp(
+          theme: AppTheme.light,
+          home: ServiceViewerPage(serviceId: linked!.id),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('原生跳转服务'), findsWidgets);
+    expect(find.text('服务概览'), findsWidgets);
   });
 }
