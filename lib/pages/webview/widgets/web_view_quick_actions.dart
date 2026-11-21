@@ -34,7 +34,7 @@ class QuickActionWheel extends StatelessWidget {
   final int? selectedIndex;
   final double size;
 
-  static const List<double> itemAngles = <double>[-160, -120, -80, -40, 0];
+  static const List<double> itemAngles = <double>[-165, -127.5, -90, -52.5, -15];
 
   @override
   Widget build(BuildContext context) {

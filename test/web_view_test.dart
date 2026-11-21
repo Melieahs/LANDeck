@@ -87,7 +87,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 620));
     expect(find.byKey(const Key('quick-action-wheel')), findsOneWidget);
 
-    await gesture.moveBy(const Offset(-30, -110));
+    await gesture.moveBy(const Offset(-70, -90));
     await tester.pump();
     await gesture.up();
     await tester.pumpAndSettle();
