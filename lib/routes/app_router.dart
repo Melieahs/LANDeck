@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../models/device_category.dart';
 import '../pages/category/category_page.dart';
 import '../pages/main_shell.dart';
-import '../pages/webview/web_view_page.dart';
+import '../pages/service/service_viewer_page.dart';
 
 abstract final class AppRoutes {
   static const String home = '/';
@@ -44,7 +44,7 @@ abstract final class AppRouter {
         return MaterialPageRoute<void>(
           settings: settings,
           builder: (BuildContext context) =>
-              WebViewPage(serviceId: arguments.serviceId),
+              ServiceViewerPage(serviceId: arguments.serviceId),
         );
       }
     }

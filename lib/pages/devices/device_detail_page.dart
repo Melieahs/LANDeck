@@ -4,7 +4,7 @@ import '../../core/app_scope.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../models/device.dart';
 import '../../models/service.dart';
-import '../../pages/webview/web_view_page.dart';
+import '../service/service_viewer_page.dart';
 import '../../repositories/service_repository.dart';
 import '../../widgets/service_icon.dart';
 import '../../widgets/service_list_tile.dart';
@@ -241,7 +241,7 @@ class DeviceDetailPage extends StatelessWidget {
                             onTap: () => Navigator.of(context).push<void>(
                               MaterialPageRoute<void>(
                                 builder: (BuildContext context) =>
-                                    WebViewPage(serviceId: services[i].id),
+                                    ServiceViewerPage(serviceId: services[i].id),
                               ),
                             ),
                           ),

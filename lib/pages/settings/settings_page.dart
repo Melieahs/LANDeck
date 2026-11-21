@@ -8,6 +8,8 @@ import '../../core/utils/feedback.dart';
 import '../../repositories/service_repository.dart';
 import '../devices/devices_page.dart';
 import '../downloads/downloads_page.dart';
+import '../../native/native_module_registry.dart';
+import 'native_modules_page.dart';
 import 'storage_page.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -130,6 +132,26 @@ class SettingsPage extends StatelessWidget {
                   ],
                 ),
               ),
+
+              const SizedBox(height: 18),
+              const _SectionLabel('原生模块'),
+              Card.outlined(
+                clipBehavior: Clip.antiAlias,
+                child: ListTile(
+                  leading: const Icon(Icons.extension_rounded),
+                  title: const Text('原生模块'),
+                  subtitle: Text(
+                    '已安装 ${NativeModuleRegistry.instance.installed.length} 个模块',
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => Navigator.of(context).push<void>(
+                    MaterialPageRoute<void>(
+                      builder: (BuildContext context) =>
+                          const NativeModulesPage(),
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 18),
               const _SectionLabel('数据'),
               Card.outlined(
@@ -186,12 +208,12 @@ class SettingsPage extends StatelessWidget {
                 child: ListTile(
                   leading: const Icon(Icons.info_outline_rounded),
                   title: const Text('LANDeck'),
-                  subtitle: const Text('v0.8.7 · 自动填充 · 本地优先'),
+                  subtitle: const Text('v0.9.0 · 原生模块 · 本地优先'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => showAboutDialog(
                     context: context,
                     applicationName: 'LANDeck',
-                    applicationVersion: '0.8.7',
+                    applicationVersion: '0.9.0',
                     applicationLegalese: 'Local-first. No account. No cloud.',
                     children: const <Widget>[
                       SizedBox(height: 12),

@@ -4,17 +4,29 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../models/service.dart';
+import '../../../models/service_mode.dart';
+import '../../../native/native_module_registry.dart';
 import '../../../widgets/service_icon.dart';
 import '../../../widgets/status_dot.dart';
 
-/// Opens the service switcher and returns the newly selected service.
-Future<Service?> showServiceSwitcherSheet(
+/// A selected service plus the presentation the user asked for.
+class ServiceSelection {
+  const ServiceSelection({required this.service, required this.mode});
+
+  final Service service;
+  final ServiceMode mode;
+}
+
+/// Opens the service switcher and returns the selected service and mode.
+Future<ServiceSelection?> showServiceSwitcherSheet(
   BuildContext context, {
   required List<Service> services,
   required Service current,
+  required ServiceMode currentMode,
   required String Function(Service service) deviceNameFor,
+  NativeModuleRegistry? registry,
 }) {
-  return showModalBottomSheet<Service>(
+  return showModalBottomSheet<ServiceSelection>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
@@ -24,7 +36,9 @@ Future<Service?> showServiceSwitcherSheet(
       return ServiceSwitcherSheet(
         services: services,
         current: current,
+        currentMode: currentMode,
         deviceNameFor: deviceNameFor,
+        registry: registry ?? NativeModuleRegistry.instance,
       );
     },
   );
@@ -35,12 +49,16 @@ class ServiceSwitcherSheet extends StatefulWidget {
     super.key,
     required this.services,
     required this.current,
+    required this.currentMode,
     required this.deviceNameFor,
+    required this.registry,
   });
 
   final List<Service> services;
   final Service current;
+  final ServiceMode currentMode;
   final String Function(Service service) deviceNameFor;
+  final NativeModuleRegistry registry;
 
   @override
   State<ServiceSwitcherSheet> createState() => _ServiceSwitcherSheetState();
@@ -309,8 +327,18 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                                 service: service,
                                 deviceName: widget.deviceNameFor(service),
                                 selected: service.id == widget.current.id,
-                                onTap: () =>
-                                    Navigator.of(context).pop(service),
+                                selectedMode: widget.currentMode,
+                                nativeAvailable:
+                                    widget.registry.linkedModule(service) !=
+                                    null,
+                                lastMode: service.lastMode,
+                                onSelect: (ServiceMode mode) =>
+                                    Navigator.of(context).pop(
+                                      ServiceSelection(
+                                        service: service,
+                                        mode: mode,
+                                      ),
+                                    ),
                               ),
                           ],
                         ),
@@ -329,34 +357,40 @@ class _ServiceRow extends StatelessWidget {
     required this.service,
     required this.deviceName,
     required this.selected,
-    required this.onTap,
+    required this.selectedMode,
+    required this.nativeAvailable,
+    required this.lastMode,
+    required this.onSelect,
   });
 
   final Service service;
   final String deviceName;
   final bool selected;
-  final VoidCallback onTap;
+  final ServiceMode selectedMode;
+  final bool nativeAvailable;
+  final ServiceMode lastMode;
+  final ValueChanged<ServiceMode> onSelect;
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final ServiceMode openMode = nativeAvailable ? lastMode : ServiceMode.web;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: selected
-            ? Theme.of(context).colorScheme.primaryContainer
-            : Theme.of(context).colorScheme.surface,
+        color: selected ? scheme.primaryContainer : scheme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
           side: BorderSide(
             color: selected
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.42)
-                : Theme.of(context).colorScheme.outlineVariant,
+                ? scheme.primary.withValues(alpha: 0.42)
+                : scheme.outlineVariant,
           ),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           key: ValueKey<String>('service-row-${service.id}'),
-          onTap: onTap,
+          onTap: () => onSelect(openMode),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(10, 9, 12, 9),
             child: Row(
@@ -378,7 +412,7 @@ class _ServiceRow extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface,
+                          color: scheme.onSurface,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -388,9 +422,17 @@ class _ServiceRow extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 10,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          color: scheme.onSurfaceVariant,
                         ),
                       ),
+                      if (nativeAvailable) ...<Widget>[
+                        const SizedBox(height: 6),
+                        _ModeToggle(
+                          serviceId: service.id,
+                          selected: selected ? selectedMode : null,
+                          onSelect: onSelect,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -399,7 +441,7 @@ class _ServiceRow extends StatelessWidget {
                   Icon(
                     Icons.check_circle_rounded,
                     size: 18,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: scheme.primary,
                   )
                 else
                   Row(
@@ -413,7 +455,7 @@ class _ServiceRow extends StatelessWidget {
                           fontSize: 10,
                           color: service.isOnline
                               ? AppColors.online
-                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                              : scheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -423,6 +465,68 @@ class _ServiceRow extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ModeToggle extends StatelessWidget {
+  const _ModeToggle({
+    required this.serviceId,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  final String serviceId;
+  final ServiceMode? selected;
+  final ValueChanged<ServiceMode> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    return Wrap(
+      spacing: 6,
+      children: <Widget>[
+        for (final ServiceMode mode in ServiceMode.values)
+          InkWell(
+            key: ValueKey<String>('service-mode-$serviceId-${mode.name}'),
+            borderRadius: BorderRadius.circular(20),
+            onTap: () => onSelect(mode),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+              decoration: BoxDecoration(
+                color: selected == mode
+                    ? scheme.primary
+                    : scheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Icon(
+                    mode == ServiceMode.web
+                        ? Icons.language_rounded
+                        : Icons.widgets_rounded,
+                    size: 12,
+                    color: selected == mode
+                        ? scheme.onPrimary
+                        : scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    mode.label,
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w600,
+                      color: selected == mode
+                          ? scheme.onPrimary
+                          : scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

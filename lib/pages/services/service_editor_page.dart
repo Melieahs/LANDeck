@@ -10,6 +10,8 @@ import '../../models/device_category.dart';
 import '../../models/http_credential.dart';
 import '../../models/scan_candidate.dart';
 import '../../models/service.dart';
+import '../../native/native_module.dart';
+import '../../native/native_module_registry.dart';
 import '../../repositories/service_repository.dart';
 import '../../services/http_credential_store.dart';
 import '../../widgets/service_icon.dart';
@@ -72,6 +74,7 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
   DeviceCategory? _category;
   ServiceGlyph? _icon;
   bool _favorite = false;
+  String? _nativeModuleId;
   bool _useCustomUrl = false;
   bool _saving = false;
   bool _autoName = false;
@@ -91,6 +94,7 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
     _category = service?.category ?? widget.initialCategory;
     _icon = service?.icon;
     _favorite = service?.isFavorite ?? false;
+    _nativeModuleId = service?.nativeModuleId;
 
     final Uri? candidateUri = candidate == null
         ? null
@@ -288,6 +292,7 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
             category: () => _category,
             icon: () => _icon,
             isFavorite: _favorite,
+            nativeModuleId: () => _nativeModuleId,
             lastStatus: () => scannedStatus ?? widget.service!.lastStatus,
             lastCheckedAt: () => scannedAt ?? widget.service!.lastCheckedAt,
           ),
@@ -303,6 +308,7 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
           category: _category,
           icon: _icon,
           isFavorite: _favorite,
+          nativeModuleId: _nativeModuleId,
           lastStatus: scannedStatus,
           lastCheckedAt: scannedAt,
         );
@@ -628,6 +634,13 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
                       subtitle: const Text('收藏会显示在首页顶部。'),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  _NativeModuleCard(
+                    value: _nativeModuleId,
+                    modules: _compatibleModules(),
+                    onChanged: (String? value) =>
+                        setState(() => _nativeModuleId = value),
+                  ),
                   if (widget.isEditing) ...<Widget>[
                     const SizedBox(height: 12),
                     _SavedCredentialsCard(
@@ -670,6 +683,29 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
         ),
       ),
     );
+  }
+
+
+  List<NativeModule> _compatibleModules() {
+    final Device? device = AppScope.of(context).deviceById(_deviceId);
+    final bool custom = _deviceId == null || _useCustomUrl;
+    final int? port = int.tryParse(_portController.text.trim());
+    final Service draft = Service(
+      id: widget.service?.id ?? 'draft',
+      name: _nameController.text.trim(),
+      deviceId: _deviceId,
+      protocol: _protocol,
+      port: port,
+      path: _pathController.text.trim(),
+      customUrl: custom ? _customUrlController.text.trim() : null,
+      deviceAddress: device?.primaryAddress,
+      category: _category,
+      icon: _icon,
+      isFavorite: _favorite,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
+    );
+    return NativeModuleRegistry.instance.compatibleModules(draft);
   }
 
   String _portHint() {
@@ -834,3 +870,77 @@ class _ScanContextCard extends StatelessWidget {
     );
   }
 }
+
+
+class _NativeModuleCard extends StatelessWidget {
+  const _NativeModuleCard({
+    required this.value,
+    required this.modules,
+    required this.onChanged,
+  });
+
+  final String? value;
+  final List<NativeModule> modules;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    if (modules.isEmpty) {
+      return Card.outlined(
+        child: ListTile(
+          leading: const Icon(Icons.extension_outlined),
+          title: const Text('原生模式'),
+          subtitle: Text(
+            '未安装可用的原生模块，当前服务仅使用 Web 模式。',
+            style: theme.textTheme.bodySmall,
+          ),
+        ),
+      );
+    }
+    final String selected =
+        value != null && modules.any((NativeModule m) => m.id == value)
+        ? value!
+        : _noneModule;
+    return Card.outlined(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.extension_rounded),
+              title: const Text('原生模式'),
+              subtitle: Text(
+                '关联已安装模块后，可在 Web 与原生界面之间切换。',
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
+            DropdownButtonFormField<String>(
+              key: const ValueKey<String>('service-native-module-field'),
+              initialValue: selected,
+              decoration: const InputDecoration(labelText: '原生模块'),
+              items: <DropdownMenuItem<String>>[
+                const DropdownMenuItem<String>(
+                  value: _noneModule,
+                  child: Text('不关联（仅 Web）'),
+                ),
+                for (final NativeModule module in modules)
+                  DropdownMenuItem<String>(
+                    value: module.id,
+                    child: Text('${module.name} · v${module.version}'),
+                  ),
+              ],
+              onChanged: (String? next) {
+                onChanged(next == _noneModule ? null : next);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+const String _noneModule = '__none_native_module__';

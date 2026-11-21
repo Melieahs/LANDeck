@@ -24,6 +24,8 @@ import 'widgets/download_confirm_dialog.dart';
 import 'widgets/http_auth_dialog.dart';
 import 'widgets/more_actions_sheet.dart';
 import 'widgets/service_switcher_sheet.dart';
+import '../../models/service_mode.dart';
+import '../service/service_viewer_page.dart';
 import 'widgets/web_password_dialogs.dart';
 import 'widgets/web_error_view.dart';
 import 'widgets/web_view_toolbar.dart';
@@ -1180,17 +1182,33 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       return;
     }
     _collapseToolbar();
-    final Service? picked = await showServiceSwitcherSheet(
+    final ServiceSelection? selection = await showServiceSwitcherSheet(
       context,
       services: repository.services,
       current: current,
+      currentMode: ServiceMode.web,
       deviceNameFor: repository.deviceNameFor,
     );
-    if (!mounted || picked == null || picked.id == current.id) {
+    if (!mounted || selection == null) {
+      return;
+    }
+    final Service picked = selection.service;
+    final ServiceMode mode = selection.mode;
+    unawaited(repository.markServiceOpened(picked.id));
+    unawaited(repository.setServiceMode(picked.id, mode));
+    if (mode == ServiceMode.native) {
+      await Navigator.of(context).pushReplacement<void, void>(
+        MaterialPageRoute<void>(
+          builder: (BuildContext context) =>
+              ServiceViewerPage(serviceId: picked.id, initialMode: mode),
+        ),
+      );
+      return;
+    }
+    if (picked.id == current.id) {
       return;
     }
     _resetAuthState();
-    unawaited(repository.markServiceOpened(picked.id));
     setState(() {
       _service = picked;
       _hasError = false;

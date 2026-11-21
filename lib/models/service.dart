@@ -1,5 +1,6 @@
 import '../core/utils/url_utils.dart';
 import 'device_category.dart';
+import 'service_mode.dart';
 
 /// Availability of a service as reported by the last real check.
 enum ServiceStatus { online, offline }
@@ -38,6 +39,8 @@ class Service {
     this.lastStatus,
     this.lastCheckedAt,
     this.lastOpenedAt,
+    this.nativeModuleId,
+    this.lastMode = ServiceMode.web,
   });
 
   final String id;
@@ -68,6 +71,12 @@ class Service {
 
   /// Last time the user opened this service; used for recent-first ordering.
   final DateTime? lastOpenedAt;
+
+  /// Explicitly linked native module, if the user chose one.
+  final String? nativeModuleId;
+
+  /// Last mode the user opened this service in. Defaults to Web.
+  final ServiceMode lastMode;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -147,6 +156,8 @@ class Service {
     ServiceStatus? Function()? lastStatus,
     DateTime? Function()? lastCheckedAt,
     DateTime? Function()? lastOpenedAt,
+    String? Function()? nativeModuleId,
+    ServiceMode? lastMode,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -171,6 +182,10 @@ class Service {
           ? this.lastCheckedAt
           : lastCheckedAt(),
       lastOpenedAt: lastOpenedAt == null ? this.lastOpenedAt : lastOpenedAt(),
+      nativeModuleId: nativeModuleId == null
+          ? this.nativeModuleId
+          : nativeModuleId(),
+      lastMode: lastMode ?? this.lastMode,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -193,6 +208,8 @@ class Service {
       'lastStatus': lastStatus?.name,
       'lastCheckedAt': lastCheckedAt?.toIso8601String(),
       'lastOpenedAt': lastOpenedAt?.toIso8601String(),
+      'nativeModuleId': nativeModuleId,
+      'lastMode': lastMode.name,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -238,6 +255,11 @@ class Service {
             ),
       lastCheckedAt: DateTime.tryParse(map['lastCheckedAt'] as String? ?? ''),
       lastOpenedAt: DateTime.tryParse(map['lastOpenedAt'] as String? ?? ''),
+      nativeModuleId: map['nativeModuleId'] as String?,
+      lastMode: switch (map['lastMode'] as String?) {
+        'native' => ServiceMode.native,
+        _ => ServiceMode.web,
+      },
       createdAt:
           DateTime.tryParse(map['createdAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),

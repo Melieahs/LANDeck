@@ -8,6 +8,7 @@ import '../models/device.dart';
 import '../models/device_category.dart';
 import '../models/download_task.dart';
 import '../models/service.dart';
+import '../models/service_mode.dart';
 
 class ServiceConflictException implements Exception {
   const ServiceConflictException(this.message);
@@ -222,6 +223,7 @@ class LanDeckRepository extends ChangeNotifier {
     bool isFavorite = false,
     ServiceStatus? lastStatus,
     DateTime? lastCheckedAt,
+    String? nativeModuleId,
   }) async {
     final String trimmedName = name.trim();
     if (trimmedName.isEmpty) {
@@ -259,6 +261,7 @@ class LanDeckRepository extends ChangeNotifier {
       lastStatus: lastStatus,
       lastCheckedAt: lastCheckedAt,
       healthCheckEnabled: false,
+      nativeModuleId: nativeModuleId,
       createdAt: now,
       updatedAt: now,
     );
@@ -422,7 +425,34 @@ class LanDeckRepository extends ChangeNotifier {
       return;
     }
     final DateTime now = DateTime.now();
+    final DateTime? previous = service.lastOpenedAt;
+    if (previous != null &&
+        now.difference(previous).inSeconds < 5) {
+      return;
+    }
     final Service updated = service.copyWith(lastOpenedAt: () => now);
+    await AppDatabase.serviceStore
+        .record(id)
+        .put(_appDatabase.db, updated.toMap());
+    final int index = _services.indexWhere((Service item) => item.id == id);
+    if (index >= 0) {
+      _services[index] = updated;
+    }
+  }
+
+  /// Persists the user's last-used presentation mode for this service.
+  ///
+  /// This intentionally does not notify listeners: the WebView should not be
+  /// rebuilt just because its mode preference changed.
+  Future<void> setServiceMode(String id, ServiceMode mode) async {
+    final Service? service = serviceById(id);
+    if (service == null || service.lastMode == mode) {
+      return;
+    }
+    final Service updated = service.copyWith(
+      lastMode: mode,
+      updatedAt: DateTime.now(),
+    );
     await AppDatabase.serviceStore
         .record(id)
         .put(_appDatabase.db, updated.toMap());
