@@ -1,12 +1,10 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../core/app_scope.dart';
-import '../core/theme/app_colors.dart';
 import '../core/utils/feedback.dart';
 import '../models/service.dart';
 import '../pages/services/service_editor_page.dart';
 import 'service_icon.dart';
-import 'status_dot.dart';
 
 /// Material 3 list row used by the home service list, category pages and
 /// device detail. Tapping the row opens the real WebView; the overflow menu
@@ -63,11 +61,6 @@ class ServiceListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final TextTheme text = Theme.of(context).textTheme;
-    final Color statusColor = switch (service.lastStatus) {
-      ServiceStatus.online => AppColors.online,
-      ServiceStatus.offline => AppColors.offline,
-      null => scheme.onSurfaceVariant,
-    };
     final String address = service.address.isEmpty ? '未设置地址' : service.address;
 
     return ListTile(
@@ -109,20 +102,6 @@ class ServiceListTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              StatusDot(isOnline: service.isOnline, size: 6),
-              const SizedBox(height: 3),
-              Text(
-                service.statusLabel,
-                style: text.labelSmall?.copyWith(
-                  fontSize: 9.5,
-                  color: statusColor,
-                ),
-              ),
-            ],
-          ),
           PopupMenuButton<String>(
             key: ValueKey<String>('service-menu-${service.id}'),
             tooltip: '服务操作',

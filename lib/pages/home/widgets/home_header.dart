@@ -6,14 +6,12 @@ class HomeHeader extends StatelessWidget {
     super.key,
     required this.serviceCount,
     required this.deviceCount,
-    required this.onlineCount,
     required this.onOpenServices,
     required this.onOpenDevices,
   });
 
   final int serviceCount;
   final int deviceCount;
-  final int onlineCount;
   final VoidCallback onOpenServices;
   final VoidCallback onOpenDevices;
 
@@ -57,15 +55,6 @@ class HomeHeader extends StatelessWidget {
                     onTap: onOpenDevices,
                   ),
                 ),
-                _Divider(color: scheme.outlineVariant),
-                Expanded(
-                  child: _Stat(
-                    value: '$onlineCount',
-                    label: '在线',
-                    icon: Icons.wifi_tethering_rounded,
-                    highlight: onlineCount > 0,
-                  ),
-                ),
               ],
             ),
           ),
@@ -81,14 +70,12 @@ class _Stat extends StatelessWidget {
     required this.value,
     required this.label,
     required this.icon,
-    this.highlight = false,
     this.onTap,
   });
 
   final String value;
   final String label;
   final IconData icon;
-  final bool highlight;
   final VoidCallback? onTap;
 
   @override
@@ -98,11 +85,7 @@ class _Stat extends StatelessWidget {
     final Widget content = Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        Icon(
-          icon,
-          size: 18,
-          color: highlight ? scheme.primary : scheme.onSurfaceVariant,
-        ),
+        Icon(icon, size: 18, color: scheme.onSurfaceVariant),
         const SizedBox(width: 7),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,7 +94,7 @@ class _Stat extends StatelessWidget {
             Text(
               value,
               style: text.titleLarge?.copyWith(
-                color: highlight ? scheme.primary : scheme.onSurface,
+                color: scheme.onSurface,
                 fontWeight: FontWeight.w700,
               ),
             ),

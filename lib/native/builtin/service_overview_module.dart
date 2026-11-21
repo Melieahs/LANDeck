@@ -92,8 +92,6 @@ class _ServiceOverview extends StatelessWidget {
                 _InfoRow(label: '所属设备', value: deviceName),
                 const SizedBox(height: 10),
                 _InfoRow(label: '分类', value: service.categoryLabel),
-                const SizedBox(height: 10),
-                _InfoRow(label: '最近状态', value: service.statusLabel),
               ],
             ),
           ),

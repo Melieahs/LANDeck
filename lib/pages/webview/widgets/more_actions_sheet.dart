@@ -1,9 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../models/service.dart';
 import '../../../widgets/service_icon.dart';
-import '../../../widgets/status_dot.dart';
 
 enum MoreAction {
   refresh,
@@ -508,15 +506,6 @@ class _PageInfoSheet extends StatelessWidget {
                       _InfoRow(label: '分类', value: service.categoryLabel),
                       const _ActionDivider(),
                       _InfoRow(
-                        label: '状态',
-                        value: service.statusLabel,
-                        valueColor: service.isOnline
-                            ? AppColors.online
-                            : Theme.of(context).colorScheme.onSurfaceVariant,
-                        leadingDot: true,
-                      ),
-                      const _ActionDivider(),
-                      _InfoRow(
                         label: '连接方式',
                         value: nativeWebView ? '局域网直连' : '未加载',
                       ),
@@ -541,8 +530,8 @@ class _PageInfoSheet extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   nativeWebView
-                      ? '当前页面由系统 WebView 加载，Cookie 与登录状态会随应用数据保留。\n在线状态来自最近一次扫描或页面加载结果，未检测时显示未检测。'
-                      : '当前平台没有系统 WebView，未加载任何网页内容。请使用 Android APK 或外部浏览器。\n在线状态来自最近一次扫描或页面加载结果。',
+                      ? '当前页面由系统 WebView 加载，Cookie 与登录状态会随应用数据保留。'
+                      : '当前平台没有系统 WebView，未加载任何网页内容。请使用 Android APK 或外部浏览器。',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 9.5,
@@ -560,17 +549,10 @@ class _PageInfoSheet extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.label,
-    required this.value,
-    this.valueColor,
-    this.leadingDot = false,
-  });
+  const _InfoRow({required this.label, required this.value});
 
   final String label;
   final String value;
-  final Color? valueColor;
-  final bool leadingDot;
 
   @override
   Widget build(BuildContext context) {
@@ -594,10 +576,6 @@ class _InfoRow extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: <Widget>[
-                if (leadingDot) ...<Widget>[
-                  StatusDot(isOnline: value == '在线', size: 5),
-                  const SizedBox(width: 5),
-                ],
                 Flexible(
                   child: Text(
                     value,
@@ -605,9 +583,7 @@ class _InfoRow extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11.5,
                       height: 1.4,
-                      color:
-                          valueColor ??
-                          Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),

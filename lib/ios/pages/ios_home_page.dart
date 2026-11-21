@@ -37,17 +37,22 @@ class _IosHomePageState extends State<IosHomePage> {
         : repository.searchServices(query);
     final List<Device> devices = query.isEmpty
         ? repository.devices
-        : repository.devices.where((Device device) {
-            final String text =
-                '${device.name} ${device.primaryAddress} ${device.deviceType.label}'
-                    .toLowerCase();
-            return text.contains(query);
-          }).toList(growable: false);
-    final Set<String> matchingIds =
-        services.map((Service service) => service.id).toSet();
+        : repository.devices
+              .where((Device device) {
+                final String text =
+                    '${device.name} ${device.primaryAddress} ${device.deviceType.label}'
+                        .toLowerCase();
+                return text.contains(query);
+              })
+              .toList(growable: false);
+    final Set<String> matchingIds = services
+        .map((Service service) => service.id)
+        .toSet();
     final List<Service> favorites = repository.favorites
-        .where((Service service) =>
-            query.isEmpty || matchingIds.contains(service.id))
+        .where(
+          (Service service) =>
+              query.isEmpty || matchingIds.contains(service.id),
+        )
         .toList(growable: false);
     final double topInset = MediaQuery.paddingOf(context).top;
 
@@ -75,7 +80,6 @@ class _IosHomePageState extends State<IosHomePage> {
                     _OverviewLine(
                       serviceCount: repository.services.length,
                       deviceCount: repository.devices.length,
-                      onlineCount: repository.onlineCount,
                     ),
                     const SizedBox(height: 24),
                     _SectionHeader(title: '收藏'),
@@ -134,9 +138,14 @@ class _IosHomePageState extends State<IosHomePage> {
     return Wrap(
       spacing: 22,
       runSpacing: 14,
-      children: favorites.map((Service service) {
-        return _FavoriteItem(service: service, onTap: () => _openService(service));
-      }).toList(growable: false),
+      children: favorites
+          .map((Service service) {
+            return _FavoriteItem(
+              service: service,
+              onTap: () => _openService(service),
+            );
+          })
+          .toList(growable: false),
     );
   }
 
@@ -144,9 +153,7 @@ class _IosHomePageState extends State<IosHomePage> {
     if (devices.isEmpty) {
       return _EmptyAction(
         title: _query.isEmpty ? '添加第一台设备' : '没有匹配的设备',
-        subtitle: _query.isEmpty
-            ? '设备地址用于自动生成关联服务的访问 URL'
-            : '试试设备名称或 IP 地址',
+        subtitle: _query.isEmpty ? '设备地址用于自动生成关联服务的访问 URL' : '试试设备名称或 IP 地址',
         action: _query.isEmpty ? _openAddDevice : null,
         actionText: '添加设备',
       );
@@ -170,9 +177,7 @@ class _IosHomePageState extends State<IosHomePage> {
     if (services.isEmpty) {
       return _EmptyAction(
         title: _query.isEmpty ? '还没有添加服务' : '没有找到匹配的服务',
-        subtitle: _query.isEmpty
-            ? '进入设备详情，输入端口即可创建服务'
-            : '试试服务名称、设备或 IP 地址',
+        subtitle: _query.isEmpty ? '进入设备详情，输入端口即可创建服务' : '试试服务名称、设备或 IP 地址',
       );
     }
     return Column(
@@ -242,12 +247,14 @@ class _IosHomePageState extends State<IosHomePage> {
       builder: (BuildContext context) {
         return CupertinoActionSheet(
           title: const Text('选择设备'),
-          actions: repository.devices.map((Device device) {
-            return CupertinoActionSheetAction(
-              onPressed: () => Navigator.pop(context, device),
-              child: Text('${device.name} · ${device.addressLabel}'),
-            );
-          }).toList(growable: false),
+          actions: repository.devices
+              .map((Device device) {
+                return CupertinoActionSheetAction(
+                  onPressed: () => Navigator.pop(context, device),
+                  child: Text('${device.name} · ${device.addressLabel}'),
+                );
+              })
+              .toList(growable: false),
           cancelButton: CupertinoActionSheetAction(
             isDefaultAction: true,
             onPressed: () => Navigator.pop(context),
@@ -338,15 +345,10 @@ class _IosHomePageState extends State<IosHomePage> {
 enum _AddAction { device, service }
 
 class _OverviewLine extends StatelessWidget {
-  const _OverviewLine({
-    required this.serviceCount,
-    required this.deviceCount,
-    required this.onlineCount,
-  });
+  const _OverviewLine({required this.serviceCount, required this.deviceCount});
 
   final int serviceCount;
   final int deviceCount;
-  final int onlineCount;
 
   @override
   Widget build(BuildContext context) {
@@ -363,9 +365,7 @@ class _OverviewLine extends StatelessWidget {
           TextSpan(text: '$serviceCount', style: number),
           TextSpan(text: ' 个服务   ', style: label),
           TextSpan(text: '$deviceCount', style: number),
-          TextSpan(text: ' 台设备   ', style: label),
-          TextSpan(text: '$onlineCount', style: number),
-          TextSpan(text: ' 在线', style: label),
+          TextSpan(text: ' 台设备', style: label),
         ],
       ),
     );
@@ -442,14 +442,6 @@ class _DeviceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<Service> linked = repository.servicesForDevice(device);
-    final bool hasOnline = linked.any((Service service) => service.isOnline);
-    final bool hasStatus = linked.any((Service service) => service.hasStatus);
-    final String status = hasOnline
-        ? '在线'
-        : hasStatus
-        ? '离线'
-        : '未检测';
     return _TapRow(
       onTap: onTap,
       leading: Icon(
@@ -458,7 +450,7 @@ class _DeviceRow extends StatelessWidget {
         color: CupertinoColors.systemBlue.resolveFrom(context),
       ),
       title: device.name,
-      subtitle: '${device.deviceType.label} · ${device.addressLabel} · $status',
+      subtitle: '${device.deviceType.label} · ${device.addressLabel}',
       trailing: Text(
         '$serviceCount 个服务',
         style: TextStyle(
@@ -493,16 +485,10 @@ class _ServiceRow extends StatelessWidget {
       ),
       title: service.name,
       subtitle: '$deviceName · ${service.address}',
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          IosStatusText(
-            isOnline: service.isOnline,
-            unknown: !service.hasStatus,
-          ),
-          const SizedBox(width: 2),
-          Icon(CupertinoIcons.chevron_forward, size: 13, color: secondary),
-        ],
+      trailing: Icon(
+        CupertinoIcons.chevron_forward,
+        size: 13,
+        color: secondary,
       ),
     );
   }
@@ -557,7 +543,9 @@ class _TapRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 13,
-                      color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                      color: CupertinoColors.secondaryLabel.resolveFrom(
+                        context,
+                      ),
                     ),
                   ),
                 ],

@@ -3,7 +3,6 @@ import 'package:material_ui/material_ui.dart';
 import '../../../models/service.dart';
 import '../../../widgets/section_header.dart';
 import '../../../widgets/service_icon.dart';
-import '../../../widgets/status_dot.dart';
 
 /// Home favorites grid with a manual order the user controls by dragging.
 class FavoritesSection extends StatefulWidget {
@@ -193,23 +192,6 @@ class _FavoriteCard extends StatelessWidget {
                         color: scheme.onSurface,
                         fontWeight: FontWeight.w600,
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: <Widget>[
-                        StatusDot(isOnline: service.isOnline, size: 5),
-                        const SizedBox(width: 5),
-                        Expanded(
-                          child: Text(
-                            service.isOnline ? '在线' : service.statusLabel,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: text.labelSmall?.copyWith(
-                              color: scheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),

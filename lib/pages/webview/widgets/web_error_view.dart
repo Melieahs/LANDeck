@@ -2,7 +2,6 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../models/service.dart';
 import '../../../widgets/service_icon.dart';
-import '../../../widgets/status_dot.dart';
 
 /// Lightweight connection error shown inside the WebView surface.
 class WebErrorView extends StatelessWidget {
@@ -84,8 +83,6 @@ class WebErrorView extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      const StatusDot(isOnline: false, size: 5),
-                      const SizedBox(width: 5),
                       Text(
                         '连接失败',
                         style: textTheme.labelSmall?.copyWith(

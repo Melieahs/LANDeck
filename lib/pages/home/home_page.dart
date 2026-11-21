@@ -161,7 +161,6 @@ class _HomePageState extends State<HomePage> {
                   HomeHeader(
                     serviceCount: repository.services.length,
                     deviceCount: repository.devices.length,
-                    onlineCount: repository.onlineCount,
                     onOpenServices: _openServices,
                     onOpenDevices: _openDevices,
                   ),

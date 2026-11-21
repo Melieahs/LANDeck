@@ -25,8 +25,6 @@ class IosDeviceDetailPage extends StatelessWidget {
       );
     }
     final List<Service> services = repository.servicesForDevice(device);
-    final bool hasOnline = services.any((Service service) => service.isOnline);
-    final bool hasStatus = services.any((Service service) => service.hasStatus);
 
     return CupertinoPageScaffold(
       child: CustomScrollView(
@@ -55,13 +53,6 @@ class IosDeviceDetailPage extends StatelessWidget {
                   title: const Text('类型'),
                   additionalInfo: Text(device.deviceType.label),
                 ),
-                CupertinoListTile(
-                  title: const Text('状态'),
-                  trailing: IosStatusText(
-                    isOnline: hasOnline,
-                    unknown: !hasStatus,
-                  ),
-                ),
                 if (device.notes != null && device.notes!.trim().isNotEmpty)
                   CupertinoListTile(
                     title: const Text('备注'),
@@ -84,10 +75,6 @@ class IosDeviceDetailPage extends StatelessWidget {
                     title: Text(service.name),
                     subtitle: Text(
                       '${service.address}${service.pathLabel.isEmpty ? '' : ' · ${service.pathLabel}'}',
-                    ),
-                    trailing: IosStatusText(
-                      isOnline: service.isOnline,
-                      unknown: !service.hasStatus,
                     ),
                     onTap: () => _openService(context, service),
                   );
@@ -155,7 +142,8 @@ class IosDeviceDetailPage extends StatelessWidget {
     if (action == _DeviceAction.edit) {
       await Navigator.of(context).push(
         CupertinoPageRoute<void>(
-          builder: (BuildContext context) => IosDeviceEditorPage(device: device),
+          builder: (BuildContext context) =>
+              IosDeviceEditorPage(device: device),
         ),
       );
       return;

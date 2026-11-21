@@ -69,8 +69,7 @@ class CategoryPage extends StatelessWidget {
                         return Padding(
                           padding: const EdgeInsets.fromLTRB(8, 4, 8, 10),
                           child: Text(
-                            '${services.length} 个服务 · '
-                            '${services.where((Service s) => s.isOnline).length} 在线',
+                            '${services.length} 个服务',
                             style: Theme.of(context).textTheme.labelLarge
                                 ?.copyWith(
                                   color: Theme.of(context)
