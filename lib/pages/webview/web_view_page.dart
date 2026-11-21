@@ -82,6 +82,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   final Map<String, DateTime> _recentDownloadPrompts = <String, DateTime>{};
   final Set<String> _handledDownloadUrls = <String>{};
   bool _immersive = false;
+  bool _allowExit = false;
 
   @override
   void initState() {
@@ -1092,12 +1093,16 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   }
 
   void _exitViewer() {
-    final ModalRoute<Object?>? route = ModalRoute.of(context);
-    if (route == null) {
+    if (_allowExit) {
       Navigator.of(context).maybePop();
       return;
     }
-    Navigator.of(context).removeRoute(route);
+    setState(() => _allowExit = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Navigator.of(context).maybePop();
+      }
+    });
   }
 
   void _handleSystemBack() {
@@ -1109,7 +1114,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       _goBack();
       return;
     }
-    Navigator.of(context).pop();
+    _exitViewer();
   }
 
   Future<void> _handleRefresh() async {
@@ -1545,7 +1550,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
             : Brightness.dark,
       ),
       child: PopScope<Object?>(
-        canPop: false,
+        canPop: _allowExit,
         onPopInvokedWithResult: (bool didPop, Object? result) {
           if (didPop) {
             return;
