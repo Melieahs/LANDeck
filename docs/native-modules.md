@@ -133,7 +133,7 @@ Flutter 的 Android/iOS 安装包是 AOT 编译的，不能在运行时加载任
 - `form` 会以 `application/x-www-form-urlencoded` 发送；`json` 会以 JSON 发送。
 - `query` 追加查询参数。
 - `headers` 可附加普通请求头；`Authorization` 由 LANDeck 根据登录凭据设置。
-- `confirmText` 非空时显示确认框；为空则直接执行（内置 Padavan 模块也不做二次确认）。
+- `confirmText` 非空时显示确认框；为空则直接执行（示例插件 Padavan 也不做二次确认）。
 - `refreshDelaySeconds` 在操作成功后等待并刷新状态，范围 0–120。
 - `icon` 支持 `refresh`、`power`、`wifi`、`settings`、`restart`、`download`、
   `upload`、`play`、`stop`，其他值使用通用图标。
@@ -146,11 +146,50 @@ Android Keystore / iOS Keychain，绑定 `serviceId + host:port + plugin:<id>`�
 
 ## 安装与卸载
 
-设置 → 原生模块 → 右上角 `+` / 「导入 .json / .zip 插件」。导入前会展示名称、版本、
-作者、状态请求和操作列表，需要再次确认。导入后到服务编辑页 →「原生模块」选择该模块，
-再选择「默认打开方式」。
+三种安装方式：
+
+1. **发现页插件源**：打开「发现」→「模块插件」，从 LANDeck 仓库读取插件索引，点
+   「安装」后先下载清单，展示名称、版本、作者、状态请求和操作列表，确认后才写入。
+2. 设置 → 原生模块 → 右上角 `+` / 「导入 .json / .zip 插件」，导入本地文件。
+3. 命令行/自动化场景可直接把清单放到应用支持目录的 `native_modules/*.json`。
+
+导入后到服务编辑页 →「原生模块」选择该模块，再选择「默认打开方式」。
 
 卸载会删除插件清单；已关联服务自动回退为 Web 模式，已保存的密码不会删除。
+
+## 插件源（发现页）
+
+插件源是仓库里的一个 JSON 索引，默认地址：
+
+```
+https://raw.githubusercontent.com/Melieahs/LANDeck/main/examples/native-modules/index.json
+```
+
+格式：
+
+```json
+{
+  "schemaVersion": 1,
+  "plugins": [
+    {
+      "id": "plugin.padavan-wan",
+      "name": "Padavan 路由器",
+      "version": "1.0.0",
+      "description": "读取 WAN 状态并控制连接。",
+      "author": "LANDeck",
+      "path": "padavan-wan/plugin.json"
+    }
+  ]
+}
+```
+
+- `path` 必须相对于索引地址，只能是 `.json`，不能是绝对路径、URL 或包含 `..`；
+- `id` 必须以 `plugin.` 开头，且索引内不能重复；
+- 索引最大 128 KB，单个清单最大 128 KB；HTTP(S) 之外的协议一律拒绝；
+- 下载的清单仍走本地导入相同的校验流程，确认框里会列出全部请求；
+- 索引只在打开发现页时读取，可手动刷新；缓存写入与应用内导入的插件相同。
+
+当前只收录 `examples/native-modules/` 下的插件。未合入默认分支的插件在发现页不可见。
 
 ## 版本与兼容
 
@@ -158,4 +197,4 @@ Android Keystore / iOS Keychain，绑定 `serviceId + host:port + plugin:<id>`�
 - 不支持的字段会被忽略；非法 id、绝对 URL、未知权限、超限数量会拒绝导入。
 - 插件不做代码签名；只导入你信任的来源。声明式插件虽然不能执行代码，但仍可向关联
   服务发送修改类请求，导入前请审查 `actions`。
-- 动态导入、第三方签名、脚本/自定义 UI 和模块市场属于后续阶段。
+- 暂不支持第三方插件源、签名校验、脚本/自定义 UI 和版本更新提示。

@@ -5,6 +5,7 @@ import '../../core/utils/feedback.dart';
 import '../../native/native_module.dart';
 import '../../native/native_module_registry.dart';
 import '../../native/plugin/imported_module_store.dart';
+import '../../native/plugin/plugin_install_dialog.dart';
 import '../../native/plugin/plugin_manifest.dart';
 
 /// Lists built-in and imported native modules.
@@ -41,59 +42,20 @@ class _NativeModulesPageState extends State<NativeModulesPage> {
     }
     setState(() => _busy = true);
     try {
-      final ImportedNativeModule module = await ImportedPluginStore.instance.previewBytes(
-        await picked.xFile.readAsBytes(),
-        fileName: picked.name,
-      );
+      final ImportedNativeModule module = await ImportedPluginStore.instance
+          .previewBytes(
+            await picked.xFile.readAsBytes(),
+            fileName: picked.name,
+          );
       if (!mounted) {
         return;
       }
-      final bool? confirmed = await showDialog<bool>(
-        context: context,
-        builder: (BuildContext context) => AlertDialog(
-          icon: const Icon(Icons.extension_rounded),
-          title: const Text('导入原生模块？'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text('${module.name} · v${module.version}'),
-                const SizedBox(height: 6),
-                Text(module.description),
-                if (module.manifest.author != null) ...<Widget>[
-                  const SizedBox(height: 6),
-                  Text('作者：${module.manifest.author}'),
-                ],
-                const SizedBox(height: 12),
-                Text(
-                  '此插件只包含声明式 HTTP 配置，不会执行第三方代码。'
-                  '它可以向关联服务的地址发送以下请求，请只导入可信来源：',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  <String>[
-                    if (module.manifest.actions.isNotEmpty)
-                      '操作：${module.manifest.actions.map((PluginAction item) => item.label).join('、')}',
-                    if (module.manifest.status != null)
-                      '状态读取：${module.manifest.status!.method} ${module.manifest.status!.path}',
-                  ].join('；'),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
-            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('导入')),
-          ],
-        ),
-      );
-      if (confirmed != true || !mounted) {
+      final bool confirmed = await confirmPluginInstall(context, module);
+      if (!confirmed) {
         return;
       }
-      final ImportedPluginResult result = await ImportedPluginStore.instance.install(module);
+      final ImportedPluginResult result = await ImportedPluginStore.instance
+          .install(module);
       if (!mounted) {
         return;
       }
@@ -120,9 +82,14 @@ class _NativeModulesPageState extends State<NativeModulesPage> {
         title: Text('移除「${module.name}」？'),
         content: const Text('已关联此模块的服务会回退为 Web 模式；已保存的密码不会被删除。'),
         actions: <Widget>[
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('移除'),
           ),
@@ -152,7 +119,11 @@ class _NativeModulesPageState extends State<NativeModulesPage> {
             tooltip: '导入模块',
             onPressed: _busy ? null : _import,
             icon: _busy
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Icon(Icons.add_rounded),
           ),
         ],
@@ -201,7 +172,11 @@ class _NativeModulesPageState extends State<NativeModulesPage> {
                   for (int i = 0; i < modules.length; i++) ...<Widget>[
                     ListTile(
                       key: ValueKey<String>('native-module-${modules[i].id}'),
-                      leading: Icon(modules[i].isBuiltin ? Icons.extension_rounded : Icons.extension_outlined),
+                      leading: Icon(
+                        modules[i].isBuiltin
+                            ? Icons.extension_rounded
+                            : Icons.extension_outlined,
+                      ),
                       title: Text(modules[i].name),
                       subtitle: Text(
                         'v${modules[i].version} · ${modules[i].description}',
@@ -212,12 +187,16 @@ class _NativeModulesPageState extends State<NativeModulesPage> {
                           ? Chip(
                               label: const Text('内置'),
                               visualDensity: VisualDensity.compact,
-                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
                             )
                           : IconButton(
-                              key: ValueKey<String>('delete-native-module-${modules[i].id}'),
+                              key: ValueKey<String>(
+                                'delete-native-module-${modules[i].id}',
+                              ),
                               tooltip: '移除',
-                              onPressed: () => _delete(modules[i] as ImportedNativeModule),
+                              onPressed: () =>
+                                  _delete(modules[i] as ImportedNativeModule),
                               icon: const Icon(Icons.delete_outline_rounded),
                             ),
                     ),

@@ -20,12 +20,12 @@ LANDeck 是一个 Flutter 的局域网服务启动器：
 - UI 已统一为 **Material Design 3**，支持浅色/深色/跟随系统、Android Material You 动态取色。
 - 数据完全来自本地 Sembast，无账号、无云端、无 Demo 数据。
 - 服务以设备为中心：先建设备，再在设备下快速添加服务；设备地址变化时关联服务 URL 自动更新。
-- 已实现真实 WebView、HTTP Basic Auth、网页密码保存/自动填充、下载、上传、局域网两阶段发现、设备端口扫描、FTP 备份/恢复、原生模块双模式、Padavan 模块、声明式插件导入。
+- 已实现真实 WebView、HTTP Basic Auth、网页密码保存/自动填充、下载、上传、局域网两阶段发现、设备端口扫描、FTP 备份/恢复、原生模块双模式、声明式插件导入（Padavan 作为插件示例，不再内置），以及发现页的仓库插件源安装。
 
 当前验证结果：
 
 - `flutter analyze`：通过，`No issues found!`
-- `flutter test`：**79 个测试全部通过**
+- `flutter test`：**83 个测试全部通过**
 - Android release APK：`dist/LANDeck-0.9.3.apk`，58,748,385 字节（约 56 MB），
   SHA-256 `8881b49816bb22dbd46cea412efd1ba5307f7d76d7630160a22abb7c44c50396`
 - iOS：CI 生成 **unsigned IPA**（不能直接安装）；本轮 `d522c33` 的 CI run 见 §11。
@@ -287,22 +287,23 @@ device.primaryAddress + protocol + port + path
 - 保存必须用户确认；加密存 `flutter_secure_storage`
 - 历史 host-only 凭据不再匹配（这是有意的安全/正确性变化）
 
-### 7.7 原生模块与 Padavan
+### 7.7 原生模块
 
 - 接口：`lib/native/native_module.dart`
-- 注册表：`lib/native/native_module_registry.dart`
+- 注册表：`lib/native/native_module_registry.dart`（默认只注册「服务概览」）
 - 内置：`lib/native/builtin/service_overview_module.dart`
-- Padavan：`lib/native/padavan/padavan_client.dart` + `padavan_native_page.dart`
+- Padavan WAN 控制已从内置模块移除，改为声明式插件示例 `examples/native-modules/padavan-wan/plugin.json`
   - 真实接口 `POST /device-map/wan_action.asp`（Connect / Disconnect / WispReassoc）
   - 状态解析 `/device-map/internet.asp`
-  - 不自动执行危险操作；用户点击后立即执行（已按用户要求移除二次确认）
+  - 插件不设 `confirmText`，用户点击后立即执行（不做二次确认）
+  - 导入入口与格式见 7.8；导入后到服务编辑页关联并选择默认打开方式
 - 双模式调度：`lib/pages/service/service_viewer_page.dart`
 - 原生页：`lib/pages/service/native_service_page.dart`
 
 ### 7.8 声明式插件（本轮新增）
 
 格式文档：`docs/native-modules.md`  
-示例：`examples/native-modules/http-status/plugin.json`
+示例：`examples/native-modules/http-status/plugin.json`、`examples/native-modules/padavan-wan/plugin.json`
 
 要点：
 
@@ -313,6 +314,11 @@ device.primaryAddress + protocol + port + path
 - 支持状态字段、最多 8 个动作、最多 16 个字段
 - 包大小上限 512 KB；manifest 128 KB
 - 导入入口：设置 → 原生模块 → 右上角 `+`
+- 发现页插件源：「发现」→「模块插件」读取仓库 `examples/native-modules/index.json`
+  （默认 `https://raw.githubusercontent.com/Melieahs/LANDeck/main/examples/native-modules/index.json`）
+  - 只接受相对 `.json` 路径，拒绝绝对 URL、`..`、非 HTTP(S)；索引/清单各 128 KB 上限
+  - 下载后复用同一确认框，再写入 `native_modules/`
+  - 未合并到默认分支的插件在发现页不可见
 - 存储：app support `native_modules/`，启动时 `loadAll()` 注册
 - 导入模块不能覆盖内置模块
 
@@ -322,7 +328,11 @@ device.primaryAddress + protocol + port + path
 lib/native/plugin/plugin_manifest.dart
 lib/native/plugin/imported_native_page.dart
 lib/native/plugin/imported_module_store.dart
+lib/native/plugin/plugin_catalog.dart
+lib/native/plugin/plugin_install_dialog.dart
+lib/pages/discover/plugin_market_section.dart
 lib/pages/settings/native_modules_page.dart
+examples/native-modules/index.json
 ```
 
 ---
@@ -511,12 +521,13 @@ PS5 Web File Manager：`192.168.1.50:8888`。
 
 ## 12. 下一步建议（按优先级）
 
-1. **完成插件端到端验证**：在服务编辑页把“网页标题”插件关联到 `Local NAS`，
-   默认方式设为原生，保存后从首页打开，确认能请求 `http://10.0.2.2:8090/`
-   并显示标题字段；再测一次动作/失败态。
+1. **完成插件端到端验证（用户手动）**：打开「发现」→「模块插件」，确认列表出现
+   `plugin.padavan-wan`，点「安装」并确认；也可继续用本地导入 `examples/native-modules/`
+   下的插件。安装后到服务编辑页关联并设默认原生，从首页打开确认状态字段与动作可用；
+   Padavan 插件用真实路由器 `192.168.1.1` 验证。
 2. **检查 iOS CI `d522c33` 结果**，把 unsigned IPA 链接交给用户；不要在未验证时称“可安装”。
-3. **Android 0.9.3 冒烟**：安装 `dist/LANDeck-0.9.3.apk`，确认导入插件列表、双模式开关、
-   Padavan 模块入口不崩溃。
+3. **Android 0.9.3 冒烟**：安装 `dist/LANDeck-0.9.3.apk`，确认发现页插件源、导入插件列表、
+   双模式开关、Padavan 插件入口不崩溃。
 4. **继续 iOS 功能补齐**：iPad 适配、原生分享/文件打开体验、发现页细节；
    注意 iOS 仍复用 Material 3。
 5. **目录上传**：若用户坚持 PS5 目录上传，需要研究 WKWebView/Android WebView 是否能在

@@ -15,6 +15,7 @@ import '../../services/network_inspector.dart';
 import '../../widgets/service_icon.dart';
 import '../devices/device_detail_page.dart';
 import '../devices/device_editor_page.dart';
+import 'plugin_market_section.dart';
 
 /// Phase 1 of LAN discovery: find devices only. Service ports are scanned
 /// later from a specific device, never across the whole subnet.
@@ -403,6 +404,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
                 onCancel: _cancelDiscovery,
                 result: result,
               ),
+              const SizedBox(height: 20),
+              const PluginMarketSection(),
               if (hasResults) ...<Widget>[
                 const SizedBox(height: 20),
                 _ResultsHeader(

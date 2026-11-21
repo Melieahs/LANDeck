@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "name": "LANDeck 模块插件",
+  "plugins": [
+    {
+      "id": "plugin.padavan-wan",
+      "name": "Padavan 路由器",
+      "version": "1.0.0",
+      "description": "读取 Padavan 路由器的 WAN 状态，并支持重连 WAN、断开 WAN 与重新关联无线中继。",
+      "author": "LANDeck",
+      "path": "padavan-wan/plugin.json"
+    }
+  ]
+}
