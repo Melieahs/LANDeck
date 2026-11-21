@@ -6,6 +6,7 @@ import '../../../widgets/service_icon.dart';
 import '../../../widgets/status_dot.dart';
 
 enum MoreAction {
+  goForward,
   openExternal,
   copyAddress,
   fillPassword,
@@ -23,6 +24,7 @@ Future<MoreAction?> showMoreActionsSheet(
   required String deviceName,
   required bool immersive,
   required bool nativeWebView,
+  required bool canGoForward,
   String? currentUrl,
 }) {
   return showModalBottomSheet<MoreAction>(
@@ -37,6 +39,7 @@ Future<MoreAction?> showMoreActionsSheet(
         deviceName: deviceName,
         immersive: immersive,
         nativeWebView: nativeWebView,
+        canGoForward: canGoForward,
         currentUrl: currentUrl,
       );
     },
@@ -49,6 +52,7 @@ class _MoreActionsSheet extends StatelessWidget {
     required this.deviceName,
     required this.immersive,
     required this.nativeWebView,
+    required this.canGoForward,
     this.currentUrl,
   });
 
@@ -56,6 +60,7 @@ class _MoreActionsSheet extends StatelessWidget {
   final String deviceName;
   final bool immersive;
   final bool nativeWebView;
+  final bool canGoForward;
   final String? currentUrl;
 
   @override
@@ -141,6 +146,17 @@ class _MoreActionsSheet extends StatelessWidget {
                   clipBehavior: Clip.antiAlias,
                   child: Column(
                     children: <Widget>[
+                      _ActionRow(
+                        icon: Icons.arrow_forward_rounded,
+                        title: '前进',
+                        subtitle: canGoForward ? '前往下一页' : '当前没有可前进的页面',
+                        onTap: canGoForward
+                            ? () =>
+                                  Navigator.of(context)
+                                      .pop(MoreAction.goForward)
+                            : null,
+                      ),
+                      const _ActionDivider(),
                       _ActionRow(
                         icon: Icons.open_in_new_rounded,
                         title: '在外部浏览器打开',
@@ -242,7 +258,7 @@ class _ActionRow extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final Widget? trailing;
 
   @override

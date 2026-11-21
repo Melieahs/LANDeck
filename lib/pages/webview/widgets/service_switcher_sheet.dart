@@ -219,14 +219,12 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                         hintText: '搜索名称、设备或 IP',
                         hintStyle: TextStyle(
                           fontSize: 12.5,
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         prefixIcon: Icon(
                           Icons.search_rounded,
                           size: 19,
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         prefixIconConstraints: const BoxConstraints(
                           minWidth: 44,
@@ -268,17 +266,13 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .outlineVariant,
+                            color: Theme.of(context).colorScheme.outlineVariant,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .outlineVariant,
+                            color: Theme.of(context).colorScheme.outlineVariant,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
@@ -374,7 +368,9 @@ class _ServiceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
-    final ServiceMode openMode = nativeAvailable ? defaultMode : ServiceMode.web;
+    final ServiceMode openMode = nativeAvailable
+        ? defaultMode
+        : ServiceMode.web;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(

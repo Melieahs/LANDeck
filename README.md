@@ -19,7 +19,7 @@
 - 真实 Android 系统 WebView，加载数据库中的 URL；Cookie 由系统 WebView 持久化
 - HTTP Authentication（Basic 及系统 WebView 支持的方案）：应用内凭据弹窗、失败重试、取消不循环、可选 Keystore 加密记住
 - Material 3 全局视觉体系：浅色 / 深色 / 跟随系统，支持 Material You 动态取色与品牌色回退
-- 沉浸式 WebView 工具栏含独立「退出」按钮，与网页后退语义分离；圆形手柄长按可呼出后退/刷新/服务/更多/退出快捷轮盘
+- WebView 与原生模块页共用顶栏：返回、服务名 + 模块名/主机副标题、后退、刷新、服务切换、更多；底部同一组 Web/原生 切换，沉浸模式从「更多」进入
 - 真实 WebView 下载：拦截下载链接 / Content-Disposition，M3 确认后经 SAF 选择保存位置，前台服务流式写入
 - 下载继承当前网页 Cookie、会话和可用的 HTTP Basic 凭据；下载管理支持进度、取消、重试、打开、分享、删除记录
 - 真实网页上传：系统文件选择器支持单文件/多文件、MIME/扩展名与取消，URI 直接回传 WebView
@@ -127,7 +127,7 @@ lib/
 │   ├── discover/                     # 阶段 1：发现设备
 │   ├── services/service_editor_page.dart
 │   ├── devices/                      # 设备列表/详情/编辑、单设备端口扫描
-│   ├── webview/                      # 沉浸 WebView、工具栏、服务切换
+│   ├── webview/                      # WebView 顶栏、服务切换、下载与认证
 │   ├── downloads/downloads_page.dart # 下载任务管理
 │   └── settings/
 └── widgets/                          # 服务行、图标、状态点、底部导航
@@ -227,7 +227,7 @@ Service.protocol = http, port = 8096, path = /web
 - Android 模拟器（Android 36 x86_64，1080×2400）实测：
   - 首次安装 0 服务、0 收藏、0 设备，空状态正常
   - 手动添加 → 首页计数/分类/收藏更新 → 强制停止再启动仍存在
-  - 真实 WebView 加载本机 HTTP 测试页，内部跳转、返回、工具栏、服务切换正常
+  - 真实 WebView 加载本机 HTTP 测试页，内部跳转、返回、顶栏、服务切换正常
   - 真实扫描当前 Wi-Fi `10.0.2.15/24`，找到 5 个确认服务（测试宿主机 `10.0.2.2` 上的多个 Web 服务）
   - 扫描结果自动匹配已有设备，添加表单无需重新输入 IP
   - 设备快捷添加只输入端口 8096，自动生成名称 Jellyfin 和 URL `http://10.0.2.2:8096`
@@ -249,7 +249,7 @@ Service.protocol = http, port = 8096, path = /web
   - 单设备扫描 `10.0.2.2`：确认 80/3000/8000/8080 四个 Web 服务，已存在的 8080 正确显示「已添加」，未重复添加
   - 快捷添加：只填端口 8080，自动生成 `http://10.0.2.3:8080`
   - Material You 动态取色开关可即时切换；关闭后回到 LANDeck 品牌蓝色
-  - WebView 工具栏第六个「退出」按钮直接退回首页，不执行网页后退
+  - WebView 顶栏返回键按网页历史后退，退到底后返回上一页
   - 真实下载 `sample.txt`（440 B）、`中文报告.txt`（660 B，UTF-8 Content-Disposition）、`large.bin`（20 MB）均完成并写入系统 Downloads
   - Basic Auth 保护的 `auth.txt`：下载前弹出 M3 认证框，登录后保存为 `secure-report.txt`（460 B）
   - 网页上传：单文件 1 个、多文件 2 个均被测试服务器实际接收

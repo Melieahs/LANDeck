@@ -247,9 +247,9 @@ device.primaryAddress + protocol + port + path
 
 `lib/pages/webview/web_view_page.dart`
 
-- 沉浸式、无地址栏、浮动圆形手柄
-- 前进/后退/刷新/服务切换/更多/退出
-- 长按手柄出现径向快捷轮盘
+- 与原生模块页一致的顶栏：返回、服务名 + 模块名/主机副标题、后退、刷新、服务切换、更多
+- 顶栏底部与原生页相同的一组 Web/原生 切换；未关联模块时提示不可切换
+- 沉浸模式从「更多」进入，右上角保留更多入口，可随时退出
 - HTTP Basic Auth 对话框
 - 网页密码自动填充/自动保存提示
 - 下载确认 + 系统选择保存位置（Android 走 SAF；iOS 写 App Documents）

@@ -28,7 +28,8 @@ import '../../models/service_mode.dart';
 import '../service/service_viewer_page.dart';
 import 'widgets/web_password_dialogs.dart';
 import 'widgets/web_error_view.dart';
-import 'widgets/web_view_toolbar.dart';
+import '../../native/native_module.dart';
+import '../../native/native_module_registry.dart';
 import '../downloads/downloads_page.dart';
 
 /// Immersive viewer for a user-added service URL.
@@ -63,9 +64,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   Timer? _loadTimeout;
   DateTime? _lastHealthWrite;
 
-  bool _toolbarVisible = false;
-  Timer? _autoHideTimer;
-
   // HTTP authentication state. Credentials are kept in memory for this
   // WebView session unless the user explicitly chooses to remember them.
   final Map<String, HttpCredential> _sessionCredentials =
@@ -97,7 +95,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     super.didChangeDependencies();
     final LanDeckRepository repository = AppScope.of(context);
     _repository = repository;
-    final Service? latest = repository.serviceById(_service?.id ?? widget.serviceId);
+    final Service? latest = repository.serviceById(
+      _service?.id ?? widget.serviceId,
+    );
     if (!_initialized) {
       _initialized = true;
       _service = latest;
@@ -114,18 +114,10 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (latest != null) {
       _service = latest;
     }
-    if (MediaQuery.viewInsetsOf(context).bottom > 0 && _toolbarVisible) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _toolbarVisible) {
-          _collapseToolbar();
-        }
-      });
-    }
   }
 
   @override
   void dispose() {
-    _autoHideTimer?.cancel();
     _loadTimeout?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     if (_immersive && !kIsWeb) {
@@ -1080,44 +1072,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   }
 
   // ---------------------------------------------------------------------------
-  // Toolbar
-  // ---------------------------------------------------------------------------
-
-  void _exitWebView() {
-    // PopScope(canPop: false) blocks maybePop, so exit must pop the route
-    // directly. This intentionally ignores page history.
-    Navigator.of(context).pop();
-  }
-
-  void _toggleToolbar() {
-    if (_toolbarVisible) {
-      _collapseToolbar();
-      return;
-    }
-    setState(() => _toolbarVisible = true);
-    _scheduleAutoHide();
-  }
-
-  void _scheduleAutoHide() {
-    _autoHideTimer?.cancel();
-    if (!_toolbarVisible) {
-      return;
-    }
-    _autoHideTimer = Timer(const Duration(seconds: 6), () {
-      if (mounted) {
-        _collapseToolbar();
-      }
-    });
-  }
-
-  void _collapseToolbar() {
-    _autoHideTimer?.cancel();
-    if (_toolbarVisible) {
-      setState(() => _toolbarVisible = false);
-    }
-  }
-
-  // ---------------------------------------------------------------------------
   // Navigation / actions
   // ---------------------------------------------------------------------------
 
@@ -1142,10 +1096,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       FocusManager.instance.primaryFocus?.unfocus();
       return;
     }
-    if (_toolbarVisible) {
-      _collapseToolbar();
-      return;
-    }
     if (_nativeWebView && _canGoBack) {
       _goBack();
       return;
@@ -1153,17 +1103,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     Navigator.of(context).pop();
   }
 
-  Future<void> _handleToolbarBack() async {
-    _scheduleAutoHide();
-    if (_nativeWebView && _canGoBack) {
-      await _goBack();
-      return;
-    }
-    Navigator.of(context).pop();
-  }
-
   Future<void> _handleRefresh() async {
-    _scheduleAutoHide();
     if (!_nativeWebView) {
       showAppSnackBar(context, '当前平台没有可用的系统 WebView');
       return;
@@ -1181,7 +1121,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (repository == null || current == null) {
       return;
     }
-    _collapseToolbar();
     final ServiceSelection? selection = await showServiceSwitcherSheet(
       context,
       services: repository.services,
@@ -1390,7 +1329,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (service == null) {
       return;
     }
-    _collapseToolbar();
     final String currentUrl = await _currentUrl();
     if (!mounted) {
       return;
@@ -1401,12 +1339,16 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       deviceName: _repository?.deviceNameFor(service) ?? '未分配设备',
       immersive: _immersive,
       nativeWebView: _nativeWebView,
+      canGoForward: _nativeWebView && _canGoForward,
       currentUrl: currentUrl,
     );
     if (!mounted || action == null) {
       return;
     }
     switch (action) {
+      case MoreAction.goForward:
+        await _goForward();
+        return;
       case MoreAction.openExternal:
         final Uri? uri = Uri.tryParse(currentUrl);
         bool opened = false;
@@ -1519,6 +1461,112 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     );
   }
 
+  PreferredSizeWidget _buildAppBar(Service service) {
+    final ThemeData theme = Theme.of(context);
+    final NativeModule? module = NativeModuleRegistry.instance.linkedModule(
+      service,
+    );
+    final Uri? uri = Uri.tryParse(service.url);
+    return AppBar(
+      leading: IconButton(
+        key: const Key('webview-exit'),
+        tooltip: '返回',
+        icon: const Icon(Icons.arrow_back_rounded),
+        onPressed: _handleSystemBack,
+      ),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(service.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(
+            module?.name ?? uri?.host ?? service.address,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        IconButton(
+          key: const Key('webview-back'),
+          tooltip: '后退',
+          onPressed: _nativeWebView && _canGoBack ? _goBack : null,
+          icon: const Icon(Icons.undo_rounded),
+        ),
+        IconButton(
+          key: const Key('webview-refresh'),
+          tooltip: '刷新',
+          onPressed: _handleRefresh,
+          icon: const Icon(Icons.refresh_rounded),
+        ),
+        IconButton(
+          key: const Key('webview-service-switch'),
+          tooltip: '切换服务',
+          onPressed: _openServiceSwitcher,
+          icon: const Icon(Icons.dashboard_customize_rounded),
+        ),
+        IconButton(
+          key: const Key('webview-more'),
+          tooltip: '更多',
+          onPressed: _openMore,
+          icon: const Icon(Icons.more_horiz_rounded),
+        ),
+      ],
+      bottom: _buildModeBar(service),
+    );
+  }
+
+  PreferredSize _buildModeBar(Service service) {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(48),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        child: SegmentedButton<ServiceMode>(
+          segments: const <ButtonSegment<ServiceMode>>[
+            ButtonSegment<ServiceMode>(
+              value: ServiceMode.web,
+              icon: Icon(Icons.language_rounded, size: 16),
+              label: Text('Web'),
+            ),
+            ButtonSegment<ServiceMode>(
+              value: ServiceMode.native,
+              icon: Icon(Icons.widgets_rounded, size: 16),
+              label: Text('原生'),
+            ),
+          ],
+          selected: const <ServiceMode>{ServiceMode.web},
+          showSelectedIcon: false,
+          onSelectionChanged: (Set<ServiceMode> value) {
+            if (value.contains(ServiceMode.native)) {
+              _switchToNative(service);
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _switchToNative(Service service) async {
+    final NativeModule? module = NativeModuleRegistry.instance.linkedModule(
+      service,
+    );
+    if (module == null) {
+      showAppSnackBar(context, '未安装可用的原生模块');
+      return;
+    }
+    await Navigator.of(context).pushReplacement<void, void>(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => ServiceViewerPage(
+          serviceId: service.id,
+          initialMode: ServiceMode.native,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final Service? service = _service;
@@ -1544,23 +1592,17 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         child: Scaffold(
           backgroundColor: Theme.of(context).colorScheme.surface,
           resizeToAvoidBottomInset: false,
+          appBar: _immersive
+              ? null
+              : service == null
+              ? AppBar(title: const Text('服务'))
+              : _buildAppBar(service),
           body: SafeArea(
             top: !_immersive,
             bottom: false,
             child: Stack(
               children: <Widget>[
-                Positioned.fill(
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: (ScrollNotification notification) {
-                      if (_toolbarVisible &&
-                          notification is ScrollStartNotification) {
-                        _collapseToolbar();
-                      }
-                      return false;
-                    },
-                    child: _buildSurface(),
-                  ),
-                ),
+                Positioned.fill(child: _buildSurface()),
                 if (_loading && service != null)
                   Positioned(
                     top: 0,
@@ -1574,48 +1616,16 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
                       ),
                     ),
                   ),
-                if (service != null)
+                if (_immersive && service != null)
                   Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: SafeArea(
-                      top: false,
-                      minimum: const EdgeInsets.only(bottom: 8),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          AnimatedSize(
-                            duration: const Duration(milliseconds: 170),
-                            curve: Curves.easeOutCubic,
-                            alignment: Alignment.bottomCenter,
-                            child: _toolbarVisible
-                                ? WebViewToolbar(
-                                    key: const Key('webview-toolbar'),
-                                    onBack: _handleToolbarBack,
-                                    onForward: _goForward,
-                                    onRefresh: _handleRefresh,
-                                    onSwitchService: _openServiceSwitcher,
-                                    onMore: _openMore,
-                                    onExit: _exitWebView,
-                                    canGoForward:
-                                        _nativeWebView && _canGoForward,
-                                  )
-                                : const SizedBox(width: double.infinity),
-                          ),
-                          if (_toolbarVisible) const SizedBox(height: 8),
-                          WebViewHandle(
-                            key: const Key('webview-handle'),
-                            expanded: _toolbarVisible,
-                            onTap: _toggleToolbar,
-                            onBack: _handleToolbarBack,
-                            onRefresh: _handleRefresh,
-                            onSwitchService: _openServiceSwitcher,
-                            onMore: _openMore,
-                            onExit: _exitWebView,
-                          ),
-                        ],
-                      ),
+                    top: MediaQuery.paddingOf(context).top + 12,
+                    right: 12,
+                    child: FloatingActionButton.small(
+                      key: const Key('webview-immersive-more'),
+                      heroTag: null,
+                      tooltip: '更多',
+                      onPressed: _openMore,
+                      child: const Icon(Icons.more_horiz_rounded),
                     ),
                   ),
               ],
