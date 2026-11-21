@@ -1,16 +1,16 @@
 import 'package:material_ui/material_ui.dart';
 
-/// Material 3 search bar. Results are filtered inline on the home page.
+/// Home entry point for the dedicated search page.
 class HomeSearchField extends StatelessWidget {
   const HomeSearchField({
     super.key,
     required this.controller,
-    required this.onChanged,
+    required this.onSubmitted,
     required this.onClear,
   });
 
   final TextEditingController controller;
-  final ValueChanged<String> onChanged;
+  final ValueChanged<String> onSubmitted;
   final VoidCallback onClear;
 
   @override
@@ -19,6 +19,7 @@ class HomeSearchField extends StatelessWidget {
       valueListenable: controller,
       builder: (BuildContext context, TextEditingValue value, Widget? _) {
         return SearchBar(
+          key: const ValueKey<String>('home-search-field'),
           controller: controller,
           hintText: '搜索服务、设备或 IP',
           leading: const Icon(Icons.search_rounded),
@@ -32,9 +33,9 @@ class HomeSearchField extends StatelessWidget {
           ],
           elevation: const WidgetStatePropertyAll<double>(0),
           padding: const WidgetStatePropertyAll<EdgeInsetsGeometry>(
-            EdgeInsets.symmetric(horizontal: 8),
+            EdgeInsets.only(left: 18, right: 8),
           ),
-          onChanged: onChanged,
+          onSubmitted: onSubmitted,
           textInputAction: TextInputAction.search,
         );
       },

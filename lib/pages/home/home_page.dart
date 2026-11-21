@@ -8,6 +8,7 @@ import '../../models/service.dart';
 import '../../pages/devices/device_detail_page.dart';
 import '../../pages/devices/device_editor_page.dart';
 import '../../pages/devices/devices_page.dart';
+import '../../pages/search/search_page.dart';
 import '../../pages/services/service_editor_page.dart';
 import '../../pages/services/services_page.dart';
 import '../../repositories/service_repository.dart';
@@ -34,7 +35,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
-  String _query = '';
 
   @override
   void dispose() {
@@ -42,13 +42,18 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  void _handleSearchChanged(String value) {
-    setState(() => _query = value);
-  }
-
   void _clearSearch() {
     _searchController.clear();
-    setState(() => _query = '');
+  }
+
+  void _submitSearch(String value) {
+    final String query = value.trim();
+    FocusScope.of(context).unfocus();
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => SearchPage(initialQuery: query),
+      ),
+    );
   }
 
   void _openService(Service service) {
@@ -109,7 +114,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final LanDeckRepository repository = AppScope.of(context);
     final List<Service> favorites = repository.favorites;
-    final List<Service> visible = repository.searchServices(_query);
+    final List<Service> visible = repository.services;
 
     return Scaffold(
       appBar: AppBar(
@@ -149,7 +154,7 @@ class _HomePageState extends State<HomePage> {
                 children: <Widget>[
                   HomeSearchField(
                     controller: _searchController,
-                    onChanged: _handleSearchChanged,
+                    onSubmitted: _submitSearch,
                     onClear: _clearSearch,
                   ),
                   const SizedBox(height: 20),
@@ -179,7 +184,7 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: AppSpacing.sectionGap),
                   AllServicesSection(
                     services: visible,
-                    query: _query,
+                    query: '',
                     deviceNameFor: repository.deviceNameFor,
                     devices: repository.devices,
                     onOpenService: _openService,

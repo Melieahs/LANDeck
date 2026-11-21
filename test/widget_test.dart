@@ -142,6 +142,21 @@ void main() {
     expect(controller.mode, ThemeMode.dark);
   });
 
+  testWidgets('home search submit opens dedicated search page', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(LanDeckApp(repository: repository));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey<String>('home-search-field')));
+    await tester.enterText(find.byType(TextField).first, 'NAS');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey<String>('search-page')), findsOneWidget);
+    expect(find.textContaining('没有找到与「NAS」'), findsOneWidget);
+  });
+
   testWidgets('home stats open services and devices', (
     WidgetTester tester,
   ) async {
@@ -181,9 +196,7 @@ void main() {
     expect(find.text('密码管理'), findsOneWidget);
   });
 
-  testWidgets('theme segments fit a narrow phone', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('theme segments fit a narrow phone', (WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(320, 568));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(LanDeckApp(repository: repository));
