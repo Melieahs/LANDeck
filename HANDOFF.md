@@ -4,7 +4,7 @@
 > 当前分支：`feature/native-modules`  
 > 当前版本：`0.9.3+28`  
 > 代码 HEAD：`d522c33 test(native): cover imported module rendering`  
-> 本文档提交：`d71ed42 docs: add development handoff`  
+> 文档状态：已提交（最新提交以 `git log` 为准）  
 > 工作区：干净（本文档提交前）  
 > 远端：`git@github.com:Melieahs/LANDeck.git`
 
@@ -500,10 +500,10 @@ PS5 Web File Manager：`192.168.1.50:8888`。
 - Android：`dist/LANDeck-0.9.3.apk`
   - 58,748,385 bytes
   - SHA-256 `8881b49816bb22dbd46cea412efd1ba5307f7d76d7630160a22abb7c44c50396`
-- iOS CI（`d522c33`）：
-  - run id `44894071777`
-  - 状态以 GitHub Actions 页面为准；成功后下载 `LANDeck-unsigned-ipa`
-  - https://github.com/Melieahs/LANDeck/actions/runs/44894071777
+- iOS CI：
+  - Actions 页面：https://github.com/Melieahs/LANDeck/actions
+  - 每次 push 到受支持分支都会触发；成功后下载 artifact `LANDeck-unsigned-ipa`
+  - 历史 run `44894071777` 对应 `d522c33`；后续文档提交会触发新的 run，以页面最新结果为准
 
 如果 CI 失败：先看 `flutter analyze` / Swift 编译日志；常见问题是 `macos-26` runner 的 Xcode 版本、Swift API 可用性、SPM 依赖。
 
