@@ -5,7 +5,7 @@ permissions:
 
 on:
   push:
-    branches: [feature/ios, feature/ios-settings-cleanup, feature/search-page, feature/toolbar-quick-actions, feature/native-modules, main]
+    branches: [main, 'feature/**']
   workflow_dispatch:
 
 concurrency:
