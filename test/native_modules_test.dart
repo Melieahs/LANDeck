@@ -3,10 +3,8 @@ import 'package:landeck/core/app_scope.dart';
 import 'package:landeck/core/theme/app_theme.dart';
 import 'package:landeck/models/service.dart';
 import 'package:landeck/models/service_mode.dart';
-import 'package:landeck/native/builtin/padavan_module.dart';
 import 'package:landeck/native/builtin/service_overview_module.dart';
 import 'package:landeck/native/native_module_registry.dart';
-import 'package:landeck/native/padavan/padavan_native_page.dart';
 import 'package:landeck/pages/service/native_service_page.dart';
 import 'package:landeck/pages/services/service_editor_page.dart';
 import 'package:landeck/pages/service/service_viewer_page.dart';
@@ -49,32 +47,6 @@ void main() {
       )).defaultMode,
       ServiceMode.native,
     );
-  });
-
-  testWidgets('Padavan module renders its login form without mock data', (
-    WidgetTester tester,
-  ) async {
-    final Service router = await tester.runAsync(() {
-      return repository.addService(
-        name: 'CR660x',
-        customUrl: 'http://192.168.1.1',
-      );
-    }) as Service;
-    await tester.pumpWidget(
-      AppScope(
-        repository: repository,
-        child: MaterialApp(
-          theme: AppTheme.light,
-          home: PadavanNativePage(serviceId: router.id),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(const PadavanNativeModule().supports(router), isTrue);
-    expect(find.byKey(const Key('padavan-username')), findsOneWidget);
-    expect(find.byKey(const Key('padavan-password')), findsOneWidget);
-    expect(find.byKey(const Key('padavan-connect')), findsOneWidget);
-    expect(find.text('登录 Padavan'), findsOneWidget);
   });
 
   testWidgets('native service page renders real service metadata', (

@@ -48,6 +48,51 @@ const Map<String, Object?> sample = <String, Object?>{
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test('Padavan example plugin declares the router status and actions', () {
+    final PluginManifest manifest = loadPadavanExample();
+    expect(manifest.id, 'plugin.padavan-wan');
+    expect(manifest.basicAuth, isTrue);
+    expect(manifest.status!.path, '/device-map/internet.asp');
+    expect(manifest.fields, hasLength(8));
+    expect(manifest.actions, hasLength(3));
+    expect(
+      manifest.actions.map((PluginAction action) => action.request.form['wan_action']),
+      containsAll(<String>['Connect', 'Disconnect', 'WispReassoc']),
+    );
+    for (final PluginAction action in manifest.actions) {
+      expect(action.request.method, 'POST');
+      expect(action.request.path, '/device-map/wan_action.asp');
+      expect(action.request.form['modem_prio'], '0');
+    }
+  });
+
+  test('Padavan example extracts fields from the router status page', () {
+    final PluginManifest manifest = loadPadavanExample();
+    const String html = '''
+function wanlink_status() { return 0;}
+function wanlink_etherlink() { return '';}
+function wanlink_apclilink() { return 'BSSID: D4:25:DE:D9:36:39';}
+function wanlink_uptime() { return 2501;}
+function wanlink_type() { return 'Automatic IP';}
+function wanlink_ip4_wan() { return '172.18.77.35';}
+function wanlink_gw4_wan() { return '172.18.72.1';}
+function wanlink_dns() { return '10.0.0.1';}
+''';
+    final Map<String, String> values = <String, String>{
+      for (final PluginField field in manifest.fields)
+        if (field.resolve(null, html) != null)
+          field.label: field.resolve(null, html)!,
+    };
+    expect(values['状态'], '已连接');
+    expect(values['连接类型'], 'Automatic IP');
+    expect(values['WAN IPv4'], '172.18.77.35');
+    expect(values['网关'], '172.18.72.1');
+    expect(values['DNS'], '10.0.0.1');
+    expect(values['连接时长(秒)'], '2501');
+    expect(values['有线链路'], '—');
+    expect(values['无线中继'], 'BSSID: D4:25:DE:D9:36:39');
+  });
+
   test('manifest parses declarative status and actions', () {
     final PluginManifest manifest = PluginManifest.parse(sample);
     expect(manifest.id, 'plugin.demo-status');
@@ -156,4 +201,15 @@ void main() {
     expect(find.text('模块已连接'), findsOneWidget);
     expect(find.textContaining('导入模块「演示状态」'), findsOneWidget);
   });
+}
+
+PluginManifest loadPadavanExample() {
+  final File file = File('examples/native-modules/padavan-wan/plugin.json');
+  if (!file.existsSync()) {
+    fail('缺少 Padavan 插件示例：${file.path}');
+  }
+  return PluginManifest.parse(
+    (jsonDecode(file.readAsStringSync()) as Map<String, dynamic>)
+        .cast<String, Object?>(),
+  );
 }

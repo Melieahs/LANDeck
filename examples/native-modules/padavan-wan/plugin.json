@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "id": "plugin.padavan-wan",
+  "name": "Padavan 路由器",
+  "version": "1.0.0",
+  "description": "查看 Padavan 的 WAN 状态，执行 WAN 重连、断开和无线中继重新关联。",
+  "author": "LANDeck",
+  "permissions": ["http"],
+  "basicAuth": true,
+  "status": {
+    "method": "GET",
+    "path": "/device-map/internet.asp",
+    "fields": [
+      {
+        "label": "状态",
+        "pattern": "function\\s+wanlink_status\\s*\\(\\s*\\)\\s*\\{\\s*return\\s+(\\d+)",
+        "group": 1,
+        "map": {
+          "0": "已连接",
+          "1": "未插入网线",
+          "2": "未连接到上级 WISP AP",
+          "3": "未连接到上级蜂窝基站",
+          "4": "网络接口未就绪",
+          "5": "正在获取 IP 地址",
+          "6": "等待 PPP 客户端连接",
+          "7": "PPP 连接未激活",
+          "8": "未设置默认网关",
+          "9": "WAN 与 LAN 子网冲突"
+        }
+      },
+      {
+        "label": "连接类型",
+        "pattern": "function\\s+wanlink_type\\s*\\(\\s*\\)\\s*\\{\\s*return\\s+'([^']*)'",
+        "group": 1,
+        "map": { "": "—" }
+      },
+      {
+        "label": "WAN IPv4",
+        "pattern": "function\\s+wanlink_ip4_wan\\s*\\(\\s*\\)\\s*\\{\\s*return\\s+'([^']*)'",
+        "group": 1,
+        "map": { "": "—" }
+      },
+      {
+        "label": "网关",
+        "pattern": "function\\s+wanlink_gw4_wan\\s*\\(\\s*\\)\\s*\\{\\s*return\\s+'([^']*)'",
+        "group": 1,
+        "map": { "": "—" }
+      },
+      {
+        "label": "DNS",
+        "pattern": "function\\s+wanlink_dns\\s*\\(\\s*\\)\\s*\\{\\s*return\\s+'([^']*)'",
+        "group": 1,
+        "map": { "": "—" }
+      },
+      {
+        "label": "连接时长(秒)",
+        "pattern": "function\\s+wanlink_uptime\\s*\\(\\s*\\)\\s*\\{\\s*return\\s+(\\d+)",
+        "group": 1
+      },
+      {
+        "label": "有线链路",
+        "pattern": "function\\s+wanlink_etherlink\\s*\\(\\s*\\)\\s*\\{\\s*return\\s+'([^']*)'",
+        "group": 1,
+        "map": { "": "—", "---": "—" }
+      },
+      {
+        "label": "无线中继",
+        "pattern": "function\\s+wanlink_apclilink\\s*\\(\\s*\\)\\s*\\{\\s*return\\s+'([^']*)'",
+        "group": 1,
+        "map": { "": "—", "---": "—" }
+      }
+    ]
+  },
+  "actions": [
+    {
+      "id": "reconnect",
+      "label": "重连 WAN",
+      "icon": "refresh",
+      "description": "重新建立 WAN 连接，可能短暂断网。",
+      "refreshDelaySeconds": 6,
+      "request": {
+        "method": "POST",
+        "path": "/device-map/wan_action.asp",
+        "form": { "wan_action": "Connect", "modem_prio": "0" }
+      }
+    },
+    {
+      "id": "disconnect",
+      "label": "断开 WAN",
+      "icon": "power",
+      "description": "断开当前 WAN 连接。",
+      "refreshDelaySeconds": 3,
+      "request": {
+        "method": "POST",
+        "path": "/device-map/wan_action.asp",
+        "form": { "wan_action": "Disconnect", "modem_prio": "0" }
+      }
+    },
+    {
+      "id": "wisp-reassoc",
+      "label": "重新关联无线中继",
+      "icon": "wifi",
+      "description": "重新关联上级 WISP AP。",
+      "refreshDelaySeconds": 6,
+      "request": {
+        "method": "POST",
+        "path": "/device-map/wan_action.asp",
+        "form": { "wan_action": "WispReassoc", "modem_prio": "0" }
+      }
+    }
+  ]
+}
