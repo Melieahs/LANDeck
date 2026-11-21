@@ -102,7 +102,7 @@ class PadavanClient {
       throw PadavanAuthException('路由器已有其它管理会话，请先注销该会话');
     }
     final RegExpMatch? match = RegExp(
-      r'restart_needed_time\((\d+)\)',
+      r'restart_needed_time\s*\(\s*(\d+)\s*\)',
     ).firstMatch(html);
     if (match == null) {
       throw PadavanException('未收到 Padavan 操作确认，可能未登录或页面不兼容');
