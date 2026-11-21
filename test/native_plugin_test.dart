@@ -4,9 +4,11 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:landeck/models/service.dart';
 import 'package:landeck/native/native_module_registry.dart';
 import 'package:landeck/native/plugin/imported_module_store.dart';
+import 'package:landeck/native/plugin/imported_native_page.dart';
 import 'package:landeck/native/plugin/plugin_manifest.dart';
 
 const Map<String, Object?> sample = <String, Object?>{
@@ -128,5 +130,30 @@ void main() {
     final ImportedNativeModule preview = await store.previewBytes(zip, fileName: 'demo.zip');
     expect(preview.id, 'plugin.demo-status');
     expect(preview.manifest.status, isNotNull);
+  });
+
+  testWidgets('imported module renders a connected page', (WidgetTester tester) async {
+    final PluginManifest manifest = PluginManifest.parse(<String, Object?>{
+      ...sample,
+      'basicAuth': false,
+      'status': null,
+      'actions': <Object?>[],
+    });
+    final ImportedNativeModule module = ImportedNativeModule(manifest);
+    final Service service = Service(
+      id: 's1',
+      name: 'Demo',
+      protocol: 'http',
+      customUrl: 'http://192.168.1.2:8080/',
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+    );
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: ImportedNativePage(module: module, service: service)),
+    ));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('模块已连接'), findsOneWidget);
+    expect(find.textContaining('导入模块「演示状态」'), findsOneWidget);
   });
 }

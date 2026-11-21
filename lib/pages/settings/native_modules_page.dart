@@ -73,8 +73,12 @@ class _NativeModulesPageState extends State<NativeModulesPage> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '操作：${module.manifest.actions.map((PluginAction item) => item.label).join('、')}'
-                  '${module.manifest.status == null ? '' : '；状态读取：${module.manifest.status!.method} ${module.manifest.status!.path}'}',
+                  <String>[
+                    if (module.manifest.actions.isNotEmpty)
+                      '操作：${module.manifest.actions.map((PluginAction item) => item.label).join('、')}',
+                    if (module.manifest.status != null)
+                      '状态读取：${module.manifest.status!.method} ${module.manifest.status!.path}',
+                  ].join('；'),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
