@@ -208,14 +208,15 @@ Service.protocol = http, port = 8096, path = /web
 
 - 通过 `AndroidWebViewController.setOnShowFileSelector` 接管网页 `input[type=file]`。
 - `ACTION_OPEN_DOCUMENT` 支持单文件/多文件、`accept` MIME 与常见扩展名映射；返回 content URI 并保留读权限。
+- `切换服务` 面板按最近使用排序，支持名称/设备/IP 搜索。
 - `ACTION_CREATE_DOCUMENT` 支持网页的 save 模式；用户取消时回传空列表，WebView 不会悬挂回调，可连续再次选择。
 - 文件不复制到 App 私有目录，不整文件读入内存；大文件由系统文件提供程序流式读取。`capture` 当前退化为普通文件/媒体选择，不额外申请相机权限。
 
 ## 验证结果
 
 - `flutter analyze`：No issues found
-- `flutter test`：38 tests passed
-- `flutter build apk --release`：成功，约 55.8 MB（0.7.0+7）
+- `flutter test`：62 tests passed
+- `flutter build apk --release`：成功，约 56.7 MB（0.8.7+24）
 - Android 模拟器（Android 36 x86_64，1080×2400）实测：
   - 首次安装 0 服务、0 收藏、0 设备，空状态正常
   - 手动添加 → 首页计数/分类/收藏更新 → 强制停止再启动仍存在
@@ -412,7 +413,8 @@ iOS 端当前直接复用与 Android 相同的 Material 3 页面、主题和业�
 - iOS 入口：`lib/app.dart` 不再按平台分流，直接使用 `LanDeckApp`。
 - 共享：数据模型、Sembast 数据库、URL 生成、仓库逻辑、Material 3 主题。
 - `ios/Runner/Info.plist` 已包含本地网络权限描述与 Bonjour 服务类型。
-- 构建：Linux 只能执行 `flutter analyze` / `flutter test`，不能编译 iOS；`.github/workflows/ios-simulator.yml` 在 GitHub Actions macOS Runner 上构建模拟器 `.app` 并提交首页截图到 `docs/screenshots/ios-home.png`。
+- 构建：Linux 只能执行 `flutter analyze` / `flutter test`，不能编译 iOS；`.github/workflows/ios-simulator.yml` 在 GitHub Actions macOS Runner 上构建未签名真机 IPA（`flutter build ios --release --no-codesign`）并上传 artifact。
 - 当前可用：WKWebView 网页浏览、导航、服务切换、Cookie/Session、HTTP Basic Auth、文件上传。
 - iOS 下载：新增 Swift `URLSession` 下载桥接，文件保存到「文件 App / LANDeck / Downloads」，支持取消、打开和分享；Basic Auth、Cookie 和私有网段自签名证书沿用 WebView 会话。
-- 当前限制：Bonjour 发现和端口扫描尚未接入 iOS；原生 Liquid Glass 代码仍保留但未启用。
+- 已接入：Bonjour/mDNS 发现、iOS 本地网络权限处理、单设备端口扫描、FTP 备份/恢复。
+- 当前限制：签名 IPA/TestFlight 仍需 Apple Developer 账号；Liquid Glass 实验代码保留但未启用。
