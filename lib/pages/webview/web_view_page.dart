@@ -72,6 +72,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   final Set<String> _cancelledScopes = <String>{};
   final Set<String> _blockedHosts = <String>{};
   bool _authDialogOpen = false;
+  bool _passwordPromptOpen = false;
   int _authAttempts = 0;
   bool _downloadPromptOpen = false;
   bool _downloadAuthPromptOpen = false;
@@ -144,6 +145,10 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       ..addJavaScriptChannel(
         'LANDeckDownloads',
         onMessageReceived: _onDownloadBridgeMessage,
+      )
+      ..addJavaScriptChannel(
+        'LandeckPasswordBridge',
+        onMessageReceived: _onPasswordBridgeMessage,
       );
   }
 
@@ -239,6 +244,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     _authAttempts = 0;
     await _syncNavigationState();
     await _installDownloadIframeHook();
+    await _installPasswordHooks();
+    await _autoFillSavedLogin(url);
     _markHealth(ServiceStatus.online);
   }
 
@@ -272,6 +279,148 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       }
     } on Object {
       // Ignore malformed messages from page scripts.
+    }
+  }
+
+  Future<void> _installPasswordHooks() async {
+    final WebViewController? controller = _controller;
+    if (controller == null || !_nativeWebView) {
+      return;
+    }
+    try {
+      await controller.runJavaScript(WebPasswordFill.hookScript);
+    } on Object {
+      // Pages without a login form simply keep the normal path.
+    }
+  }
+
+  Future<void> _autoFillSavedLogin(String url) async {
+    final WebViewController? controller = _controller;
+    final Service? service = _service;
+    if (!mounted || controller == null || service == null) {
+      return;
+    }
+    final Uri? pageUri = Uri.tryParse(url);
+    final Uri? serviceUri = Uri.tryParse(service.url);
+    if (pageUri == null || serviceUri == null) {
+      return;
+    }
+    if (pageUri.host.toLowerCase() != serviceUri.host.toLowerCase()) {
+      return;
+    }
+    try {
+      final List<HttpCredential> credentials = await HttpCredentialStore
+          .instance
+          .credentialsFor(service.id);
+      HttpCredential? saved;
+      for (final HttpCredential credential in credentials) {
+        if (credential.realm == WebPasswordFill.webRealm &&
+            credential.matches(pageUri.host, WebPasswordFill.webRealm)) {
+          saved = credential;
+          break;
+        }
+      }
+      if (saved == null || !mounted) {
+        return;
+      }
+      await controller.runJavaScript(
+        WebPasswordFill.autoFillScript(
+          username: saved.username,
+          password: saved.password,
+        ),
+      );
+    } on Object {
+      // Auto-fill is opportunistic; never interrupt page loading.
+    }
+  }
+
+  void _onPasswordBridgeMessage(JavaScriptMessage message) {
+    try {
+      final Object? decoded = jsonDecode(message.message);
+      if (decoded is! Map) {
+        return;
+      }
+      if (decoded['type'] != 'credentials') {
+        return;
+      }
+      final String username = (decoded['username'] as String? ?? '').trim();
+      final String password = decoded['password'] as String? ?? '';
+      final String host = (decoded['host'] as String? ?? '').trim();
+      final Service? service = _service;
+      if (username.isEmpty ||
+          password.isEmpty ||
+          host.isEmpty ||
+          service == null) {
+        return;
+      }
+      final Uri? serviceUri = Uri.tryParse(service.url);
+      if (serviceUri == null ||
+          host.toLowerCase() != serviceUri.host.toLowerCase()) {
+        return;
+      }
+      unawaited(_promptSaveLoginFromPage(host, username, password));
+    } on Object {
+      // Ignore malformed messages from page scripts.
+    }
+  }
+
+  Future<void> _promptSaveLoginFromPage(
+    String host,
+    String username,
+    String password,
+  ) async {
+    final Service? service = _service;
+    if (!mounted || service == null || _passwordPromptOpen) {
+      return;
+    }
+    final HttpCredential? existing = await HttpCredentialStore.instance.find(
+      service.id,
+      host: host,
+      realm: WebPasswordFill.webRealm,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (existing != null &&
+        existing.username == username &&
+        existing.password == password) {
+      return;
+    }
+    _passwordPromptOpen = true;
+    final bool confirmed = await showSaveWebPasswordDialog(
+      context,
+      serviceName: service.name,
+      host: host,
+      username: username,
+    );
+    _passwordPromptOpen = false;
+    if (!mounted || !confirmed) {
+      return;
+    }
+    try {
+      await HttpCredentialStore.instance.save(
+        HttpCredential(
+          serviceId: service.id,
+          host: host,
+          realm: WebPasswordFill.webRealm,
+          username: username,
+          password: password,
+          updatedAt: DateTime.now(),
+        ),
+      );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('已保存登录信息')));
+    } on Object {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('登录信息保存失败')));
     }
   }
 
