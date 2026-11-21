@@ -325,16 +325,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           break;
         }
       }
-      // Migrate old builds that stored only the hostname.
-      if (saved == null) {
-        for (final HttpCredential credential in credentials) {
-          if (credential.realm == WebPasswordFill.webRealm &&
-              credential.matches(pageUri.host, WebPasswordFill.webRealm)) {
-            saved = credential;
-            break;
-          }
-        }
-      }
       if (saved == null || !mounted) {
         return;
       }
