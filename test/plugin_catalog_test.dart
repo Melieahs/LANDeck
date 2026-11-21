@@ -85,6 +85,34 @@ void main() {
     expect(NativeModuleRegistry.instance.byId('plugin.padavan-wan'), isNotNull);
   });
 
+  test('falls back to the mirror index and downloads from it', () async {
+    final Uri fallback = Uri.parse(
+      'http://127.0.0.1:${server.port}/mirror/examples/native-modules/index.json',
+    );
+    final PluginCatalog withFallback = PluginCatalog(
+      indexUri: indexUri,
+      fallbackIndexUri: fallback,
+      timeout: const Duration(seconds: 3),
+    );
+    responses['/mirror/examples/native-modules/index.json'] = (
+      HttpStatus.ok,
+      File('examples/native-modules/index.json').readAsStringSync(),
+    );
+    responses['/mirror/examples/native-modules/padavan-wan/plugin.json'] = (
+      HttpStatus.ok,
+      File('examples/native-modules/padavan-wan/plugin.json')
+          .readAsStringSync(),
+    );
+
+    final List<PluginCatalogEntry> entries = await withFallback.fetch();
+
+    expect(entries.single.baseUri, fallback);
+    final ImportedNativeModule module = await withFallback.download(
+      entries.single,
+    );
+    expect(module.id, 'plugin.padavan-wan');
+  });
+
   test('fetch rejects unsafe paths', () async {
     responses['/examples/native-modules/index.json'] = (
       HttpStatus.ok,

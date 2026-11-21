@@ -168,6 +168,7 @@ class PluginCatalog {
       author: author is String && author.trim().isNotEmpty
           ? author.trim()
           : null,
+      baseUri: source,
     );
   }
 
