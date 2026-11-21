@@ -228,6 +228,7 @@ device.primaryAddress + protocol + port + path
 - 首页：`lib/pages/home/home_page.dart`
 - 收藏网格手动排序：点「编辑」进入编辑状态后拖动卡片重排，点「完成」退出，顺序存 `Service.favoriteSortOrder`
 - 统计可点击：服务数 → 全部服务页；设备数 → 设备页
+- 首页不再提供排序菜单：服务与设备列表固定按名称排列，设备分类筛选保留
 - 界面不再展示在线/离线状态（扫描结果不准）；`Service.lastStatus` 仅用于排序与插件字段，切换服务列表的绿点表示「有后台页面」
 - 搜索入口 → `lib/pages/search/search_page.dart`
 - 设备分类已并入设备模块，按 `DeviceType` 统计设备数

@@ -226,7 +226,7 @@ void main() {
     expect(find.text('设备管理'), findsOneWidget);
   });
 
-  testWidgets('home and sort menu fit a narrow phone without overflow', (
+  testWidgets('home fits a narrow phone without overflow', (
     WidgetTester tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(320, 568));
@@ -254,11 +254,8 @@ void main() {
     await tester.pumpWidget(LanDeckApp(repository: repository));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-
-    await tester.tap(find.byIcon(Icons.sort_rounded).first);
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
-    expect(find.text('按名称'), findsAtLeastNWidgets(1));
+    expect(find.byKey(const ValueKey<String>('all-services-add')), findsOneWidget);
+    expect(find.text('管理'), findsOneWidget);
   });
   testWidgets('dragging a favorite card changes its order', (
     WidgetTester tester,

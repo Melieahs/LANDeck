@@ -5,10 +5,6 @@ import '../../../models/service.dart';
 import '../../../widgets/section_header.dart';
 import '../../../widgets/service_icon.dart';
 import '../../../widgets/service_list_tile.dart';
-import '../../../widgets/sort_menu.dart';
-
-enum _ServiceSort { name, status, device, category }
-
 class AllServicesSection extends StatefulWidget {
   const AllServicesSection({
     super.key,
@@ -36,7 +32,6 @@ class AllServicesSection extends StatefulWidget {
 }
 
 class _AllServicesSectionState extends State<AllServicesSection> {
-  _ServiceSort _sort = _ServiceSort.name;
   String? _deviceId;
   bool _onlyUnassigned = false;
 
@@ -49,35 +44,10 @@ class _AllServicesSectionState extends State<AllServicesSection> {
       return true;
     }).toList();
 
-    switch (_sort) {
-      case _ServiceSort.name:
-        list.sort(
-          (Service a, Service b) =>
-              a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-        );
-      case _ServiceSort.status:
-        list.sort((Service a, Service b) {
-          if (a.isOnline != b.isOnline) return a.isOnline ? -1 : 1;
-          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-        });
-      case _ServiceSort.device:
-        list.sort((Service a, Service b) {
-          final int byDevice = widget
-              .deviceNameFor(a)
-              .toLowerCase()
-              .compareTo(widget.deviceNameFor(b).toLowerCase());
-          return byDevice != 0
-              ? byDevice
-              : a.name.toLowerCase().compareTo(b.name.toLowerCase());
-        });
-      case _ServiceSort.category:
-        list.sort((Service a, Service b) {
-          final int byCategory = a.categoryLabel.compareTo(b.categoryLabel);
-          return byCategory != 0
-              ? byCategory
-              : a.name.toLowerCase().compareTo(b.name.toLowerCase());
-        });
-    }
+    list.sort(
+      (Service a, Service b) =>
+          a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
     return list;
   }
 
@@ -111,39 +81,11 @@ class _AllServicesSectionState extends State<AllServicesSection> {
               : _hasFilter
               ? '${visible.length} / ${widget.services.length} 个'
               : '共 ${widget.services.length} 个',
-          action: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              SortMenu<_ServiceSort>(
-                current: _sort,
-                onSelected: (_ServiceSort value) =>
-                    setState(() => _sort = value),
-                choices: const <SortChoice<_ServiceSort>>[
-                  SortChoice<_ServiceSort>(
-                    value: _ServiceSort.name,
-                    label: '按名称',
-                  ),
-                  SortChoice<_ServiceSort>(
-                    value: _ServiceSort.status,
-                    label: '按在线状态',
-                  ),
-                  SortChoice<_ServiceSort>(
-                    value: _ServiceSort.device,
-                    label: '按设备',
-                  ),
-                  SortChoice<_ServiceSort>(
-                    value: _ServiceSort.category,
-                    label: '按服务分类',
-                  ),
-                ],
-              ),
-              IconButton(
-                key: const ValueKey<String>('all-services-add'),
-                onPressed: widget.onAddService,
-                tooltip: '添加服务',
-                icon: const Icon(Icons.add_rounded),
-              ),
-            ],
+          action: IconButton(
+            key: const ValueKey<String>('all-services-add'),
+            onPressed: widget.onAddService,
+            tooltip: '添加服务',
+            icon: const Icon(Icons.add_rounded),
           ),
         ),
         if (widget.services.isNotEmpty)

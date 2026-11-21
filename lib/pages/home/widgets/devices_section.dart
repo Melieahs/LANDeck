@@ -3,7 +3,6 @@ import 'package:material_ui/material_ui.dart';
 import '../../../models/device.dart';
 import '../../../widgets/section_header.dart';
 import '../../../widgets/service_icon.dart';
-import '../../../widgets/sort_menu.dart';
 
 /// Device module with its category filter built in.
 ///
@@ -29,11 +28,8 @@ class DevicesSection extends StatefulWidget {
   State<DevicesSection> createState() => _DevicesSectionState();
 }
 
-enum _DeviceSort { name, type, services, address }
-
 class _DevicesSectionState extends State<DevicesSection> {
   DeviceType? _selected;
-  _DeviceSort _sort = _DeviceSort.name;
 
   List<Device> get _visible {
     final List<Device> list = _selected == null
@@ -41,35 +37,10 @@ class _DevicesSectionState extends State<DevicesSection> {
         : widget.devices
               .where((Device device) => device.deviceType == _selected)
               .toList();
-    switch (_sort) {
-      case _DeviceSort.name:
-        list.sort(
-          (Device a, Device b) =>
-              a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-        );
-      case _DeviceSort.type:
-        list.sort((Device a, Device b) {
-          final int byType = a.deviceType.index.compareTo(b.deviceType.index);
-          return byType != 0
-              ? byType
-              : a.name.toLowerCase().compareTo(b.name.toLowerCase());
-        });
-      case _DeviceSort.services:
-        list.sort((Device a, Device b) {
-          final int byCount = widget
-              .serviceCountForDevice(b)
-              .compareTo(widget.serviceCountForDevice(a));
-          return byCount != 0
-              ? byCount
-              : a.name.toLowerCase().compareTo(b.name.toLowerCase());
-        });
-      case _DeviceSort.address:
-        list.sort(
-          (Device a, Device b) => a.primaryAddress.toLowerCase().compareTo(
-            b.primaryAddress.toLowerCase(),
-          ),
-        );
-    }
+    list.sort(
+      (Device a, Device b) =>
+          a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
     return list;
   }
 
@@ -89,40 +60,11 @@ class _DevicesSectionState extends State<DevicesSection> {
               : _selected == null
               ? '${widget.devices.length} 台'
               : '${visible.length} / ${widget.devices.length} 台',
-          action: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              if (widget.devices.isNotEmpty)
-                SortMenu<_DeviceSort>(
-                  current: _sort,
-                  onSelected: (_DeviceSort value) =>
-                      setState(() => _sort = value),
-                  choices: const <SortChoice<_DeviceSort>>[
-                    SortChoice<_DeviceSort>(
-                      value: _DeviceSort.name,
-                      label: '按名称',
-                    ),
-                    SortChoice<_DeviceSort>(
-                      value: _DeviceSort.type,
-                      label: '按设备类型',
-                    ),
-                    SortChoice<_DeviceSort>(
-                      value: _DeviceSort.services,
-                      label: '按服务数量',
-                    ),
-                    SortChoice<_DeviceSort>(
-                      value: _DeviceSort.address,
-                      label: '按地址',
-                    ),
-                  ],
-                ),
-              TextButton(
-                onPressed: widget.devices.isEmpty
-                    ? widget.onAddDevice
-                    : widget.onManage,
-                child: Text(widget.devices.isEmpty ? '添加设备' : '管理'),
-              ),
-            ],
+          action: TextButton(
+            onPressed: widget.devices.isEmpty
+                ? widget.onAddDevice
+                : widget.onManage,
+            child: Text(widget.devices.isEmpty ? '添加设备' : '管理'),
           ),
         ),
         SingleChildScrollView(
