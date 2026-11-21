@@ -144,4 +144,31 @@ void main() {
     expect(find.text('较早服务'), findsOneWidget);
     expect(find.text('最近服务'), findsNothing);
   });
+
+  testWidgets('switching services updates the active page', (
+    WidgetTester tester,
+  ) async {
+    final Service target = (await tester.runAsync(() async {
+      return repository.addService(
+        name: '切换目标',
+        customUrl: 'http://192.168.1.20:8080',
+      );
+    }))!;
+    final Service start = repository.services.firstWhere(
+      (Service service) => service.name == '测试服务',
+    );
+
+    await tester.pumpWidget(LanDeckApp(repository: repository));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(Key('favorite-${start.id}')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('webview-handle')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('webview-service-switch')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(Key('service-row-${target.id}')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('http://192.168.1.20:8080'), findsOneWidget);
+  });
 }
