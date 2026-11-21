@@ -18,7 +18,7 @@ void main() {
     test('scopes credentials to host and non-default port', () {
       expect(
         WebPasswordFill.scopeHostOf(Uri.parse('http://192.168.1.2/')),
-        '192.168.1.2',
+        '192.168.1.2:80',
       );
       expect(
         WebPasswordFill.scopeHostOf(Uri.parse('http://192.168.1.12:5666/')),
@@ -26,7 +26,7 @@ void main() {
       );
       expect(
         WebPasswordFill.scopeHostOf(Uri.parse('https://nas.local:443/')),
-        'nas.local',
+        'nas.local:443',
       );
       expect(
         WebPasswordFill.scopeHostOf(Uri.parse('https://nas.local:8443/')),

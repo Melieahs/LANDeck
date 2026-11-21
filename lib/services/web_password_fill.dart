@@ -23,13 +23,10 @@ abstract final class WebPasswordFill {
   static String? scopeHostOf(Uri? uri) {
     final String host = uri?.host.trim().toLowerCase() ?? '';
     if (host.isEmpty) return null;
-    final int? port = uri?.hasPort == true ? uri!.port : null;
-    if (port == null) return host;
     final String scheme = uri!.scheme.toLowerCase();
-    if ((scheme == 'http' && port == 80) ||
-        (scheme == 'https' && port == 443)) {
-      return host;
-    }
+    final int port = uri.hasPort
+        ? uri.port
+        : (scheme == 'https' ? 443 : 80);
     return '$host:$port';
   }
 
@@ -137,7 +134,7 @@ abstract final class WebPasswordFill {
     if (!username || !username.value) return null;
     return {
       type: 'credentials',
-      host: location.host,
+      host: location.hostname.toLowerCase() + ':' + (location.port || (location.protocol === 'https:' ? '443' : '80')),
       username: username.value,
       password: password.value
     };
@@ -162,7 +159,7 @@ abstract final class WebPasswordFill {
   return JSON.stringify({
     ok: true,
     username: !!usernameInput,
-    host: location.host
+    host: location.hostname.toLowerCase() + ':' + (location.port || (location.protocol === 'https:' ? '443' : '80'))
   });
 })();
 ''';
@@ -177,7 +174,7 @@ abstract final class WebPasswordFill {
   const username = findUsername(password);
   return JSON.stringify({
     ok: true,
-    host: location.host,
+    host: location.hostname.toLowerCase() + ':' + (location.port || (location.protocol === 'https:' ? '443' : '80')),
     username: username ? username.value : '',
     password: password.value || ''
   });
@@ -272,7 +269,7 @@ abstract final class WebPasswordFill {
     observer.observe(document.documentElement, { childList: true, subtree: true });
     window.setTimeout(() => observer.disconnect(), 30000);
   } catch (e) {}
-  return JSON.stringify({ok: true, host: location.host});
+  return JSON.stringify({ok: true, host: location.hostname.toLowerCase() + ':' + (location.port || (location.protocol === 'https:' ? '443' : '80'))});
 })();
 ''';
   }
