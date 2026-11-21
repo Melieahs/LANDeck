@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../models/service.dart';
+import 'builtin/padavan_module.dart';
 import 'builtin/service_overview_module.dart';
 import 'native_module.dart';
 
@@ -58,5 +59,6 @@ class NativeModuleRegistry {
   void resetToDefaults() {
     _modules.clear();
     register(const ServiceOverviewNativeModule());
+    register(const PadavanNativeModule());
   }
 }
