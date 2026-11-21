@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../models/service.dart';
 import '../../../models/service_mode.dart';
 import '../../../native/native_module_registry.dart';
@@ -412,42 +411,15 @@ class _ServiceRow extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          Flexible(
-                            child: Text(
-                              service.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: scheme.onSurface,
-                              ),
-                            ),
-                          ),
-                          if (open) ...<Widget>[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 5,
-                                vertical: 1,
-                              ),
-                              decoration: BoxDecoration(
-                                color: scheme.secondaryContainer,
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: Text(
-                                '已打开',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  height: 1.2,
-                                  color: scheme.onSecondaryContainer,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
+                      Text(
+                        service.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.onSurface,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -478,21 +450,9 @@ class _ServiceRow extends StatelessWidget {
                     color: scheme.primary,
                   )
                 else
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      StatusDot(isOnline: service.isOnline, size: 5),
-                      const SizedBox(width: 5),
-                      Text(
-                        service.statusLabel,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: service.isOnline
-                              ? AppColors.online
-                              : scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+                  Tooltip(
+                    message: open ? '存活 · 有后台页面' : '无后台页面',
+                    child: StatusDot(isOnline: open, size: 7),
                   ),
               ],
             ),

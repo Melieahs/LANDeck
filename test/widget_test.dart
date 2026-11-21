@@ -286,10 +286,13 @@ void main() {
     expect(firstCard, findsOneWidget);
     expect(secondCard, findsOneWidget);
 
+    await tester.tap(find.byKey(const Key('favorites-edit')));
+    await tester.pumpAndSettle();
+
     final Offset start = tester.getCenter(firstCard);
     final Offset target = tester.getCenter(secondCard);
     final TestGesture gesture = await tester.startGesture(start);
-    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pump(const Duration(milliseconds: 200));
     await gesture.moveTo(target);
     await tester.pump(const Duration(milliseconds: 300));
     await gesture.up();

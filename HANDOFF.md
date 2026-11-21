@@ -226,7 +226,7 @@ device.primaryAddress + protocol + port + path
 ### 7.1 首页 / 搜索 / 设备
 
 - 首页：`lib/pages/home/home_page.dart`
-- 收藏网格手动排序：长按卡片拖动即可重排，顺序存 `Service.favoriteSortOrder`
+- 收藏网格手动排序：点「编辑」进入编辑状态后拖动卡片重排，点「完成」退出，顺序存 `Service.favoriteSortOrder`
 - 统计可点击：服务数 → 全部服务页；设备数 → 设备页
 - 搜索入口 → `lib/pages/search/search_page.dart`
 - 设备分类已并入设备模块，按 `DeviceType` 统计设备数
@@ -251,7 +251,7 @@ device.primaryAddress + protocol + port + path
 - 与原生模块页一致的顶栏：左上角退出（直接离开 WebView）、服务名 + 模块名/主机副标题、后退、前进、更多、最右侧切换服务
 - 刷新放入「更多」菜单；不再有 Web/原生 大切换器，模式切换在「切换服务」面板里完成
 - 原生模块页同样去掉底部切换器，顶栏最右为切换服务
-- 切换服务是多标签语义：已打开的 WebView 页面保留在后台（LRU 保留 4 个），切回不重载；切换面板给已打开的服务加「已打开」标记；退出查看器（Web 或原生页左上角/系统返回）时统一关闭后台标签
+- 切换服务是多标签语义：已打开的 WebView 页面保留在后台（LRU 保留 4 个），切回不重载；切换面板用绿点标明有后台页面的服务（存活），退出查看器（Web 或原生页左上角/系统返回）时统一关闭后台标签
 - 沉浸模式从「更多」进入，右上角保留更多入口，可随时退出
 - HTTP Basic Auth 对话框
 - 网页密码自动填充/自动保存提示

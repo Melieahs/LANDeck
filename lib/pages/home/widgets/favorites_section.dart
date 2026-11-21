@@ -28,6 +28,7 @@ class FavoritesSection extends StatefulWidget {
 
 class _FavoritesSectionState extends State<FavoritesSection> {
   late List<Service> _services = widget.services;
+  bool _editing = false;
 
   @override
   void didUpdateWidget(FavoritesSection oldWidget) {
@@ -40,9 +41,8 @@ class _FavoritesSectionState extends State<FavoritesSection> {
         .toList();
     final bool changed =
         next.length != shown.length ||
-        Iterable<int>.generate(
-          next.length,
-        ).any((int index) => next[index] != shown[index]);
+        Iterable<int>.generate(next.length)
+            .any((int index) => next[index] != shown[index]);
     if (changed) {
       _services = widget.services;
     }
@@ -62,6 +62,20 @@ class _FavoritesSectionState extends State<FavoritesSection> {
     widget.onReorder(next);
   }
 
+  Widget _editButton() {
+    return TextButton(
+      key: const Key('favorites-edit'),
+      onPressed: () => setState(() => _editing = !_editing),
+      style: TextButton.styleFrom(
+        visualDensity: VisualDensity.compact,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(_editing ? '完成' : '编辑'),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<Service> services = _services;
@@ -72,7 +86,10 @@ class _FavoritesSectionState extends State<FavoritesSection> {
           title: '收藏',
           trailing: services.isEmpty
               ? null
-              : '${services.length} 个常用服务 · 长按拖动排序',
+              : _editing
+              ? '拖动卡片调整顺序'
+              : '${services.length} 个常用服务',
+          action: services.isEmpty ? null : _editButton(),
         ),
         if (services.isEmpty)
           _EmptyFavorites(onAddService: widget.onAddService)
@@ -93,8 +110,12 @@ class _FavoritesSectionState extends State<FavoritesSection> {
               final Widget card = _FavoriteCard(
                 key: ValueKey<String>('favorite-${service.id}'),
                 service: service,
-                onTap: () => widget.onOpenService(service),
+                editing: _editing,
+                onTap: _editing ? null : () => widget.onOpenService(service),
               );
+              if (!_editing) {
+                return card;
+              }
               return DragTarget<Service>(
                 onWillAcceptWithDetails: (DragTargetDetails<Service> details) =>
                     details.data.id != service.id,
@@ -106,17 +127,14 @@ class _FavoritesSectionState extends State<FavoritesSection> {
                       List<Service?> candidate,
                       List<Object?> rejected,
                     ) {
-                      return LongPressDraggable<Service>(
+                      return Draggable<Service>(
                         data: service,
                         dragAnchorStrategy: pointerDragAnchorStrategy,
                         feedback: SizedBox(
                           width: MediaQuery.sizeOf(context).width * 0.42,
                           child: card,
                         ),
-                        childWhenDragging: Opacity(
-                          opacity: 0.35,
-                          child: card,
-                        ),
+                        childWhenDragging: Opacity(opacity: 0.35, child: card),
                         child: AnimatedScale(
                           scale: candidate.isNotEmpty ? 0.96 : 1,
                           duration: const Duration(milliseconds: 120),
@@ -133,10 +151,16 @@ class _FavoritesSectionState extends State<FavoritesSection> {
 }
 
 class _FavoriteCard extends StatelessWidget {
-  const _FavoriteCard({super.key, required this.service, required this.onTap});
+  const _FavoriteCard({
+    super.key,
+    required this.service,
+    required this.onTap,
+    this.editing = false,
+  });
 
   final Service service;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool editing;
 
   @override
   Widget build(BuildContext context) {
@@ -190,6 +214,14 @@ class _FavoriteCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (editing) ...<Widget>[
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.drag_indicator_rounded,
+                  size: 18,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ],
             ],
           ),
         ),
