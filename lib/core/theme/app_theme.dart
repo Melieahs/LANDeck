@@ -258,13 +258,38 @@ abstract final class AppTheme {
   /// algorithm. We do not hand-tune surface roles, so every container step
   /// follows the standard tonal distances.
   static ColorScheme _brandScheme(Brightness brightness) {
-    return ColorScheme.fromSeed(
+    final ColorScheme base = ColorScheme.fromSeed(
       seedColor: const Color(0xFF2E6BE6),
       brightness: brightness,
       // "Vibrant" is one of the official Material Theme Builder variants and
       // keeps the LANDeck blue recognisable instead of the muted tonal-spot
       // primary.
       dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
+    );
+    if (brightness == Brightness.light) {
+      return base;
+    }
+    // Dark mode follows the neutral charcoal scale used by the Windows
+    // reference: a near-black page, cards one step lighter and a saturated
+    // blue accent. The generated scheme leans violet, so the surface roles are
+    // pinned to neutral greys.
+    return base.copyWith(
+      primary: const Color(0xFF4C8DFF),
+      onPrimary: const Color(0xFFFFFFFF),
+      primaryContainer: const Color(0xFF1F3A66),
+      onPrimaryContainer: const Color(0xFFD9E4FF),
+      surface: const Color(0xFF1B1B1D),
+      surfaceContainerLowest: const Color(0xFF141416),
+      surfaceContainerLow: const Color(0xFF262628),
+      surfaceContainer: const Color(0xFF2A2A2C),
+      surfaceContainerHigh: const Color(0xFF303032),
+      surfaceContainerHighest: const Color(0xFF353537),
+      onSurface: const Color(0xFFF2F2F3),
+      onSurfaceVariant: const Color(0xFFB4B4B8),
+      outline: const Color(0xFF6A6A70),
+      outlineVariant: const Color(0xFF353538),
+      inverseSurface: const Color(0xFFEAEAEC),
+      surfaceTint: const Color(0xFF4C8DFF),
     );
   }
 }

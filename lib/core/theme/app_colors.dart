@@ -16,28 +16,28 @@ abstract final class AppColors {
   static bool get isLight => _brightness == Brightness.light;
 
   static Color get background =>
-      isLight ? const Color(0xFFFAF8FF) : const Color(0xFF121318);
+      isLight ? const Color(0xFFFAF8FF) : const Color(0xFF1B1B1D);
 
   static Color get surface =>
-      isLight ? const Color(0xFFF4F3FA) : const Color(0xFF1A1B21);
+      isLight ? const Color(0xFFF4F3FA) : const Color(0xFF262628);
 
   static Color get surfaceHigh =>
-      isLight ? const Color(0xFFEEEDF4) : const Color(0xFF1E1F25);
+      isLight ? const Color(0xFFEEEDF4) : const Color(0xFF303032);
 
   static Color get surfaceSoft =>
-      isLight ? const Color(0xFFFFFFFF) : const Color(0xFF16171C);
+      isLight ? const Color(0xFFFFFFFF) : const Color(0xFF151517);
 
   static Color get border =>
-      isLight ? const Color(0xFFC5C6D0) : const Color(0xFF45464F);
+      isLight ? const Color(0xFFC5C6D0) : const Color(0xFF353538);
 
   static Color get accent =>
-      isLight ? const Color(0xFF1B5FD9) : const Color(0xFFAAC7FF);
+      isLight ? const Color(0xFF1B5FD9) : const Color(0xFF4C8DFF);
 
   static Color get accentSoft =>
       isLight ? const Color(0x1A1B5FD9) : const Color(0x33AAC7FF);
 
   static Color get textPrimary =>
-      isLight ? const Color(0xFF171C24) : const Color(0xFFE3E8F0);
+      isLight ? const Color(0xFF171C24) : const Color(0xFFF2F2F3);
 
   static Color get textSecondary =>
       isLight ? const Color(0xFF4B5565) : const Color(0xFFAAB6C8);
