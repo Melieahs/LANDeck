@@ -361,9 +361,11 @@ examples/native-modules/index.json
   （`NavigationRail(extended: false, labelType: all)`，图标 + 小字），无底部导航；
   侧栏背景 `surfaceContainerLow`，Container 铺满全高，只有内容受 SafeArea 约束。
 - 首页：`usesWideHome` 在桌面窗口宽 ≥ 860 时两列，否则单列；其余页面仍 520pt 限宽居中。
-- WebView：`webview_flutter` 没有 Windows 实现。桌面点开服务时 `WebViewPage` 直接用
-  `url_launcher` 在系统浏览器打开并 `maybePop` 返回，不进入内嵌页面；不支持的提示页只作兜底。
-  **不要声称桌面端可内嵌浏览**。
+- 内嵌 WebView：`webview_flutter` 没有 Windows 实现，桌面改用 `webview_windows`（WebView2）。
+  `ServiceViewerPage` 在 Windows 上分发到 `lib/pages/webview/windows_web_view_page.dart`，
+  支持加载、后退/前进/刷新、加载进度、切换服务；初始化失败时提供「用系统浏览器打开」兜底。
+  暂不支持：网页密码填充、下载拦截、HTTP Basic 自动认证、多标签保活（这些仍是 Android/iOS 能力）。
+  **不要声称桌面端与移动端 WebView 功能完全一致**。
 - 多窗口：计划中（`desktop_multi_window` 或每窗口独立 engine + 独立入口），当前单窗口。
 - CI：`.github/workflows/windows.yml` 在 `windows-latest` 跑 analyze/test + `flutter build windows --release`，
   artifact `LANDeck-windows-x64`。

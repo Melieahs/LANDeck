@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/app_scope.dart';
@@ -7,6 +8,7 @@ import '../../native/native_module.dart';
 import '../../native/native_module_registry.dart';
 import '../../repositories/service_repository.dart';
 import '../webview/web_view_page.dart';
+import '../webview/windows_web_view_page.dart';
 import 'native_service_page.dart';
 
 /// Chooses the presentation for an existing service without duplicating the
@@ -40,6 +42,9 @@ class ServiceViewerPage extends StatelessWidget {
         serviceId: service.id,
         moduleId: module.id,
       );
+    }
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
+      return WindowsWebViewPage(serviceId: service.id);
     }
     return WebViewPage(serviceId: service.id);
   }
