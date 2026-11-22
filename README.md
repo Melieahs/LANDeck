@@ -425,4 +425,4 @@ iOS 端当前直接复用与 Android 相同的 Material 3 页面、主题和业�
 - 当前可用：WKWebView 网页浏览、导航、服务切换、Cookie/Session、HTTP Basic Auth、文件上传。
 - iOS 下载：新增 Swift `URLSession` 下载桥接，文件保存到「文件 App / LANDeck / Downloads」，支持取消、打开和分享；Basic Auth、Cookie 和私有网段自签名证书沿用 WebView 会话。
 - 已接入：Bonjour/mDNS 发现、iOS 本地网络权限处理、单设备端口扫描、FTP 备份/恢复。
-- 当前限制：签名 IPA/TestFlight 仍需 Apple Developer 账号；Liquid Glass 实验代码保留但未启用。
+- 当前限制：签名 IPA/TestFlight 仍需 Apple Developer 账号。

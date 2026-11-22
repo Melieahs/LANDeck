@@ -25,7 +25,7 @@ LANDeck 是一个 Flutter 的局域网服务启动器：
 当前验证结果：
 
 - `flutter analyze`：通过，`No issues found!`
-- `flutter test`：**95 个测试全部通过**
+- `flutter test`：**92 个测试全部通过**
 - Android release APK：`dist/LANDeck-0.9.3.apk`，58,748,385 字节（约 56 MB），
   SHA-256 `8881b49816bb22dbd46cea412efd1ba5307f7d76d7630160a22abb7c44c50396`
 - iOS：CI 生成 **unsigned IPA**（不能直接安装）；本轮 `d522c33` 的 CI run 见 §11。
@@ -151,11 +151,11 @@ lib/
 ├── routes/                     # AppRouter
 ├── services/                   # 扫描、下载、FTP、密码填充等业务服务
 ├── widgets/                    # 通用 M3 组件
-└── ios/                        # 已停用的 Cupertino/Liquid Glass 实验代码，当前不参与 iOS 运行
+└── core/ui/                    # 自适应布局（AdaptiveLayout）
 ```
 
-iOS 当前**直接使用共享 Material 3 UI**（`lib/app.dart` 没有 iOS 分支）。
-`lib/ios/` 只是历史实验，不要误接回去，除非用户明确要求 Cupertino。
+iOS 与 Android **共用同一套 Material 3 UI**（`lib/app.dart` 没有 iOS 分支）。
+Cupertino / Liquid Glass 实验代码（原 `lib/ios/`）已删除，不要再引入。
 
 Android 原生关键文件：
 
@@ -345,7 +345,6 @@ examples/native-modules/index.json
 ### 7.9 平板适配（iPad）
 
 - 入口仍是 `lib/app.dart` → `MainShell`（Material 3）；**iOS/Android 共用同一套 Material UI**。
-  `lib/ios/` 是停用的 Cupertino 实验，不要改它来做 iPad。
 - 断点：`lib/core/ui/adaptive_layout.dart` 的 `AdaptiveLayout.usesSideNavigation`
   （宽 ≥ 700 且最短边 > 600）。iPad 竖屏 744pt 起触发；iPhone 横屏与 800×600 测试窗口保持紧凑布局。
 - 导航：`lib/pages/main_shell.dart` 宽屏用左侧 `NavigationRail`（extended，240pt 宽，含 LANDeck 品牌行），
@@ -508,7 +507,7 @@ PS5 Web File Manager：`192.168.1.50:8888`。
 - 没有 Mac，无法本地调试；所有 iOS 结论来自 CI + 用户真机反馈。
 - 本地网络权限没有运行时状态 API；拒绝后需去系统设置手动开。
 - 基础 WebView/HTTP Auth/上传由 `webview_flutter_wkwebview` 提供；下载由 `AppDelegate.swift` 的桥实现。
-- `lib/ios/` 是停用的 Cupertino 实验，不要作为当前 iOS UI。
+- 不要重新引入 Cupertino / Liquid Glass 实验 UI；iOS 与 Android 共用 Material 3。
 
 ### 插件系统
 
@@ -557,7 +556,6 @@ PS5 Web File Manager：`192.168.1.50:8888`。
 5. **目录上传**：若用户坚持 PS5 目录上传，需要研究 WKWebView/Android WebView 是否能在
    `onShowFileSelector` 之外保留相对路径；当前结论是做不到，需要明确告知限制，不能伪造。
 6. **FTP**：用真实 NAS 再测根目录/子目录/FTPS；当前只做配置备份恢复。
-7. **清理**：如确认不再需要 `lib/ios/` 实验代码，可另开分支删除；不要在功能分支顺手删。
 
 ---
 
