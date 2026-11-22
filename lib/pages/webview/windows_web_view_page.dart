@@ -5,17 +5,23 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_windows/webview_windows.dart';
 
 import '../../core/app_scope.dart';
+import '../../core/utils/feedback.dart';
+import '../../models/http_credential.dart';
 import '../../models/service.dart';
 import '../../models/service_mode.dart';
 import '../../repositories/service_repository.dart';
+import '../../services/http_credential_store.dart';
+import '../../services/web_password_fill.dart';
+import 'widgets/http_auth_dialog.dart';
 import 'widgets/service_switcher_sheet.dart';
+import 'widgets/web_password_dialogs.dart';
 
 /// Desktop (Windows/WebView2) viewer for a service URL.
 ///
 /// `webview_flutter` has no Windows implementation, so desktop uses
-/// `webview_windows` (WebView2). It intentionally supports the core browsing
-/// flow only: load, back/forward/reload, progress and service switching.
-/// Password autofill and download interception remain Android/iOS features.
+/// `webview_windows` (WebView2). It mirrors the mobile feature set as far as
+/// WebView2 allows: browsing, HTTP basic authentication with saved accounts,
+/// login-form autofill and password capture.
 class WindowsWebViewPage extends StatefulWidget {
   const WindowsWebViewPage({super.key, required this.serviceId});
 
@@ -30,12 +36,23 @@ class _WindowsWebViewPageState extends State<WindowsWebViewPage> {
   final List<StreamSubscription<dynamic>> _subscriptions =
       <StreamSubscription<dynamic>>[];
 
+  /// Hosts whose saved basic-auth account was already tried automatically.
+  /// A second challenge for the same host always asks the user.
+  final Set<String> _basicAuthAttemptedHosts = <String>{};
+
+  /// Hosts that already showed the account picker on this page load.
+  final Set<String> _loginFocusPrompts = <String>{};
+
   Service? _service;
+  String? _currentUrl;
   bool _initStarted = false;
   bool _controllerReady = false;
   bool _loading = true;
   bool _canGoBack = false;
   bool _canGoForward = false;
+  bool _authPromptOpen = false;
+  bool _savePromptOpen = false;
+  bool _fillPromptOpen = false;
   String? _error;
   bool _exiting = false;
 
@@ -85,6 +102,9 @@ class _WindowsWebViewPageState extends State<WindowsWebViewPage> {
               _error = null;
             }
           });
+          if (state == LoadingState.none) {
+            unawaited(_autoFillSavedLogin());
+          }
         }),
       );
       _subscriptions.add(
@@ -109,6 +129,25 @@ class _WindowsWebViewPageState extends State<WindowsWebViewPage> {
           });
         }),
       );
+      _subscriptions.add(
+        _controller.url.listen((String url) {
+          _currentUrl = url;
+          _loginFocusPrompts.clear();
+        }),
+      );
+      _subscriptions.add(
+        _controller.webMessage.listen(_onWebMessage, onError: (Object _) {}),
+      );
+      _subscriptions.add(
+        _controller.basicAuthRequested.listen(_onBasicAuthChallenge),
+      );
+
+      // Expose the same bridge object the mobile scripts expect, backed by
+      // WebView2's postMessage channel.
+      await _controller.addScriptToExecuteOnDocumentCreated(
+        '${_bridgeShim()}\n${WebPasswordFill.hookScript}',
+      );
+
       if (!mounted) {
         return;
       }
@@ -124,6 +163,269 @@ class _WindowsWebViewPageState extends State<WindowsWebViewPage> {
       });
     }
   }
+
+  static String _bridgeShim() {
+    return '''
+window.LandeckPasswordBridge = window.LandeckPasswordBridge || {
+  postMessage: (message) => {
+    try { window.chrome.webview.postMessage(message); } catch (e) {}
+  }
+};
+''';
+  }
+
+  // ---------------------------------------------------------------------------
+  // Credentials
+
+  HttpCredential? _preferredAccount(
+    List<HttpCredential> accounts,
+    String? defaultUsername,
+  ) {
+    if (accounts.isEmpty) {
+      return null;
+    }
+    for (final HttpCredential account in accounts) {
+      if (account.username == defaultUsername) {
+        return account;
+      }
+    }
+    return accounts.first;
+  }
+
+  String? _formScope() {
+    final Uri? uri = Uri.tryParse(_currentUrl ?? '');
+    if (uri != null) {
+      return WebPasswordFill.scopeHostOf(uri);
+    }
+    final String? url = _service?.url;
+    return WebPasswordFill.scopeHostOf(Uri.tryParse(url ?? ''));
+  }
+
+  Future<void> _autoFillSavedLogin() async {
+    final Service? service = _service;
+    if (service == null || service.passwordFillMode == PasswordFillMode.off) {
+      return;
+    }
+    final String? host = _formScope();
+    if (host == null) {
+      return;
+    }
+    final List<HttpCredential> accounts = await HttpCredentialStore.instance
+        .accountsFor(service.id, host: host, realm: WebPasswordFill.webRealm);
+    if (accounts.isEmpty || !mounted) {
+      return;
+    }
+    final HttpCredential? account = _preferredAccount(
+      accounts,
+      service.defaultCredentialUsername,
+    );
+    if (account == null) {
+      return;
+    }
+    if (service.passwordFillMode == PasswordFillMode.auto) {
+      await _controller.executeScript(
+        WebPasswordFill.autoFillScript(
+          username: account.username,
+          password: account.password,
+        ),
+      );
+    }
+  }
+
+  void _onWebMessage(dynamic message) {
+    if (message is! Map) {
+      return;
+    }
+    final String type = message['type']?.toString() ?? '';
+    switch (type) {
+      case 'login-focus':
+        final String host = message['host']?.toString() ?? '';
+        unawaited(_promptFillOnFocus(host));
+        break;
+      case 'credentials':
+        final String host = message['host']?.toString() ?? '';
+        final String username = message['username']?.toString() ?? '';
+        final String password = message['password']?.toString() ?? '';
+        if (username.isEmpty || password.isEmpty) {
+          return;
+        }
+        unawaited(_promptSaveLogin(host, username, password));
+        break;
+    }
+  }
+
+  Future<void> _promptFillOnFocus(String host) async {
+    final Service? service = _service;
+    if (service == null ||
+        service.passwordFillMode != PasswordFillMode.ask ||
+        host.isEmpty ||
+        _fillPromptOpen ||
+        _loginFocusPrompts.contains(host)) {
+      return;
+    }
+    final List<HttpCredential> accounts = await HttpCredentialStore.instance
+        .accountsFor(service.id, host: host, realm: WebPasswordFill.webRealm);
+    if (accounts.isEmpty || !mounted) {
+      return;
+    }
+    _loginFocusPrompts.add(host);
+    _fillPromptOpen = true;
+    try {
+      final HttpCredential? account = await showCredentialPicker(
+        context,
+        credentials: accounts,
+        defaultUsername: service.defaultCredentialUsername,
+      );
+      if (account == null || !mounted) {
+        return;
+      }
+      await _controller.executeScript(
+        WebPasswordFill.fillScript(
+          username: account.username,
+          password: account.password,
+        ),
+      );
+      if (mounted) {
+        showAppSnackBar(context, '已填充账号 ${account.username}');
+      }
+    } finally {
+      _fillPromptOpen = false;
+    }
+  }
+
+  Future<void> _promptSaveLogin(
+    String host,
+    String username,
+    String password,
+  ) async {
+    final Service? service = _service;
+    if (service == null || host.isEmpty || _savePromptOpen) {
+      return;
+    }
+    final List<HttpCredential> saved = await HttpCredentialStore.instance
+        .accountsFor(service.id, host: host, realm: WebPasswordFill.webRealm);
+    final bool exists = saved.any(
+      (HttpCredential item) =>
+          item.username == username && item.password == password,
+    );
+    if (exists || !mounted) {
+      return;
+    }
+    _savePromptOpen = true;
+    try {
+      final bool remember = await showSaveWebPasswordDialog(
+        context,
+        serviceName: service.name,
+        host: host,
+        username: username,
+      );
+      if (!remember) {
+        return;
+      }
+      await HttpCredentialStore.instance.save(
+        HttpCredential(
+          serviceId: service.id,
+          host: host,
+          realm: WebPasswordFill.webRealm,
+          username: username,
+          password: password,
+          updatedAt: DateTime.now(),
+        ),
+      );
+      if (mounted) {
+        showAppSnackBar(context, '已保存登录信息');
+      }
+    } finally {
+      _savePromptOpen = false;
+    }
+  }
+
+  Future<void> _onBasicAuthChallenge(BasicAuthChallenge challenge) async {
+    final Service? service = _service;
+    if (service == null || _authPromptOpen) {
+      await _controller.respondBasicAuth(challenge.id, cancel: true);
+      return;
+    }
+    final String host = challenge.host;
+    final List<HttpCredential> accounts = await HttpCredentialStore.instance
+        .accountsFor(service.id, host: host, realm: '');
+    final HttpCredential? saved = _preferredAccount(
+      accounts,
+      service.defaultCredentialUsername,
+    );
+
+    // Try one saved account silently, then ask the user. WebView2 gives us no
+    // success signal, so a repeated challenge means the guess was rejected.
+    if (saved != null &&
+        service.passwordFillMode == PasswordFillMode.auto &&
+        !_basicAuthAttemptedHosts.contains(host)) {
+      _basicAuthAttemptedHosts.add(host);
+      await _controller.respondBasicAuth(
+        challenge.id,
+        username: saved.username,
+        password: saved.password,
+      );
+      return;
+    }
+
+    if (!mounted) {
+      await _controller.respondBasicAuth(challenge.id, cancel: true);
+      return;
+    }
+    _authPromptOpen = true;
+    try {
+      final HttpCredential? stale = _basicAuthAttemptedHosts.contains(host)
+          ? saved
+          : null;
+      if (stale != null) {
+        await HttpCredentialStore.instance.deleteCredential(
+          service.id,
+          host: host,
+          realm: '',
+          username: stale.username,
+        );
+      }
+      if (!mounted) {
+        await _controller.respondBasicAuth(challenge.id, cancel: true);
+        return;
+      }
+      final HttpAuthResult? result = await showHttpAuthDialog(
+        context,
+        serviceName: service.name,
+        address: service.address,
+        host: host,
+        realm: '受限资源',
+        initialUsername: stale?.username,
+        errorText: stale != null ? '认证失败，请检查用户名和密码' : null,
+      );
+      if (result == null) {
+        await _controller.respondBasicAuth(challenge.id, cancel: true);
+        return;
+      }
+      if (result.remember) {
+        await HttpCredentialStore.instance.save(
+          HttpCredential(
+            serviceId: service.id,
+            host: host,
+            realm: '',
+            username: result.username,
+            password: result.password,
+            updatedAt: DateTime.now(),
+          ),
+        );
+      }
+      await _controller.respondBasicAuth(
+        challenge.id,
+        username: result.username,
+        password: result.password,
+      );
+    } finally {
+      _authPromptOpen = false;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Navigation
 
   void _exit() {
     if (_exiting) {
@@ -152,9 +454,7 @@ class _WindowsWebViewPageState extends State<WindowsWebViewPage> {
       mode: LaunchMode.externalApplication,
     );
     if (!opened && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('无法打开系统浏览器')));
+      showAppSnackBar(context, '无法打开系统浏览器');
     }
   }
 
@@ -182,6 +482,8 @@ class _WindowsWebViewPageState extends State<WindowsWebViewPage> {
       _canGoBack = false;
       _canGoForward = false;
     });
+    _basicAuthAttemptedHosts.clear();
+    _loginFocusPrompts.clear();
     await _controller.loadUrl(selection.service.url);
   }
 
@@ -332,10 +634,7 @@ class _WindowsWebError extends StatelessWidget {
                     child: const Text('用系统浏览器打开'),
                   ),
                   const SizedBox(width: 10),
-                  FilledButton(
-                    onPressed: onRetry,
-                    child: const Text('重试'),
-                  ),
+                  FilledButton(onPressed: onRetry, child: const Text('重试')),
                 ],
               ),
             ],
