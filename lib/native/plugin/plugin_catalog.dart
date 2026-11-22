@@ -48,22 +48,13 @@ class PluginCatalogEntry {
 class PluginCatalog {
   PluginCatalog({
     Uri? indexUri,
-    Uri? fallbackIndexUri,
+    this.fallbackIndexUri,
     this.timeout = const Duration(seconds: 12),
-  }) : indexUri = indexUri ?? defaultIndexUri,
-       fallbackIndexUri = indexUri == null
-           ? (fallbackIndexUri ?? defaultFallbackIndexUri)
-           : fallbackIndexUri;
+  }) : indexUri = indexUri ?? defaultIndexUri;
 
   /// Plugin index shipped in the repository.
   static final Uri defaultIndexUri = Uri.parse(
     'https://raw.githubusercontent.com/Melieahs/LANDeck/main/examples/native-modules/index.json',
-  );
-
-  /// Temporary mirror for the native-modules branch before it is merged into
-  /// `main`. Remove this once the plugin index is on the default branch.
-  static final Uri defaultFallbackIndexUri = Uri.parse(
-    'https://raw.githubusercontent.com/Melieahs/LANDeck/feature/native-modules/examples/native-modules/index.json',
   );
 
   static final PluginCatalog instance = PluginCatalog();
@@ -74,8 +65,9 @@ class PluginCatalog {
   final Uri? fallbackIndexUri;
   final Duration timeout;
 
-  /// Loads and validates the plugin index. Falls back to the development
-  /// branch mirror while the default branch has no index yet.
+  /// Loads and validates the plugin index from [indexUri]. When a
+  /// [fallbackIndexUri] is supplied (tests or alternative mirrors), a failed
+  /// primary fetch is retried there.
   Future<List<PluginCatalogEntry>> fetch() async {
     try {
       return await _fetchIndex(indexUri);
