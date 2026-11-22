@@ -73,7 +73,7 @@ class _DevicesSectionState extends State<DevicesSection> {
             height: 100,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.only(right: 4),
               itemCount: visible.length,
               separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (BuildContext context, int index) {

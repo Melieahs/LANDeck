@@ -78,10 +78,13 @@ abstract final class AppTheme {
           fontSize: desktopChrome ? 16 : null,
         ),
       ),
+      // Material 3 filled card: a tonal container step, no drop shadow. The
+      // old elevation-1 shadow drew a hard offset ring on iOS and read as a
+      // duplicate card rather than elevation.
       cardTheme: CardThemeData(
-        color: scheme.surfaceContainerLow,
+        color: scheme.surfaceContainerHighest,
         surfaceTintColor: Colors.transparent,
-        elevation: 1,
+        elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
