@@ -1,6 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 
-/// Home overview: a restrained Material 3 summary instead of a dashboard.
+/// Home overview: a compact summary line under the search field.
+///
+/// Counts stay tappable so the service and device pages remain one gesture
+/// away, but they no longer occupy a full card above the favourites.
 class HomeHeader extends StatelessWidget {
   const HomeHeader({
     super.key,
@@ -18,115 +21,80 @@ class HomeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
-    final TextTheme text = Theme.of(context).textTheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: <Widget>[
-        Text(
-          '我的网络',
-          style: text.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: scheme.onSurface,
+        _Count(
+          key: const ValueKey<String>('home-stat-services'),
+          icon: Icons.dns_outlined,
+          value: serviceCount,
+          unit: '个服务',
+          onTap: onOpenServices,
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            '·',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: scheme.outline),
           ),
         ),
-        const SizedBox(height: 14),
-        Card(
-          color: scheme.surfaceContainer,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
-            child: Row(
-              children: <Widget>[
-                Expanded(
-                  child: _Stat(
-                    key: const ValueKey<String>('home-stat-services'),
-                    value: '$serviceCount',
-                    label: '服务',
-                    icon: Icons.dns_outlined,
-                    onTap: onOpenServices,
-                  ),
-                ),
-                _Divider(color: scheme.outlineVariant),
-                Expanded(
-                  child: _Stat(
-                    key: const ValueKey<String>('home-stat-devices'),
-                    value: '$deviceCount',
-                    label: '设备',
-                    icon: Icons.devices_other_outlined,
-                    onTap: onOpenDevices,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        _Count(
+          key: const ValueKey<String>('home-stat-devices'),
+          icon: Icons.devices_other_outlined,
+          value: deviceCount,
+          unit: '台设备',
+          onTap: onOpenDevices,
         ),
       ],
     );
   }
 }
 
-class _Stat extends StatelessWidget {
-  const _Stat({
+class _Count extends StatelessWidget {
+  const _Count({
     super.key,
-    required this.value,
-    required this.label,
     required this.icon,
-    this.onTap,
+    required this.value,
+    required this.unit,
+    required this.onTap,
   });
 
-  final String value;
-  final String label;
   final IconData icon;
-  final VoidCallback? onTap;
+  final int value;
+  final String unit;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
     final TextTheme text = Theme.of(context).textTheme;
-    final Widget content = Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        Icon(icon, size: 18, color: scheme.onSurfaceVariant),
-        const SizedBox(width: 7),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
+            Icon(icon, size: 15, color: scheme.onSurfaceVariant),
+            const SizedBox(width: 5),
             Text(
-              value,
-              style: text.titleLarge?.copyWith(
+              '$value',
+              style: text.labelLarge?.copyWith(
                 color: scheme.onSurface,
                 fontWeight: FontWeight.w700,
+                fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
               ),
             ),
+            const SizedBox(width: 3),
             Text(
-              label,
-              style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+              unit,
+              style: text.labelMedium?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ],
         ),
-      ],
-    );
-    if (onTap == null) {
-      return content;
-    }
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: content,
       ),
     );
-  }
-}
-
-class _Divider extends StatelessWidget {
-  const _Divider({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(width: 1, height: 34, color: color);
   }
 }

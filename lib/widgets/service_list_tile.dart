@@ -66,7 +66,8 @@ class ServiceListTile extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       isThreeLine: true,
-      contentPadding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
+      visualDensity: VisualDensity.compact,
+      contentPadding: const EdgeInsets.fromLTRB(16, 2, 4, 2),
       leading: ServiceIconBadge(
         icon: iconForService(service),
         emphasized: service.isFavorite,

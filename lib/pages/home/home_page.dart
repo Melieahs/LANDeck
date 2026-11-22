@@ -168,10 +168,10 @@ class _HomePageState extends State<HomePage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         _searchField(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 10),
         _header(repository),
-        const SizedBox(height: 24),
-        _favorites(repository),
+        const SizedBox(height: 22),
+        _favorites(repository, columns: 2),
         const SizedBox(height: AppSpacing.sectionGap),
         _devices(repository),
         const SizedBox(height: AppSpacing.sectionGap),
@@ -187,9 +187,9 @@ class _HomePageState extends State<HomePage> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         _searchField(),
-        const SizedBox(height: 20),
+        const SizedBox(height: 10),
         _header(repository),
-        const SizedBox(height: 26),
+        const SizedBox(height: 24),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -198,7 +198,7 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  _favorites(repository),
+                  _favorites(repository, columns: 4),
                   const SizedBox(height: AppSpacing.sectionGap),
                   _devices(repository),
                 ],
@@ -229,8 +229,9 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _favorites(LanDeckRepository repository) {
+  Widget _favorites(LanDeckRepository repository, {required int columns}) {
     return FavoritesSection(
+      columns: columns,
       services: repository.favorites,
       deviceNameFor: repository.deviceNameFor,
       onOpenService: _openService,

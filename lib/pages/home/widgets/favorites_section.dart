@@ -13,6 +13,7 @@ class FavoritesSection extends StatefulWidget {
     required this.onOpenService,
     required this.onAddService,
     required this.onReorder,
+    this.columns = 2,
   });
 
   final List<Service> services;
@@ -20,6 +21,9 @@ class FavoritesSection extends StatefulWidget {
   final ValueChanged<Service> onOpenService;
   final VoidCallback onAddService;
   final ValueChanged<List<Service>> onReorder;
+
+  /// Grid columns; wide layouts show four favourites per row.
+  final int columns;
 
   @override
   State<FavoritesSection> createState() => _FavoritesSectionState();
@@ -98,8 +102,8 @@ class _FavoritesSectionState extends State<FavoritesSection> {
             physics: const NeverScrollableScrollPhysics(),
             padding: EdgeInsets.zero,
             itemCount: services.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: widget.columns,
               mainAxisSpacing: 8,
               crossAxisSpacing: 8,
               mainAxisExtent: 92,
