@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/services.dart';
+
 import 'package:file_selector/file_selector.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -184,7 +186,7 @@ class _WindowsWebViewPageState extends State<WindowsWebViewPage> {
           tab.error = null;
         }
         _refresh(tab);
-        if (state == LoadingState.none) {
+        if (state == LoadingState.navigationCompleted) {
           unawaited(_autoFillSavedLogin(tab));
         }
       }),
@@ -553,6 +555,61 @@ window.LandeckPasswordBridge = window.LandeckPasswordBridge || {
     await tab.controller.reload();
   }
 
+  Future<void> _fillLogin(_WindowsTab tab) async {
+    if (_fillPromptOpen) {
+      return;
+    }
+    final String? host = _formScope(tab);
+    if (host == null) {
+      return;
+    }
+    final List<HttpCredential> accounts = await HttpCredentialStore.instance
+        .accountsFor(tab.service.id, host: host, realm: WebPasswordFill.webRealm);
+    if (accounts.isEmpty) {
+      if (mounted) {
+        showAppSnackBar(context, '没有保存的网页登录账号');
+      }
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+    _fillPromptOpen = true;
+    try {
+      final HttpCredential? account = await showCredentialPicker(
+        context,
+        credentials: accounts,
+        defaultUsername: tab.service.defaultCredentialUsername,
+      );
+      if (account == null || !mounted) {
+        return;
+      }
+      await tab.controller.executeScript(
+        WebPasswordFill.fillScript(
+          username: account.username,
+          password: account.password,
+        ),
+      );
+      if (mounted) {
+        showAppSnackBar(context, '已填充账号 ${account.username}');
+      }
+    } finally {
+      _fillPromptOpen = false;
+    }
+  }
+
+  Future<void> _copyAddress(_WindowsTab tab) async {
+    final String address =
+        tab.currentUrl ?? Uri.tryParse(tab.service.url)?.toString() ?? '';
+    if (address.isEmpty) {
+      return;
+    }
+    await Clipboard.setData(ClipboardData(text: address));
+    if (mounted) {
+      showAppSnackBar(context, '已复制地址');
+    }
+  }
+
   Future<void> _retry(_WindowsTab tab) async {
     final Service service = tab.service;
     _tabs.remove(service.id);
@@ -661,11 +718,43 @@ window.LandeckPasswordBridge = window.LandeckPasswordBridge || {
                 ? () => tab.controller.goForward()
                 : null,
           ),
-          IconButton(
-            key: const ValueKey<String>('windows-webview-reload'),
-            tooltip: '刷新',
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: tab != null && tab.ready ? () => _reload(tab) : null,
+          PopupMenuButton<_WindowsMoreAction>(
+            key: const ValueKey<String>('windows-webview-more'),
+            tooltip: '更多',
+            icon: const Icon(Icons.more_horiz_rounded),
+            onSelected: (value) {
+              if (tab == null) {
+                return;
+              }
+              switch (value) {
+                case _WindowsMoreAction.refresh:
+                  unawaited(_reload(tab));
+                case _WindowsMoreAction.fillLogin:
+                  unawaited(_fillLogin(tab));
+                case _WindowsMoreAction.copyAddress:
+                  unawaited(_copyAddress(tab));
+                case _WindowsMoreAction.openExternal:
+                  unawaited(_openExternally());
+              }
+            },
+            itemBuilder: (BuildContext context) => const <PopupMenuEntry<_WindowsMoreAction>>[
+              PopupMenuItem<_WindowsMoreAction>(
+                value: _WindowsMoreAction.refresh,
+                child: Text('刷新'),
+              ),
+              PopupMenuItem<_WindowsMoreAction>(
+                value: _WindowsMoreAction.fillLogin,
+                child: Text('填充登录信息'),
+              ),
+              PopupMenuItem<_WindowsMoreAction>(
+                value: _WindowsMoreAction.copyAddress,
+                child: Text('复制地址'),
+              ),
+              PopupMenuItem<_WindowsMoreAction>(
+                value: _WindowsMoreAction.openExternal,
+                child: Text('用系统浏览器打开'),
+              ),
+            ],
           ),
           IconButton(
             key: const ValueKey<String>('windows-webview-service-switch'),
@@ -719,6 +808,8 @@ window.LandeckPasswordBridge = window.LandeckPasswordBridge || {
     );
   }
 }
+
+enum _WindowsMoreAction { refresh, fillLogin, copyAddress, openExternal }
 
 class _WindowsWebError extends StatelessWidget {
   const _WindowsWebError({
