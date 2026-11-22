@@ -435,5 +435,6 @@ Windows 与 Android/iOS 共用同一套 Material 3 页面，桌面窗口在布�
 - 侧栏：96pt 窄栏（图标 + 小字竖排），背景使用 `surfaceContainerLow` 与内容区区分、上下铺满；桌面不显示底部导航。
 - 首页：窗口宽 ≥ 860 时两列（左「收藏 + 设备」、右「全部服务」），更窄的窗口回退为单列；其余页面保持 520pt 限宽居中。
 - 多窗口：计划中，当前为单窗口。
-- 已知限制：`webview_flutter` 没有 Windows 实现，桌面打开网页会显示「此环境不支持内嵌网页」；内嵌浏览需要后续接入 `webview_windows` 或改用系统浏览器降级。
+- 打开服务：`webview_flutter` 没有 Windows 实现，桌面点开服务会直接交给系统默认浏览器（`url_launcher`）并返回应用，不进入内嵌页面。
+- 内嵌浏览需要后续接入 `webview_windows`（WebView2）或 `flutter_inappwebview`；当前不做。
 - 构建：Linux 不能编译 Windows；`.github/workflows/windows.yml` 在 `windows-latest` 上执行 analyze/test 并构建 `LANDeck-windows-x64`。

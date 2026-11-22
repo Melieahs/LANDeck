@@ -11,6 +11,7 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'web_view_sessions.dart';
 
 import '../../core/app_scope.dart';
+import '../../core/ui/adaptive_layout.dart';
 import '../../core/utils/feedback.dart';
 import '../../models/download_task.dart';
 import '../../models/http_credential.dart';
@@ -109,6 +110,16 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       _service = latest;
       if (latest != null) {
         unawaited(repository.markServiceOpened(latest.id));
+      }
+      if (latest != null && !_nativeWebView && AdaptiveLayout.isDesktop) {
+        // Desktop platforms have no webview_flutter implementation. Opening
+        // the service in the system browser keeps the action useful instead
+        // of dropping the user on the unsupported-placeholder screen.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            unawaited(_openInSystemBrowserAndClose());
+          }
+        });
       }
       if (latest != null && _nativeWebView) {
         final WebViewSession? existing = WebViewSessionRegistry.instance
@@ -1646,6 +1657,31 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     showAppSnackBar(context, value ? '已进入沉浸模式' : '已恢复普通模式');
   }
 
+  /// Windows/macOS/Linux have no webview_flutter implementation, so the
+  /// viewer hands the URL to the default browser and closes itself.
+  Future<void> _openInSystemBrowserAndClose() async {
+    final Service? service = _service;
+    if (service == null) {
+      return;
+    }
+    final Uri? uri = Uri.tryParse(service.url);
+    if (uri == null) {
+      return;
+    }
+    final bool opened = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (opened) {
+      Navigator.of(context).maybePop();
+    } else {
+      showAppSnackBar(context, '无法打开系统浏览器');
+    }
+  }
+
   Future<void> _openExternally() async {
     final Service? service = _service;
     if (service == null) {
@@ -1974,7 +2010,7 @@ class _UnsupportedWebView extends StatelessWidget {
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
-                            Icons.phone_android_rounded,
+                            Icons.language_rounded,
                             size: 26,
                             color: Theme.of(context)
                                 .colorScheme
@@ -1993,8 +2029,8 @@ class _UnsupportedWebView extends StatelessWidget {
                         ),
                         const SizedBox(height: 7),
                         Text(
-                          'Android APK 会使用系统 WebView 打开下面的真实地址。'
-                          '这里的网页预览不会渲染模拟内容。',
+                          '当前平台不提供内嵌网页，可用系统浏览器打开下面的真实地址。'
+                          '这里不会渲染模拟内容。',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 11.5,
