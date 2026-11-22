@@ -370,7 +370,12 @@ examples/native-modules/index.json
   该 fork 同时包含 VS2026 协程弃用抑制（`_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS`、`/WX-`、`CMP0175 OLD`）。
 - Windows 密码能力：HTTP Basic 自动/手动认证、网页登录表单自动填充与保存（与移动端同一套
   `WebPasswordFill` 脚本，通过 `window.chrome.webview.postMessage` 桥接）。
-  暂不支持：下载拦截、多标签保活（仍是 Android/iOS 能力）。
+- Windows 下载：fork 的插件拦截 `ICoreWebView2_4::DownloadStarting`，弹系统保存对话框
+  （`file_selector` 的 `getSaveLocation`），取消或保存由 `respondDownload` 回给 WebView2。
+- Windows 多标签：`WindowsWebViewPage` 为每个打开过的服务保留一个 `WebviewController`
+  （最多 4 个，LRU 回收），切换服务不重载，退出查看器时统一释放；`Webview` 是 Texture 渲染，
+  控制器存活即可保留页面状态。
+  仍不支持：下载进度/暂停、跨查看器实例的后台存活。
   **不要声称桌面端与移动端 WebView 功能完全一致**。
 - 多窗口：计划中（`desktop_multi_window` 或每窗口独立 engine + 独立入口），当前单窗口。
 - CI：`.github/workflows/windows.yml` 在 `windows-latest` 跑 analyze/test + `flutter build windows --release`，

@@ -30,6 +30,22 @@ class BasicAuthChallenge {
   }
 }
 
+class DownloadStarting {
+  final int id;
+  final String uri;
+  final String suggestedFilePath;
+  const DownloadStarting(this.id, this.uri, this.suggestedFilePath);
+
+  /// File name WebView2 suggests for the download, derived from the path it
+  /// would have used by default.
+  String get suggestedFileName {
+    final String path = suggestedFilePath.isNotEmpty ? suggestedFilePath : uri;
+    final segments = path.split(RegExp(r'[\\/]'));
+    return segments.lastWhere((segment) => segment.isNotEmpty,
+        orElse: () => 'download');
+  }
+}
+
 typedef PermissionRequestedDelegate
     = FutureOr<WebviewPermissionDecision> Function(
         String url, WebviewPermissionKind permissionKind, bool isUserInitiated);
@@ -181,6 +197,14 @@ class WebviewController extends ValueNotifier<WebviewValue> {
   Stream<BasicAuthChallenge> get basicAuthRequested =>
       _basicAuthStreamController.stream;
 
+  final StreamController<DownloadStarting> _downloadStreamController =
+      StreamController<DownloadStarting>.broadcast();
+
+  /// Downloads WebView2 is about to start. Answer each one through
+  /// [respondDownload]; WebView2 blocks the download until then.
+  Stream<DownloadStarting> get downloadStarting =>
+      _downloadStreamController.stream;
+
   WebviewController() : super(WebviewValue.uninitialized());
 
   /// Initializes the underlying platform view.
@@ -240,6 +264,13 @@ class WebviewController extends ValueNotifier<WebviewValue> {
             final value = map['value'] as Map<dynamic, dynamic>;
             _basicAuthStreamController.add(BasicAuthChallenge(
                 value['id'] as int, value['uri'] as String));
+            break;
+          case 'downloadStarting':
+            final value = map['value'] as Map<dynamic, dynamic>;
+            _downloadStreamController.add(DownloadStarting(
+                value['id'] as int,
+                value['uri'] as String? ?? '',
+                value['suggestedFilePath'] as String? ?? ''));
         }
       });
 
@@ -288,6 +319,23 @@ class WebviewController extends ValueNotifier<WebviewValue> {
     return null;
   }
 
+  /// Answers a [downloadStarting] event. Pass [path] to save the file there,
+  /// or [cancel] to abort the download.
+  Future<void> respondDownload(
+    int id, {
+    String? path,
+    bool cancel = false,
+  }) async {
+    if (_isDisposed) {
+      return;
+    }
+    return _methodChannel.invokeMethod('respondDownload', <String, dynamic>{
+      'id': id,
+      'path': path ?? '',
+      'cancel': cancel,
+    });
+  }
+
   /// Answers a [basicAuthRequested] challenge. Pass [cancel] to abort the
   /// navigation instead.
   Future<void> respondBasicAuth(
@@ -314,6 +362,7 @@ class WebviewController extends ValueNotifier<WebviewValue> {
       _isDisposed = true;
       await _eventStreamSubscription?.cancel();
       await _basicAuthStreamController.close();
+      await _downloadStreamController.close();
       await _pluginChannel.invokeMethod('dispose', _textureId);
     }
     super.dispose();

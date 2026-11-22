@@ -372,6 +372,47 @@ void Webview::RegisterEventHandlers() {
           .Get(),
       &event_registrations_.contains_fullscreen_element_changed_token_);
 
+  auto webview4 = webview_.try_query<ICoreWebView2_4>();
+  if (webview4) {
+    webview4->add_DownloadStarting(
+        Callback<ICoreWebView2DownloadStartingEventHandler>(
+            [this](ICoreWebView2* sender,
+                   ICoreWebView2DownloadStartingEventArgs* args) -> HRESULT {
+              if (!download_starting_callback_) {
+                // Keep the default WebView2 behaviour.
+                return S_OK;
+              }
+
+              wil::com_ptr<ICoreWebView2DownloadOperation> operation;
+              args->get_DownloadOperation(operation.put());
+
+              wil::unique_cotaskmem_string uri;
+              if (operation) {
+                operation->get_Uri(uri.put());
+              }
+              wil::unique_cotaskmem_string default_path;
+              args->get_ResultFilePath(default_path.put());
+
+              wil::com_ptr<ICoreWebView2Deferral> deferral;
+              if (FAILED(args->GetDeferral(deferral.put()))) {
+                return S_OK;
+              }
+
+              const int64_t id = ++next_download_id_;
+              args->AddRef();
+              deferral->AddRef();
+              pending_download_[id] = PendingDownload{args, deferral.get()};
+
+              download_starting_callback_(
+                  id, uri ? util::Utf8FromUtf16(uri.get()) : std::string(),
+                  default_path ? util::Utf8FromUtf16(default_path.get())
+                               : std::string());
+              return S_OK;
+            })
+            .Get(),
+        &event_registrations_.download_starting_token_);
+  }
+
   auto webview10 = webview_.try_query<ICoreWebView2_10>();
   if (webview10) {
     webview10->add_BasicAuthenticationRequested(
@@ -432,6 +473,28 @@ void Webview::RespondBasicAuth(int64_t id, const std::wstring& username,
   deferral->Release();
   args->Release();
   pending_basic_auth_.erase(it);
+}
+
+void Webview::RespondDownload(int64_t id, const std::wstring& path,
+                              bool cancel) {
+  const auto it = pending_download_.find(id);
+  if (it == pending_download_.end()) {
+    return;
+  }
+
+  ICoreWebView2DownloadStartingEventArgs* args = it->second.args;
+  ICoreWebView2Deferral* deferral = it->second.deferral;
+
+  if (cancel) {
+    args->put_Cancel(TRUE);
+  } else if (!path.empty()) {
+    args->put_ResultFilePath(path.c_str());
+  }
+
+  deferral->Complete();
+  deferral->Release();
+  args->Release();
+  pending_download_.erase(it);
 }
 
 void Webview::SetSurfaceSize(size_t width, size_t height, float scale_factor) {

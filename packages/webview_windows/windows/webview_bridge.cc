@@ -48,6 +48,7 @@ constexpr auto kMethodSetCacheDisabled = "setCacheDisabled";
 constexpr auto kMethodSetPopupWindowPolicy = "setPopupWindowPolicy";
 constexpr auto kMethodSetFpsLimit = "setFpsLimit";
 constexpr auto kMethodRespondBasicAuth = "respondBasicAuth";
+constexpr auto kMethodRespondDownload = "respondDownload";
 
 constexpr auto kEventType = "type";
 constexpr auto kEventValue = "value";
@@ -318,6 +319,23 @@ void WebviewBridge::RegisterEventHandlers() {
              contains_fullscreen_element}});
         EmitEvent(event);
       });
+
+  webview_->OnDownloadStarting([this](
+                                    int64_t id, const std::string& uri,
+                                    const std::string& suggested_file_path) {
+    const auto event = flutter::EncodableValue(flutter::EncodableMap{
+        {flutter::EncodableValue(kEventType),
+         flutter::EncodableValue("downloadStarting")},
+        {flutter::EncodableValue(kEventValue),
+         flutter::EncodableValue(flutter::EncodableMap{
+             {flutter::EncodableValue("id"), flutter::EncodableValue(id)},
+             {flutter::EncodableValue("uri"), flutter::EncodableValue(uri)},
+             {flutter::EncodableValue("suggestedFilePath"),
+              flutter::EncodableValue(suggested_file_path)},
+         })},
+    });
+    EmitEvent(event);
+  });
 
   webview_->OnBasicAuthRequested([this](int64_t id, const std::string& uri) {
     const auto event = flutter::EncodableValue(flutter::EncodableMap{
@@ -751,6 +769,49 @@ void WebviewBridge::HandleMethodCall(
     if (webview_) {
       webview_->RespondBasicAuth(id, util::Utf16FromUtf8(username),
                                  util::Utf16FromUtf8(password), cancel);
+    }
+    return result->Success();
+  }
+
+  // respondDownload: {id: int, path: string, cancel: bool}
+  if (method_name.compare(kMethodRespondDownload) == 0) {
+    const auto* args =
+        std::get_if<flutter::EncodableMap>(method_call.arguments());
+    if (!args) {
+      return result->Error(kErrorInvalidArgs);
+    }
+    const auto id_it = args->find(flutter::EncodableValue("id"));
+    if (id_it == args->end()) {
+      return result->Error(kErrorInvalidArgs);
+    }
+
+    int64_t id = 0;
+    if (const auto* id64 = std::get_if<int64_t>(&id_it->second)) {
+      id = *id64;
+    } else if (const auto* id32 = std::get_if<int32_t>(&id_it->second)) {
+      id = *id32;
+    } else {
+      return result->Error(kErrorInvalidArgs);
+    }
+
+    std::string path;
+    const auto path_it = args->find(flutter::EncodableValue("path"));
+    if (path_it != args->end()) {
+      if (const auto* value = std::get_if<std::string>(&path_it->second)) {
+        path = *value;
+      }
+    }
+
+    bool cancel = false;
+    const auto cancel_it = args->find(flutter::EncodableValue("cancel"));
+    if (cancel_it != args->end()) {
+      if (const auto* value = std::get_if<bool>(&cancel_it->second)) {
+        cancel = *value;
+      }
+    }
+
+    if (webview_) {
+      webview_->RespondDownload(id, util::Utf16FromUtf8(path), cancel);
     }
     return result->Success();
   }

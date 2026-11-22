@@ -91,6 +91,7 @@ struct EventRegistrations {
   EventRegistrationToken new_windows_requested_token_{};
   EventRegistrationToken contains_fullscreen_element_changed_token_{};
   EventRegistrationToken basic_auth_requested_token_{};
+  EventRegistrationToken download_starting_token_{};
 };
 
 class Webview {
@@ -122,6 +123,9 @@ class Webview {
       ContainsFullScreenElementChangedCallback;
   typedef std::function<void(int64_t id, const std::string& uri)>
       BasicAuthRequestedCallback;
+  typedef std::function<void(int64_t id, const std::string& uri,
+                             const std::string& suggested_file_path)>
+      DownloadStartingCallback;
 
   ~Webview();
 
@@ -222,6 +226,12 @@ class Webview {
   void RespondBasicAuth(int64_t id, const std::wstring& username,
                         const std::wstring& password, bool cancel);
 
+  void OnDownloadStarting(DownloadStartingCallback callback) {
+    download_starting_callback_ = std::move(callback);
+  }
+
+  void RespondDownload(int64_t id, const std::wstring& path, bool cancel);
+
  private:
   HWND hwnd_;
   bool owns_window_;
@@ -265,6 +275,14 @@ class Webview {
                 ICoreWebView2Deferral*>>
       pending_basic_auth_;
   int64_t next_basic_auth_id_ = 0;
+  DownloadStartingCallback download_starting_callback_;
+
+  struct PendingDownload {
+    ICoreWebView2DownloadStartingEventArgs* args;
+    ICoreWebView2Deferral* deferral;
+  };
+  std::unordered_map<int64_t, PendingDownload> pending_download_;
+  int64_t next_download_id_ = 0;
 
   Webview(
       wil::com_ptr<ICoreWebView2CompositionController> composition_controller,
