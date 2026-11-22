@@ -31,7 +31,9 @@ abstract final class AppTheme {
   }) {
     ColorScheme scheme =
         dynamicScheme ??
-        _seededScheme(brightness, seedColor ?? brandSeed);
+        (seedColor == null
+            ? _brandScheme(brightness)
+            : _seededScheme(brightness, seedColor));
     if (amoled && brightness == Brightness.dark) {
       scheme = _amoled(scheme);
     }
@@ -56,11 +58,10 @@ abstract final class AppTheme {
       colorScheme: scheme,
       // Light themes read best as a tinted page with white cards; dark themes
       // keep the page dark and lift the cards one container step, so content
-      // floats without any drop shadow.
-      scaffoldBackgroundColor: isLight
-          ? scheme.surfaceContainerLow
-          : scheme.surface,
-      canvasColor: isLight ? scheme.surfaceContainerLow : scheme.surface,
+      // floats without any drop shadow. The light page is a touch darker than
+      // surfaceContainerLow so white cards separate without borders.
+      scaffoldBackgroundColor: isLight ? _lightPage(scheme) : scheme.surface,
+      canvasColor: isLight ? _lightPage(scheme) : scheme.surface,
       splashFactory: InkSparkle.splashFactory,
       fontFamilyFallback: const <String>[
         'Noto Sans SC',
@@ -93,9 +94,7 @@ abstract final class AppTheme {
     return base.copyWith(
       textTheme: textTheme,
       appBarTheme: AppBarTheme(
-        backgroundColor: isLight
-            ? scheme.surfaceContainerLow
-            : scheme.surface,
+        backgroundColor: isLight ? _lightPage(scheme) : scheme.surface,
         foregroundColor: scheme.onSurface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -111,7 +110,7 @@ abstract final class AppTheme {
       // Cards are flat tonal containers: white on the tinted light page and
       // one step above the dark page. No elevation shadow, no outline.
       cardTheme: CardThemeData(
-        color: isLight ? scheme.surface : scheme.surfaceContainerLow,
+        color: isLight ? _lightCard(scheme) : scheme.surfaceContainerLow,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         margin: EdgeInsets.zero,
@@ -282,7 +281,17 @@ abstract final class AppTheme {
   static ColorScheme _brandScheme(Brightness brightness) {
     final ColorScheme scheme = _seededScheme(brightness, brandSeed);
     if (brightness == Brightness.light) {
-      return scheme;
+      // The vibrant tonal palette hands back a very dark blue (#0056D2) for
+      // filled buttons. On a light page that reads harsh, so the light brand
+      // keeps the seed blue itself: 4.8:1 against white text, and visibly
+      // softer than the generated primary.
+      return scheme.copyWith(
+        primary: const Color(0xFF2E6BE6),
+        onPrimary: const Color(0xFFFFFFFF),
+        primaryContainer: const Color(0xFFD7E3FF),
+        onPrimaryContainer: const Color(0xFF001B3D),
+        surfaceTint: const Color(0xFF2E6BE6),
+      );
     }
     // Keep the saturated brand accent on the charcoal scale.
     return scheme.copyWith(
@@ -293,6 +302,18 @@ abstract final class AppTheme {
       surfaceTint: const Color(0xFF4C8DFF),
     );
   }
+
+  /// Slightly deepened page tint: white cards get a little more separation
+  /// than the raw surfaceContainerLow without turning the page grey.
+  /// A light card tint that follows the accent: white with a whisper of the
+  /// primary colour, so a blue theme gets a blue-white card and a green theme
+  /// gets a green-white card.
+  static Color _lightCard(ColorScheme scheme) =>
+      Color.alphaBlend(scheme.primary.withValues(alpha: 0.07), Colors.white);
+
+  static Color _lightPage(ColorScheme scheme) =>
+      Color.alphaBlend(scheme.onSurface.withValues(alpha: 0.075),
+          scheme.surfaceContainerLow);
 
   static ColorScheme _seededScheme(Brightness brightness, Color seed) {
     final ColorScheme base = ColorScheme.fromSeed(

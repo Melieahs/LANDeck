@@ -598,6 +598,10 @@ class _DiscoveryControlCard extends StatelessWidget {
                     onPressed: canStart ? onStart : null,
                     icon: const Icon(Icons.radar_rounded),
                     label: Text(result == null ? '开始发现' : '重新发现'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: scheme.primaryContainer,
+                      foregroundColor: scheme.onPrimaryContainer,
+                    ),
                   ),
               ],
             ),
