@@ -65,7 +65,7 @@ class CategoryPage extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(12, 12, 12, 32),
                     itemCount: services.length + 1,
                     separatorBuilder: (BuildContext context, int index) =>
-                        const Divider(height: 1, indent: 16, endIndent: 16),
+                        const Divider(height: 1),
                     itemBuilder: (BuildContext context, int index) {
                       if (index == 0) {
                         return Padding(

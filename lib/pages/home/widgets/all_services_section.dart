@@ -82,7 +82,7 @@ class _AllServicesSectionState extends State<AllServicesSection> {
                     onTap: () => widget.onOpenService(visible[index]),
                   ),
                   if (index != visible.length - 1)
-                    const Divider(height: 1, indent: 72),
+                    const Divider(height: 1),
                 ],
               ],
             ),

@@ -341,8 +341,6 @@ class _ActionDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Divider(
       height: 1,
-      indent: 57,
-      endIndent: 12,
       color: Theme.of(context).colorScheme.outlineVariant,
     );
   }

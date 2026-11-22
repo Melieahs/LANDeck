@@ -246,7 +246,7 @@ class DeviceDetailPage extends StatelessWidget {
                             ),
                           ),
                           if (i != services.length - 1)
-                            const Divider(height: 1, indent: 16, endIndent: 16),
+                            const Divider(height: 1),
                         ],
                       ],
                     ),
