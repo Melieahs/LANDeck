@@ -68,24 +68,25 @@ class _MainShellState extends State<MainShell> {
     final ColorScheme colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      body: SafeArea(
-        right: false,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            // The rail sits on a distinct surface, like a desktop sidebar,
-            // instead of relying on a hairline divider.
-            Container(
-              width: AdaptiveLayout.railWidth,
-              color: colors.surfaceContainerLow,
+      // The rail background runs edge to edge like a desktop sidebar; only
+      // its contents respect the safe area.
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Container(
+            width: AdaptiveLayout.railWidth,
+            color: colors.surfaceContainerLow,
+            child: SafeArea(
+              right: false,
+              bottom: false,
               child: _MainRail(
                 currentIndex: _currentIndex,
                 onChanged: _selectTab,
               ),
             ),
-            Expanded(child: _content()),
-          ],
-        ),
+          ),
+          Expanded(child: _content()),
+        ],
       ),
     );
   }
