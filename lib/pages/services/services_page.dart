@@ -7,6 +7,7 @@ import '../../repositories/service_repository.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/service_list_tile.dart';
 import 'service_editor_page.dart';
+import '../../widgets/empty_state.dart';
 
 class ServicesPage extends StatelessWidget {
   const ServicesPage({super.key});
@@ -40,40 +41,16 @@ class ServicesPage extends StatelessWidget {
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: kMaxAppWidth),
+            constraints: const BoxConstraints(maxWidth: kListPageMaxWidth),
             child: services.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Icon(
-                            Icons.dns_outlined,
-                            size: 42,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            '还没有服务',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '添加设备后，在设备详情里填端口即可创建服务。',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          const SizedBox(height: 16),
-                          FilledButton.icon(
-                            onPressed: () => _addService(context),
-                            icon: const Icon(Icons.add_rounded),
-                            label: const Text('添加服务'),
-                          ),
-                        ],
-                      ),
+                ? EmptyState(
+                    icon: Icons.dns_outlined,
+                    title: '还没有服务',
+                    message: '添加设备后，在设备详情里填端口即可创建服务。',
+                    action: FilledButton.icon(
+                      onPressed: () => _addService(context),
+                      icon: const Icon(Icons.add_rounded),
+                      label: const Text('添加服务'),
                     ),
                   )
                 : ListView.separated(

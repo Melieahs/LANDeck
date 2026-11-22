@@ -6,6 +6,7 @@ import '../../core/utils/feedback.dart';
 import '../../models/download_task.dart';
 import '../../repositories/service_repository.dart';
 import '../../services/download_center.dart';
+import '../../widgets/empty_state.dart';
 
 /// Persistent download queue. All progress is reported by the native
 /// foreground service; nothing here is simulated.
@@ -385,25 +386,10 @@ class _EmptyDownloads extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme scheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(Icons.download_done_rounded, size: 48, color: scheme.primary),
-            const SizedBox(height: 14),
-            Text('还没有下载任务', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 6),
-            Text(
-              '在网页中点开文件下载链接，任务会在这里显示，并在后台继续。',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, height: 1.5, color: scheme.onSurfaceVariant),
-            ),
-          ],
-        ),
-      ),
+    return const EmptyState(
+      icon: Icons.download_done_rounded,
+      title: '还没有下载任务',
+      message: '在网页中点开文件下载链接，任务会在这里显示，并在后台继续。',
     );
   }
 }

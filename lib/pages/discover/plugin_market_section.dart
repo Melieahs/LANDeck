@@ -6,6 +6,7 @@ import '../../native/plugin/imported_module_store.dart';
 import '../../native/plugin/plugin_catalog.dart';
 import '../../native/plugin/plugin_install_dialog.dart';
 import '../../native/plugin/plugin_manifest.dart';
+import '../../widgets/list_skeleton.dart';
 
 /// Lists declarative plugins published in the LANDeck repository and installs
 /// them after an explicit confirmation.
@@ -187,12 +188,7 @@ class _PluginMarketSectionState extends State<PluginMarketSection> {
     }
     if (_loading) {
       return <Widget>[
-        Text(
-          '正在读取插件源…',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
+        const ListSkeleton(rows: 2, rowHeight: 52, padding: EdgeInsets.zero),
       ];
     }
     if (_entries.isEmpty) {

@@ -7,6 +7,8 @@ import '../../models/http_credential.dart';
 import '../../models/service.dart';
 import '../../repositories/service_repository.dart';
 import '../../services/http_credential_store.dart';
+import '../../widgets/empty_state.dart';
+import '../../widgets/list_skeleton.dart';
 
 class CredentialManagerPage extends StatefulWidget {
   const CredentialManagerPage({super.key});
@@ -93,8 +95,6 @@ class _CredentialManagerPageState extends State<CredentialManagerPage> {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme scheme = Theme.of(context).colorScheme;
-    final TextTheme text = Theme.of(context).textTheme;
     return Scaffold(
       appBar: AppBar(title: const Text('密码管理')),
       body: SafeArea(
@@ -102,32 +102,14 @@ class _CredentialManagerPageState extends State<CredentialManagerPage> {
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: kMaxAppWidth),
+            constraints: const BoxConstraints(maxWidth: kSettingsPageMaxWidth),
             child: _loading
-                ? const Center(child: CircularProgressIndicator())
+                ? const ListSkeleton()
                 : _rows.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Icon(
-                            Icons.key_off_outlined,
-                            size: 42,
-                            color: scheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(height: 12),
-                          Text('还没有保存的密码', style: text.titleMedium),
-                          const SizedBox(height: 4),
-                          Text(
-                            '在网页登录表单提交后选择保存，或在 HTTP 认证对话框中勾选记住。',
-                            textAlign: TextAlign.center,
-                            style: text.bodyMedium,
-                          ),
-                        ],
-                      ),
-                    ),
+                ? const EmptyState(
+                    icon: Icons.key_off_outlined,
+                    title: '还没有保存的密码',
+                    message: '在网页登录表单提交后选择保存，或在 HTTP 认证对话框中勾选记住。',
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),

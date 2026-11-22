@@ -7,6 +7,7 @@ import '../../repositories/service_repository.dart';
 import '../../widgets/service_icon.dart';
 import 'device_detail_page.dart';
 import 'device_editor_page.dart';
+import '../../widgets/empty_state.dart';
 
 class DevicesPage extends StatelessWidget {
   const DevicesPage({super.key});
@@ -45,7 +46,7 @@ class DevicesPage extends StatelessWidget {
         top: false,
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: kMaxAppWidth),
+            constraints: const BoxConstraints(maxWidth: kListPageMaxWidth),
             child: devices.isEmpty
                 ? _EmptyDevices(onAdd: () => _openEditor(context))
                 : ListView.separated(
@@ -118,35 +119,14 @@ class _EmptyDevices extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme scheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(
-              Icons.devices_other_rounded,
-              size: 48,
-              color: scheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 16),
-            Text('还没有添加设备', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 6),
-            Text(
-              '添加设备后，可以把服务归类到 NAS、路由器或电脑，并只需输入端口即可创建服务。',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium
-                  ?.copyWith(color: scheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('添加设备'),
-            ),
-          ],
-        ),
+    return EmptyState(
+      icon: Icons.devices_other_rounded,
+      title: '还没有添加设备',
+      message: '添加设备后，可以把服务归类到 NAS、路由器或电脑，并只需输入端口即可创建服务。',
+      action: FilledButton.icon(
+        onPressed: onAdd,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('添加设备'),
       ),
     );
   }

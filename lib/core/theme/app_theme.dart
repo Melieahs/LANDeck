@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Material 3 theme for LANDeck.
@@ -20,6 +21,13 @@ abstract final class AppTheme {
   static ThemeData _build(ColorScheme scheme) {
     final Brightness brightness = scheme.brightness;
     final bool isLight = brightness == Brightness.light;
+    // Desktop windows already draw their own 44px title bar, so the page app
+    // bar shrinks to a compact strip instead of stacking a second 64px row.
+    final bool desktopChrome =
+        !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.windows ||
+            defaultTargetPlatform == TargetPlatform.macOS ||
+            defaultTargetPlatform == TargetPlatform.linux);
     final ThemeData base = ThemeData(
       useMaterial3: true,
       brightness: brightness,
@@ -64,9 +72,11 @@ abstract final class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
+        toolbarHeight: desktopChrome ? 48 : null,
         titleTextStyle: textTheme.titleLarge?.copyWith(
           color: scheme.onSurface,
           fontWeight: FontWeight.w700,
+          fontSize: desktopChrome ? 16 : null,
         ),
       ),
       cardTheme: CardThemeData(

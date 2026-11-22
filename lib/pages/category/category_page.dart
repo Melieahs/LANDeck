@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/app_scope.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../core/utils/feedback.dart';
 import '../../models/device_category.dart';
 import '../../models/service.dart';
@@ -9,6 +10,7 @@ import '../../routes/app_router.dart';
 import '../../widgets/service_icon.dart';
 import '../../widgets/service_list_tile.dart';
 import '../services/service_editor_page.dart';
+import '../../widgets/empty_state.dart';
 
 class CategoryPage extends StatelessWidget {
   const CategoryPage({super.key, required this.category});
@@ -53,7 +55,7 @@ class CategoryPage extends StatelessWidget {
         top: false,
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
+            constraints: const BoxConstraints(maxWidth: kListPageMaxWidth),
             child: services.isEmpty
                 ? _EmptyCategory(
                     category: category,
@@ -106,38 +108,14 @@ class _EmptyCategory extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme scheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(
-              iconForCategory(category),
-              size: 48,
-              color: scheme.onSurfaceVariant,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              category == DeviceCategory.all ? '还没有添加服务' : '该分类下还没有服务',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '服务只来自你手动添加或扫描确认的记录。',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium
-                  ?.copyWith(color: scheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 20),
-            FilledButton.icon(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('添加服务'),
-            ),
-          ],
-        ),
+    return EmptyState(
+      icon: iconForCategory(category),
+      title: category == DeviceCategory.all ? '还没有添加服务' : '该分类下还没有服务',
+      message: '服务只来自你手动添加或扫描确认的记录。',
+      action: FilledButton.icon(
+        onPressed: onAdd,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('添加服务'),
       ),
     );
   }

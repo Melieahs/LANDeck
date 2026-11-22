@@ -135,7 +135,7 @@ class DeviceDetailPage extends StatelessWidget {
         top: false,
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: kMaxAppWidth),
+            constraints: const BoxConstraints(maxWidth: kSettingsPageMaxWidth),
             child: ListView(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.page,

@@ -9,6 +9,7 @@ import '../../models/http_credential.dart';
 import '../../models/service.dart';
 import '../../services/http_credential_store.dart';
 import 'plugin_manifest.dart';
+import '../../widgets/list_skeleton.dart';
 
 /// Renders a declarative imported plugin. No third-party code is executed:
 /// the manifest only describes same-origin HTTP requests and how to display
@@ -474,9 +475,10 @@ class _ImportedNativePageState extends State<ImportedNativePage>
               ],
             ),
             if (_loading)
-              const Padding(
+              const ListSkeleton(
+                rows: 3,
+                rowHeight: 44,
                 padding: EdgeInsets.symmetric(vertical: 18),
-                child: Center(child: CircularProgressIndicator()),
               )
             else if (rows.isEmpty && manifest.status != null)
               Padding(

@@ -75,7 +75,7 @@ class _SearchPageState extends State<SearchPage> {
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: kMaxAppWidth),
+            constraints: const BoxConstraints(maxWidth: kListPageMaxWidth),
             child: ListView(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.page,

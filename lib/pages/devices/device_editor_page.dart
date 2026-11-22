@@ -128,7 +128,7 @@ class _DeviceEditorPageState extends State<DeviceEditorPage> {
         top: false,
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: kMaxAppWidth),
+            constraints: const BoxConstraints(maxWidth: kFormPageMaxWidth),
             child: Form(
               key: _formKey,
               child: ListView(

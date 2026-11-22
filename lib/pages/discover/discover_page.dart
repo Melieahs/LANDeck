@@ -367,7 +367,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
       child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: kMaxAppWidth),
+          constraints: const BoxConstraints(maxWidth: kListPageMaxWidth),
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
             children: <Widget>[

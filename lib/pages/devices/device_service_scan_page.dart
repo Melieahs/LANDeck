@@ -149,7 +149,7 @@ class _DeviceServiceScanPageState extends State<DeviceServiceScanPage> {
         top: false,
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: kMaxAppWidth),
+            constraints: const BoxConstraints(maxWidth: kListPageMaxWidth),
             child: ListView(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.page,

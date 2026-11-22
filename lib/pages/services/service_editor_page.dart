@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/app_scope.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../core/utils/feedback.dart';
 import '../../core/utils/url_utils.dart';
 import '../../models/device.dart';
@@ -388,7 +389,7 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
         top: false,
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
+            constraints: const BoxConstraints(maxWidth: kFormPageMaxWidth),
             child: Form(
               key: _formKey,
               child: ListView(
