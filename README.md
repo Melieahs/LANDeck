@@ -76,7 +76,7 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 
 - `dist/LANDeck-0.9.3.apk`（约 56 MB，含 arm64-v8a / armeabi-v7a / x86_64）
 - 构建产物：`build/app/outputs/flutter-apk/app-release.apk`
-- 包名 `com.example.landeck`，版本 `0.9.3+28`
+- 包名 `com.example.landeck`，版本 `0.9.4+29`（每次修改后递增 patch 与 build 号）
 - SHA-256：以最终构建产物为准
 - 当前使用 Flutter 默认 debug 签名，可直接安装测试，不适合直接上架
 
@@ -225,7 +225,7 @@ Service.protocol = http, port = 8096, path = /web
 
 - `flutter analyze`：No issues found
 - `flutter test`：62 tests passed
-- `flutter build apk --release`：成功，约 57.5 MB（0.9.3+28）
+- `flutter build apk --release`：成功，约 57.5 MB（0.9.3+28，历史记录；0.9.4+29 待构建）
 - Android 模拟器（Android 36 x86_64，1080×2400）实测：
   - 首次安装 0 服务、0 收藏、0 设备，空状态正常
   - 手动添加 → 首页计数/分类/收藏更新 → 强制停止再启动仍存在
