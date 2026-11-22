@@ -1,4 +1,3 @@
-import 'package:dynamic_color/dynamic_color.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/app_scope.dart';
@@ -9,6 +8,7 @@ import '../../repositories/service_repository.dart';
 import '../devices/devices_page.dart';
 import '../downloads/downloads_page.dart';
 import '../../native/native_module_registry.dart';
+import 'appearance_page.dart';
 import 'native_modules_page.dart';
 import 'storage_page.dart';
 
@@ -36,71 +36,17 @@ class SettingsPage extends StatelessWidget {
               const _SectionLabel('外观'),
               Card.outlined(
                 clipBehavior: Clip.antiAlias,
-                child: Column(
-                  children: <Widget>[
-                    const ListTile(
-                      leading: Icon(Icons.palette_outlined),
-                      title: Text('主题'),
-                      subtitle: Text('默认跟随系统；选择会保存在本机。'),
+                child: ListTile(
+                  key: const ValueKey<String>('appearance-entry'),
+                  leading: const Icon(Icons.palette_outlined),
+                  title: const Text('主题'),
+                  subtitle: Text(_themeSummary(themeController)),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => Navigator.of(context).push<void>(
+                    MaterialPageRoute<void>(
+                      builder: (BuildContext context) => const AppearancePage(),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: SegmentedButton<ThemeMode>(
-                          key: const ValueKey<String>('theme-mode-selector'),
-                          segments: const <ButtonSegment<ThemeMode>>[
-                            ButtonSegment<ThemeMode>(
-                              value: ThemeMode.system,
-                              label: Text('系统'),
-                            ),
-                            ButtonSegment<ThemeMode>(
-                              value: ThemeMode.light,
-                              label: Text('浅色'),
-                            ),
-                            ButtonSegment<ThemeMode>(
-                              value: ThemeMode.dark,
-                              label: Text('深色'),
-                            ),
-                          ],
-                          selected: <ThemeMode>{themeController.mode},
-                          showSelectedIcon: false,
-                          onSelectionChanged: (Set<ThemeMode> values) {
-                            themeController.setMode(values.first);
-                          },
-                        ),
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    DynamicColorBuilder(
-                      builder:
-                          (
-                            ColorScheme? lightDynamic,
-                            ColorScheme? darkDynamic,
-                          ) {
-                            final bool supported =
-                                lightDynamic != null || darkDynamic != null;
-                            return SwitchListTile(
-                              key: const ValueKey<String>(
-                                'dynamic-color-switch',
-                              ),
-                              secondary: const Icon(
-                                Icons.auto_awesome_outlined,
-                              ),
-                              title: const Text('动态颜色'),
-                              subtitle: Text(
-                                supported
-                                    ? '跟随系统壁纸生成 Material You 配色'
-                                    : '当前系统不支持动态取色，使用 LANDeck 品牌配色',
-                              ),
-                              value: supported && themeController.dynamicColor,
-                              onChanged: supported
-                                  ? themeController.setDynamicColor
-                                  : null,
-                            );
-                          },
-                    ),
-                  ],
+                  ),
                 ),
               ),
               const SizedBox(height: 18),
@@ -257,4 +203,18 @@ class _SectionLabel extends StatelessWidget {
       ),
     );
   }
+}
+
+String _themeSummary(ThemeController controller) {
+  final String mode = switch (controller.mode) {
+    ThemeMode.system => '跟随系统',
+    ThemeMode.light => '浅色',
+    ThemeMode.dark => '深色',
+  };
+  final String palette = controller.dynamicColor
+      ? '动态取色'
+      : controller.seedColor == null
+      ? 'LANDeck 蓝'
+      : '自定义配色';
+  return '$mode · $palette';
 }

@@ -18,6 +18,28 @@ abstract final class AppTheme {
   static ThemeData darkWith(ColorScheme? scheme) =>
       _build(scheme ?? _brandScheme(Brightness.dark));
 
+  /// Picks the colour scheme from the user's preferences.
+  ///
+  /// Order of precedence: the system dynamic scheme (Material You), then a
+  /// custom seed colour, then the stock LANDeck blue. AMOLED only rewrites the
+  /// dark surface roles, so accent colours stay readable.
+  static ThemeData schemeFor({
+    required Brightness brightness,
+    ColorScheme? dynamicScheme,
+    Color? seedColor,
+    bool amoled = false,
+  }) {
+    ColorScheme scheme =
+        dynamicScheme ??
+        _seededScheme(brightness, seedColor ?? brandSeed);
+    if (amoled && brightness == Brightness.dark) {
+      scheme = _amoled(scheme);
+    }
+    return _build(scheme);
+  }
+
+  static const Color brandSeed = Color(0xFF2E6BE6);
+
   static ThemeData _build(ColorScheme scheme) {
     final Brightness brightness = scheme.brightness;
     final bool isLight = brightness == Brightness.light;
@@ -258,8 +280,23 @@ abstract final class AppTheme {
   /// algorithm. We do not hand-tune surface roles, so every container step
   /// follows the standard tonal distances.
   static ColorScheme _brandScheme(Brightness brightness) {
+    final ColorScheme scheme = _seededScheme(brightness, brandSeed);
+    if (brightness == Brightness.light) {
+      return scheme;
+    }
+    // Keep the saturated brand accent on the charcoal scale.
+    return scheme.copyWith(
+      primary: const Color(0xFF4C8DFF),
+      onPrimary: const Color(0xFFFFFFFF),
+      primaryContainer: const Color(0xFF1F3A66),
+      onPrimaryContainer: const Color(0xFFD9E4FF),
+      surfaceTint: const Color(0xFF4C8DFF),
+    );
+  }
+
+  static ColorScheme _seededScheme(Brightness brightness, Color seed) {
     final ColorScheme base = ColorScheme.fromSeed(
-      seedColor: const Color(0xFF2E6BE6),
+      seedColor: seed,
       brightness: brightness,
       // "Vibrant" is one of the official Material Theme Builder variants and
       // keeps the LANDeck blue recognisable instead of the muted tonal-spot
@@ -270,14 +307,9 @@ abstract final class AppTheme {
       return base;
     }
     // Dark mode follows the neutral charcoal scale used by the Windows
-    // reference: a near-black page, cards one step lighter and a saturated
-    // blue accent. The generated scheme leans violet, so the surface roles are
-    // pinned to neutral greys.
+    // reference: a near-black page, cards one step lighter. Surface roles are
+    // pinned to neutral greys while the accent stays derived from the seed.
     return base.copyWith(
-      primary: const Color(0xFF4C8DFF),
-      onPrimary: const Color(0xFFFFFFFF),
-      primaryContainer: const Color(0xFF1F3A66),
-      onPrimaryContainer: const Color(0xFFD9E4FF),
       surface: const Color(0xFF1B1B1D),
       surfaceContainerLowest: const Color(0xFF141416),
       surfaceContainerLow: const Color(0xFF262628),
@@ -289,7 +321,19 @@ abstract final class AppTheme {
       outline: const Color(0xFF6A6A70),
       outlineVariant: const Color(0xFF353538),
       inverseSurface: const Color(0xFFEAEAEC),
-      surfaceTint: const Color(0xFF4C8DFF),
     );
   }
+
+  static ColorScheme _amoled(ColorScheme scheme) => scheme.copyWith(
+    surface: Colors.black,
+    surfaceContainerLowest: Colors.black,
+    surfaceContainerLow: const Color(0xFF0C0C0E),
+    surfaceContainer: const Color(0xFF101012),
+    surfaceContainerHigh: const Color(0xFF161618),
+    surfaceContainerHighest: const Color(0xFF1C1C1E),
+    onSurface: const Color(0xFFF2F2F3),
+    onSurfaceVariant: const Color(0xFFB4B4B8),
+    outline: const Color(0xFF6A6A70),
+    outlineVariant: const Color(0xFF2A2A2D),
+  );
 }

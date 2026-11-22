@@ -128,6 +128,8 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey<String>('nav-destination-2')));
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('appearance-entry')));
+    await tester.pumpAndSettle();
     final Finder selector = find.byKey(
       const ValueKey<String>('theme-mode-selector'),
     );
@@ -205,9 +207,18 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey<String>('nav-destination-2')));
     await tester.pumpAndSettle();
-    expect(find.text('系统'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey<String>('appearance-entry')));
+    await tester.pumpAndSettle();
+    expect(find.text('自动'), findsOneWidget);
     expect(find.text('浅色'), findsOneWidget);
     expect(find.text('深色'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('纯黑模式'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('纯黑模式'), findsOneWidget);
+    expect(find.text('文本缩放'), findsOneWidget);
   });
 
   testWidgets('bottom navigation switches between tabs', (

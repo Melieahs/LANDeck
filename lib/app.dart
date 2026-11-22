@@ -42,11 +42,21 @@ class LanDeckApp extends StatelessWidget {
                 child: MaterialApp(
                   title: 'LANDeck',
                   debugShowCheckedModeBanner: false,
-                  theme: AppTheme.lightWith(
-                    controller.dynamicColor ? lightDynamic : null,
+                  theme: AppTheme.schemeFor(
+                    brightness: Brightness.light,
+                    dynamicScheme: controller.dynamicColor
+                        ? lightDynamic
+                        : null,
+                    seedColor: controller.seedColor,
+                    amoled: controller.amoled,
                   ),
-                  darkTheme: AppTheme.darkWith(
-                    controller.dynamicColor ? darkDynamic : null,
+                  darkTheme: AppTheme.schemeFor(
+                    brightness: Brightness.dark,
+                    dynamicScheme: controller.dynamicColor
+                        ? darkDynamic
+                        : null,
+                    seedColor: controller.seedColor,
+                    amoled: controller.amoled,
                   ),
                   themeMode: controller.mode,
                   themeAnimationDuration: const Duration(milliseconds: 240),
@@ -54,7 +64,15 @@ class LanDeckApp extends StatelessWidget {
                   builder: (BuildContext context, Widget? child) {
                     // Keep the small legacy palette in sync with the resolved theme.
                     AppColors.setBrightness(Theme.of(context).brightness);
-                    final Widget content = child ?? const SizedBox.shrink();
+                    Widget content = child ?? const SizedBox.shrink();
+                    if (controller.textScale != 1) {
+                      content = MediaQuery(
+                        data: MediaQuery.of(context).copyWith(
+                          textScaler: TextScaler.linear(controller.textScale),
+                        ),
+                        child: content,
+                      );
+                    }
                     if (!usesCustomWindowChrome) {
                       return content;
                     }
