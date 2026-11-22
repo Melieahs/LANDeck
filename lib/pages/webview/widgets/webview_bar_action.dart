@@ -35,9 +35,7 @@ class WebViewBarAction extends StatelessWidget {
         minimumSize: const Size(40, 40),
         maximumSize: const Size(40, 40),
         padding: EdgeInsets.zero,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(14)),
-        ),
+        shape: const CircleBorder(),
       ),
     );
   }

@@ -187,7 +187,7 @@ class _NativeServicePageState extends State<NativeServicePage> {
               icon: Icons.swap_horiz_rounded,
               onPressed: () => _switchService(service),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 6),
           ],
         ),
         body: module.buildPage(context, service),
