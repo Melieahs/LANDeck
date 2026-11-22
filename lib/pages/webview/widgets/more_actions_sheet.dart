@@ -25,6 +25,7 @@ Future<MoreAction?> showMoreActionsSheet(
   required bool nativeWebView,
   required bool canGoForward,
   String? currentUrl,
+  bool includeImmersive = true,
 }) {
   return showModalBottomSheet<MoreAction>(
     context: context,
@@ -40,6 +41,7 @@ Future<MoreAction?> showMoreActionsSheet(
         nativeWebView: nativeWebView,
         canGoForward: canGoForward,
         currentUrl: currentUrl,
+        includeImmersive: includeImmersive,
       );
     },
   );
@@ -53,6 +55,7 @@ class _MoreActionsSheet extends StatelessWidget {
     required this.nativeWebView,
     required this.canGoForward,
     this.currentUrl,
+    this.includeImmersive = true,
   });
 
   final Service service;
@@ -61,6 +64,7 @@ class _MoreActionsSheet extends StatelessWidget {
   final bool nativeWebView;
   final bool canGoForward;
   final String? currentUrl;
+  final bool includeImmersive;
 
   @override
   Widget build(BuildContext context) {
@@ -213,16 +217,17 @@ class _MoreActionsSheet extends StatelessWidget {
                         onTap: () =>
                             Navigator.of(context).pop(MoreAction.downloads),
                       ),
-                      const _ActionDivider(),
-                      _ActionRow(
-                        icon: Icons.fullscreen_rounded,
-                        title: '全屏 / 沉浸模式',
-                        subtitle: '隐藏系统栏，专注网页内容',
-                        trailing: _StateChip(active: immersive),
-                        onTap: () =>
-                            Navigator.of(context)
-                                .pop(MoreAction.toggleImmersive),
-                      ),
+                      if (includeImmersive) ...<Widget>[
+                        const _ActionDivider(),
+                        _ActionRow(
+                          icon: Icons.fullscreen_rounded,
+                          title: '全屏 / 沉浸模式',
+                          subtitle: '隐藏系统栏，专注网页内容',
+                          trailing: _StateChip(active: immersive),
+                          onTap: () => Navigator.of(context)
+                              .pop(MoreAction.toggleImmersive),
+                        ),
+                      ],
                       const _ActionDivider(),
                       _ActionRow(
                         icon: Icons.info_outline_rounded,
