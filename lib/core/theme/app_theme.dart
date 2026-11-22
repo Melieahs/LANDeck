@@ -20,7 +20,6 @@ abstract final class AppTheme {
 
   static ThemeData _build(ColorScheme scheme) {
     final Brightness brightness = scheme.brightness;
-    final bool isLight = brightness == Brightness.light;
     // Desktop windows already draw their own 44px title bar, so the page app
     // bar shrinks to a compact strip instead of stacking a second 64px row.
     final bool desktopChrome =
@@ -72,7 +71,7 @@ abstract final class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        toolbarHeight: desktopChrome ? 48 : null,
+        toolbarHeight: desktopChrome ? 48 : 64,
         titleTextStyle: textTheme.titleLarge?.copyWith(
           color: scheme.onSurface,
           fontWeight: FontWeight.w700,
@@ -80,11 +79,11 @@ abstract final class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: isLight ? scheme.surfaceContainerLow : scheme.surfaceContainer,
+        color: scheme.surfaceContainerLow,
         surfaceTintColor: Colors.transparent,
-        elevation: 0,
+        elevation: 1,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       dividerTheme: DividerThemeData(
         color: scheme.outlineVariant,
@@ -242,66 +241,20 @@ abstract final class AppTheme {
     );
   }
 
+  /// Material 3 baseline colour scheme generated from the LANDeck seed.
+  ///
+  /// The official way to derive an M3 palette is a seed colour: Material Theme
+  /// Builder and Flutter's [ColorScheme.fromSeed] run the same tonal-palette
+  /// algorithm. We do not hand-tune surface roles, so every container step
+  /// follows the standard tonal distances.
   static ColorScheme _brandScheme(Brightness brightness) {
-    if (brightness == Brightness.light) {
-      return ColorScheme.fromSeed(
-        seedColor: const Color(0xFF2E6BE6),
-        brightness: Brightness.light,
-      ).copyWith(
-        primary: const Color(0xFF1B5FD9),
-        onPrimary: Colors.white,
-        primaryContainer: const Color(0xFFD8E2FF),
-        onPrimaryContainer: const Color(0xFF001A41),
-        secondary: const Color(0xFF50606F),
-        onSecondary: Colors.white,
-        secondaryContainer: const Color(0xFFD3E4F6),
-        onSecondaryContainer: const Color(0xFF0B1D2A),
-        surface: const Color(0xFFFBF8FF),
-        onSurface: const Color(0xFF171C24),
-        onSurfaceVariant: const Color(0xFF4B5565),
-        surfaceContainerLowest: Colors.white,
-        surfaceContainerLow: const Color(0xFFF5F2FA),
-        surfaceContainer: const Color(0xFFEFEDF4),
-        surfaceContainerHigh: const Color(0xFFE9E7EF),
-        surfaceContainerHighest: const Color(0xFFE4E1E9),
-        outline: const Color(0xFF79747E),
-        outlineVariant: const Color(0xFFC9C5D0),
-        error: const Color(0xFFBA1A1A),
-        onError: Colors.white,
-        inverseSurface: const Color(0xFF2D3138),
-        onInverseSurface: const Color(0xFFF1F3F8),
-        inversePrimary: const Color(0xFFAAC7FF),
-        scrim: Colors.black,
-      );
-    }
     return ColorScheme.fromSeed(
       seedColor: const Color(0xFF2E6BE6),
-      brightness: Brightness.dark,
-    ).copyWith(
-      primary: const Color(0xFFAAC7FF),
-      onPrimary: const Color(0xFF002F65),
-      primaryContainer: const Color(0xFF17457F),
-      onPrimaryContainer: const Color(0xFFD7E3FF),
-      secondary: const Color(0xFFBCC7DC),
-      onSecondary: const Color(0xFF263141),
-      secondaryContainer: const Color(0xFF3C4858),
-      onSecondaryContainer: const Color(0xFFD7E3F8),
-      surface: const Color(0xFF12161C),
-      onSurface: const Color(0xFFE3E8F0),
-      onSurfaceVariant: const Color(0xFFAAB6C8),
-      surfaceContainerLowest: const Color(0xFF0D1116),
-      surfaceContainerLow: const Color(0xFF161B22),
-      surfaceContainer: const Color(0xFF1A2028),
-      surfaceContainerHigh: const Color(0xFF232A34),
-      surfaceContainerHighest: const Color(0xFF2C3540),
-      outline: const Color(0xFF8C9199),
-      outlineVariant: const Color(0xFF2A3341),
-      error: const Color(0xFFFFB4AB),
-      onError: const Color(0xFF690005),
-      inverseSurface: const Color(0xFFE3E8F0),
-      onInverseSurface: const Color(0xFF2A313A),
-      inversePrimary: const Color(0xFF1B5FD9),
-      scrim: Colors.black,
+      brightness: brightness,
+      // "Vibrant" is one of the official Material Theme Builder variants and
+      // keeps the LANDeck blue recognisable instead of the muted tonal-spot
+      // primary.
+      dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
     );
   }
 }

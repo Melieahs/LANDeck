@@ -267,19 +267,19 @@ class _ServiceSwitcherSheetState extends State<ServiceSwitcherSheet> {
                           vertical: 13,
                         ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(28),
                           borderSide: BorderSide(
                             color: Theme.of(context).colorScheme.outlineVariant,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(28),
                           borderSide: BorderSide(
                             color: Theme.of(context).colorScheme.outlineVariant,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(28),
                           borderSide: BorderSide(
                             color: Theme.of(context).colorScheme.primary,
                             width: 1.4,
@@ -386,7 +386,7 @@ class _ServiceRow extends StatelessWidget {
       child: Material(
         color: selected ? scheme.primaryContainer : scheme.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(28),
           side: BorderSide(
             color: selected
                 ? scheme.primary.withValues(alpha: 0.42)

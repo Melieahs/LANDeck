@@ -11,10 +11,10 @@ abstract final class AdaptiveLayout {
   static const double tabletMinShortestSide = 600;
 
   /// The expanded navigation rail on the left of the tablet layout.
-  static const double railWidth = 232;
+  static const double railWidth = 256;
 
   /// The narrow icon rail used by desktop windows.
-  static const double compactRailWidth = 96;
+  static const double compactRailWidth = 80;
 
   /// Home content may use the extra width on a tablet or a desktop window.
   static const double wideHomeMaxWidth = 1160;

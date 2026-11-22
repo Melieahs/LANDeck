@@ -2,7 +2,7 @@
 
 > 交接时间：2026-11-21  
 > 当前分支：`feature/native-modules`  
-> 当前版本：`0.9.10+35`  
+> 当前版本：`0.9.11+36`  
 > 代码 HEAD：`d522c33 test(native): cover imported module rendering`  
 > 文档状态：已提交（最新提交以 `git log` 为准）  
 > 工作区：干净（本文档提交前）  
@@ -506,7 +506,7 @@ PS5 Web File Manager：`192.168.1.50:8888`。
    - 记录 APK 大小/SHA-256
 
 6. **版本/文档**
-   - `pubspec.yaml` version（当前 `0.9.10+35`）
+   - `pubspec.yaml` version（当前 `0.9.11+36`）
    - 版本规则：每次用户可感知的修改完成后，patch 与 build 号各 +1（`0.9.x+N`），再提交构建
    - 设置页“关于”版本
    - README 功能/构建结果

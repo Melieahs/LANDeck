@@ -16,19 +16,19 @@ abstract final class AppColors {
   static bool get isLight => _brightness == Brightness.light;
 
   static Color get background =>
-      isLight ? const Color(0xFFFBF8FF) : const Color(0xFF12161C);
+      isLight ? const Color(0xFFFAF8FF) : const Color(0xFF121318);
 
   static Color get surface =>
-      isLight ? const Color(0xFFF5F2FA) : const Color(0xFF1A2028);
+      isLight ? const Color(0xFFF4F3FA) : const Color(0xFF1A1B21);
 
   static Color get surfaceHigh =>
-      isLight ? const Color(0xFFEFEDF4) : const Color(0xFF232A34);
+      isLight ? const Color(0xFFEEEDF4) : const Color(0xFF1E1F25);
 
   static Color get surfaceSoft =>
-      isLight ? const Color(0xFFFFFFFF) : const Color(0xFF161B22);
+      isLight ? const Color(0xFFFFFFFF) : const Color(0xFF16171C);
 
   static Color get border =>
-      isLight ? const Color(0xFFC9C5D0) : const Color(0xFF2A3341);
+      isLight ? const Color(0xFFC5C6D0) : const Color(0xFF45464F);
 
   static Color get accent =>
       isLight ? const Color(0xFF1B5FD9) : const Color(0xFFAAC7FF);

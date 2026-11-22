@@ -1,6 +1,3 @@
-import 'package:material_ui/material_ui.dart';
-
-import 'app_colors.dart';
 
 abstract final class AppSpacing {
   static const double page = 20;
@@ -24,9 +21,3 @@ const double kSettingsPageMaxWidth = 720;
 /// Single-column editor forms.
 const double kFormPageMaxWidth = 640;
 
-BoxDecoration appCardDecoration({Color? color, Color? borderColor}) {
-  return BoxDecoration(
-    color: color ?? AppColors.surface,
-    borderRadius: BorderRadius.circular(18),
-  );
-}

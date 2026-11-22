@@ -141,7 +141,7 @@ class _MoreActionsSheet extends StatelessWidget {
                 Container(
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(28),
                     border: Border.all(
                       color: Theme.of(context).colorScheme.outlineVariant,
                     ),
@@ -496,7 +496,7 @@ class _PageInfoSheet extends StatelessWidget {
                 Container(
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(28),
                     border: Border.all(
                       color: Theme.of(context).colorScheme.outlineVariant,
                     ),
