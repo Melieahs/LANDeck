@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -233,19 +234,30 @@ window.LandeckPasswordBridge = window.LandeckPasswordBridge || {
   }
 
   void _onWebMessage(dynamic message) {
-    if (message is! Map) {
+    // WebView2 delivers the message as JSON, which for a string payload is a
+    // quoted JSON string rather than an object.
+    dynamic payload = message;
+    if (payload is String) {
+      try {
+        payload = jsonDecode(payload);
+      } on FormatException {
+        return;
+      }
+    }
+    if (payload is! Map) {
       return;
     }
-    final String type = message['type']?.toString() ?? '';
+    final Map<dynamic, dynamic> data = payload;
+    final String type = data['type']?.toString() ?? '';
     switch (type) {
       case 'login-focus':
-        final String host = message['host']?.toString() ?? '';
+        final String host = data['host']?.toString() ?? '';
         unawaited(_promptFillOnFocus(host));
         break;
       case 'credentials':
-        final String host = message['host']?.toString() ?? '';
-        final String username = message['username']?.toString() ?? '';
-        final String password = message['password']?.toString() ?? '';
+        final String host = data['host']?.toString() ?? '';
+        final String username = data['username']?.toString() ?? '';
+        final String password = data['password']?.toString() ?? '';
         if (username.isEmpty || password.isEmpty) {
           return;
         }
