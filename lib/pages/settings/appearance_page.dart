@@ -2,6 +2,7 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/theme/theme_controller.dart';
 import '../../core/utils/feedback.dart';
 
@@ -79,53 +80,47 @@ class AppearancePage extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               DynamicColorBuilder(
-                builder:
-                    (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-                      final bool dynamicSupported =
-                          lightDynamic != null || darkDynamic != null;
-                      return LayoutBuilder(
-                        builder: (BuildContext context, BoxConstraints c) {
-                          final int columns = (c.maxWidth / 92)
-                              .floor()
-                              .clamp(3, 8);
-                          return GridView.count(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            crossAxisCount: columns,
-                            mainAxisSpacing: 10,
-                            crossAxisSpacing: 10,
-                            children: <Widget>[
-                              _DynamicSwatchTile(
-                                supported: dynamicSupported,
-                                selected: controller.dynamicColor,
-                                onTap: () {
-                                  if (!dynamicSupported) {
-                                    showAppSnackBar(
-                                      context,
-                                      '当前系统不支持动态取色',
-                                    );
-                                    return;
-                                  }
-                                  controller.setDynamicColor(true);
-                                },
-                              ),
-                              for (final Color seed in kThemeSeeds)
-                                _SeedSwatchTile(
-                                  seed: seed,
-                                  selected:
-                                      !controller.dynamicColor &&
-                                      (controller.seedColor ?? AppThemeSeed.blue) ==
-                                          seed,
-                                  onTap: () {
-                                    controller.setDynamicColor(false);
-                                    controller.setSeedColor(seed);
-                                  },
-                                ),
-                            ],
-                          );
-                        },
+                builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+                  final bool dynamicSupported =
+                      lightDynamic != null || darkDynamic != null;
+                  return LayoutBuilder(
+                    builder: (BuildContext context, BoxConstraints c) {
+                      final int columns = (c.maxWidth / 92).floor().clamp(3, 8);
+                      return GridView.count(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: columns,
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                        children: <Widget>[
+                          _DynamicSwatchTile(
+                            supported: dynamicSupported,
+                            selected: controller.dynamicColor,
+                            onTap: () {
+                              if (!dynamicSupported) {
+                                showAppSnackBar(context, '当前系统不支持动态取色');
+                                return;
+                              }
+                              controller.setDynamicColor(true);
+                            },
+                          ),
+                          for (final Color seed in kThemeSeeds)
+                            _SeedSwatchTile(
+                              seed: seed,
+                              selected:
+                                  !controller.dynamicColor &&
+                                  (controller.seedColor ?? AppThemeSeed.blue) ==
+                                      seed,
+                              onTap: () {
+                                controller.setDynamicColor(false);
+                                controller.setSeedColor(seed);
+                              },
+                            ),
+                        ],
                       );
                     },
+                  );
+                },
               ),
               const SizedBox(height: 26),
               const _SectionLabel('其他'),
@@ -193,9 +188,8 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: Theme.of(
-        context,
-      ).textTheme.labelLarge?.copyWith(color: Theme.of(context).colorScheme.primary),
+      style: Theme.of(context).textTheme.labelLarge
+          ?.copyWith(color: Theme.of(context).colorScheme.primary),
     );
   }
 }
@@ -241,11 +235,10 @@ class _SeedSwatchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme seedScheme = ColorScheme.fromSeed(
-      seedColor: seed,
+    final ColorScheme seedScheme = AppTheme.schemeFor(
       brightness: Brightness.light,
-      dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
-    );
+      seedColor: seed,
+    ).colorScheme;
     return _SwatchFrame(
       selected: selected,
       onTap: onTap,

@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../core/app_info.dart';
 import '../../core/app_scope.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/theme_controller.dart';
@@ -154,12 +155,12 @@ class SettingsPage extends StatelessWidget {
                 child: ListTile(
                   leading: const Icon(Icons.info_outline_rounded),
                   title: const Text('LANDeck'),
-                  subtitle: const Text('v0.9.3 · 模块插件 · 本地优先'),
+                  subtitle: Text('v${AppInfo.label} · 模块插件 · 本地优先'),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => showAboutDialog(
                     context: context,
                     applicationName: 'LANDeck',
-                    applicationVersion: '0.9.3',
+                    applicationVersion: AppInfo.label,
                     applicationLegalese: 'Local-first. No account. No cloud.',
                     children: const <Widget>[
                       SizedBox(height: 12),

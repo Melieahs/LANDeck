@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'app.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
+import 'core/app_info.dart';
 import 'core/theme/theme_controller.dart';
 import 'core/window/desktop_window.dart';
 import 'data/database/app_database.dart';
@@ -12,6 +13,7 @@ import 'native/plugin/imported_module_store.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AppInfo.load();
   try {
     await setupDesktopWindow();
   } on Object catch (error) {

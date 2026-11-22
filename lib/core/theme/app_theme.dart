@@ -303,17 +303,18 @@ abstract final class AppTheme {
     );
   }
 
-  /// Slightly deepened page tint: white cards get a little more separation
-  /// than the raw surfaceContainerLow without turning the page grey.
   /// A light card tint that follows the accent: white with a whisper of the
   /// primary colour, so a blue theme gets a blue-white card and a green theme
   /// gets a green-white card.
   static Color _lightCard(ColorScheme scheme) =>
-      Color.alphaBlend(scheme.primary.withValues(alpha: 0.07), Colors.white);
+      Color.alphaBlend(scheme.primary.withValues(alpha: 0.12), Colors.white);
 
-  static Color _lightPage(ColorScheme scheme) =>
-      Color.alphaBlend(scheme.onSurface.withValues(alpha: 0.075),
-          scheme.surfaceContainerLow);
+  /// Slightly deepened page tint: white cards get a little more separation
+  /// than the raw surfaceContainerLow without turning the page grey.
+  static Color _lightPage(ColorScheme scheme) => Color.alphaBlend(
+    scheme.onSurface.withValues(alpha: 0.09),
+    scheme.surfaceContainerLow,
+  );
 
   static ColorScheme _seededScheme(Brightness brightness, Color seed) {
     final ColorScheme base = ColorScheme.fromSeed(
@@ -325,7 +326,16 @@ abstract final class AppTheme {
       dynamicSchemeVariant: DynamicSchemeVariant.vibrant,
     );
     if (brightness == Brightness.light) {
-      return base;
+      // The vibrant palette generates a very dark primary (#0056D2 for the
+      // brand blue). That reads harsh as a filled button on a light page, so
+      // every palette uses its seed colour directly; black or white text is
+      // picked by luminance so light seeds (amber, lime) stay readable.
+      final bool darkText = seed.computeLuminance() > 0.179;
+      return base.copyWith(
+        primary: seed,
+        onPrimary: darkText ? const Color(0xFF1B1B1F) : const Color(0xFFFFFFFF),
+        surfaceTint: seed,
+      );
     }
     // Dark mode follows the neutral charcoal scale used by the Windows
     // reference: a near-black page, cards one step lighter. Surface roles are
