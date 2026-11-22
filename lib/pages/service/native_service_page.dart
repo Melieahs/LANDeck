@@ -5,6 +5,7 @@ import '../../models/service.dart';
 import '../../models/service_mode.dart';
 import '../../native/native_module.dart';
 import '../../native/native_module_registry.dart';
+import '../webview/widgets/webview_bar_action.dart';
 import '../../repositories/service_repository.dart';
 import '../webview/web_view_sessions.dart';
 import '../webview/widgets/service_switcher_sheet.dart';
@@ -110,14 +111,16 @@ class _NativeServicePageState extends State<NativeServicePage> {
     );
     if (module == null || !module.supports(service)) {
       return Scaffold(
-        appBar: AppBar(
-          title: Text(service.name),
-          leading: IconButton(
+        appBar: webViewerAppBar(
+          surface: Theme.of(context).colorScheme.surfaceContainer,
+          leading: WebViewBarAction(
             key: const Key('native-service-exit'),
             tooltip: '退出',
-            icon: const Icon(Icons.arrow_back_rounded),
+            icon: Icons.arrow_back_rounded,
             onPressed: _exitViewer,
           ),
+          title: Text(service.name),
+          actions: const <Widget>[],
         ),
         body: Center(
           child: Padding(
@@ -149,32 +152,42 @@ class _NativeServicePageState extends State<NativeServicePage> {
         _exitViewer();
       },
       child: Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
+        appBar: webViewerAppBar(
+          surface: theme.colorScheme.surfaceContainer,
+          leading: WebViewBarAction(
             key: const Key('native-service-exit'),
             tooltip: '退出',
-            icon: const Icon(Icons.arrow_back_rounded),
+            icon: Icons.arrow_back_rounded,
             onPressed: _exitViewer,
           ),
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Text(service.name),
+              Text(
+                service.name,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15.5,
+                ),
+              ),
               Text(
                 module.name,
                 style: theme.textTheme.labelSmall?.copyWith(
+                  fontSize: 11.5,
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
           ),
           actions: <Widget>[
-            IconButton(
+            WebViewBarAction(
               key: const Key('native-service-switcher'),
               tooltip: '切换服务',
+              icon: Icons.swap_horiz_rounded,
               onPressed: () => _switchService(service),
-              icon: const Icon(Icons.swap_horiz_rounded),
             ),
+            const SizedBox(width: 12),
           ],
         ),
         body: module.buildPage(context, service),

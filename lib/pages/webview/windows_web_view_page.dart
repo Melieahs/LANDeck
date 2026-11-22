@@ -18,6 +18,7 @@ import '../../services/http_credential_store.dart';
 import '../../services/web_password_fill.dart';
 import 'widgets/http_auth_dialog.dart';
 import 'widgets/more_actions_sheet.dart';
+import 'widgets/webview_bar_action.dart';
 import 'widgets/service_switcher_sheet.dart';
 import 'widgets/web_password_dialogs.dart';
 
@@ -166,10 +167,13 @@ class _WindowsWebViewPageState extends State<WindowsWebViewPage> {
     if (_tabs.length <= _maxTabs) {
       return;
     }
-    final List<_WindowsTab> candidates = _tabs.values
-        .where((_WindowsTab tab) => tab.service.id != _activeId)
-        .toList()
-      ..sort((_WindowsTab a, _WindowsTab b) => a.lastUsed.compareTo(b.lastUsed));
+    final List<_WindowsTab> candidates =
+        _tabs.values
+            .where((_WindowsTab tab) => tab.service.id != _activeId)
+            .toList()
+          ..sort(
+            (_WindowsTab a, _WindowsTab b) => a.lastUsed.compareTo(b.lastUsed),
+          );
     for (final _WindowsTab tab in candidates) {
       if (_tabs.length <= _maxTabs) {
         break;
@@ -374,7 +378,10 @@ window.LandeckPasswordBridge = window.LandeckPasswordBridge || {
     }
     final List<HttpCredential> accounts = await HttpCredentialStore.instance
         .accountsFor(
-            tab.service.id, host: host, realm: WebPasswordFill.webRealm);
+          tab.service.id,
+          host: host,
+          realm: WebPasswordFill.webRealm,
+        );
     if (accounts.isEmpty || !mounted) {
       return;
     }
@@ -414,7 +421,10 @@ window.LandeckPasswordBridge = window.LandeckPasswordBridge || {
     }
     final List<HttpCredential> saved = await HttpCredentialStore.instance
         .accountsFor(
-            tab.service.id, host: host, realm: WebPasswordFill.webRealm);
+          tab.service.id,
+          host: host,
+          realm: WebPasswordFill.webRealm,
+        );
     final bool exists = saved.any(
       (HttpCredential item) =>
           item.username == username && item.password == password,
@@ -487,8 +497,9 @@ window.LandeckPasswordBridge = window.LandeckPasswordBridge || {
     }
     _authPromptOpen = true;
     try {
-      final HttpCredential? stale =
-          tab.basicAuthAttemptedHosts.contains(host) ? saved : null;
+      final HttpCredential? stale = tab.basicAuthAttemptedHosts.contains(host)
+          ? saved
+          : null;
       if (stale != null) {
         await HttpCredentialStore.instance.deleteCredential(
           tab.service.id,
@@ -565,7 +576,11 @@ window.LandeckPasswordBridge = window.LandeckPasswordBridge || {
       return;
     }
     final List<HttpCredential> accounts = await HttpCredentialStore.instance
-        .accountsFor(tab.service.id, host: host, realm: WebPasswordFill.webRealm);
+        .accountsFor(
+          tab.service.id,
+          host: host,
+          realm: WebPasswordFill.webRealm,
+        );
     if (accounts.isEmpty) {
       if (mounted) {
         showAppSnackBar(context, '没有保存的网页登录账号');
@@ -683,8 +698,7 @@ window.LandeckPasswordBridge = window.LandeckPasswordBridge || {
       }
       final String username = (captured['username'] as String? ?? '').trim();
       final String password = captured['password'] as String? ?? '';
-      final String pageHost =
-          (captured['host'] as String? ?? '').toLowerCase();
+      final String pageHost = (captured['host'] as String? ?? '').toLowerCase();
       if (username.isEmpty || password.isEmpty) {
         showAppSnackBar(context, '请先在网页中填写用户名和密码');
         return;
@@ -777,12 +791,13 @@ window.LandeckPasswordBridge = window.LandeckPasswordBridge || {
     final ColorScheme colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
+      appBar: webViewerAppBar(
+        surface: colors.surfaceContainer,
+        leading: WebViewBarAction(
           key: const ValueKey<String>('windows-webview-exit'),
           tooltip: '退出',
+          icon: Icons.arrow_back_rounded,
           onPressed: _exit,
-          icon: const Icon(Icons.arrow_back_rounded),
         ),
         title: service == null
             ? const Text('服务')
@@ -812,46 +827,52 @@ window.LandeckPasswordBridge = window.LandeckPasswordBridge || {
                 ],
               ),
         actions: <Widget>[
-          IconButton(
+          WebViewBarAction(
             key: const ValueKey<String>('windows-webview-back'),
             tooltip: '后退',
-            icon: const Icon(Icons.undo_rounded),
+            icon: Icons.undo_rounded,
             onPressed: tab != null && tab.canGoBack
                 ? () => tab.controller.goBack()
                 : null,
           ),
-          IconButton(
+          const SizedBox(width: 6),
+          WebViewBarAction(
             key: const ValueKey<String>('windows-webview-forward'),
             tooltip: '前进',
-            icon: const Icon(Icons.redo_rounded),
+            icon: Icons.redo_rounded,
             onPressed: tab != null && tab.canGoForward
                 ? () => tab.controller.goForward()
                 : null,
           ),
-          IconButton(
+          const SizedBox(width: 6),
+          WebViewBarAction(
             key: const ValueKey<String>('windows-webview-reload'),
             tooltip: '刷新',
-            icon: const Icon(Icons.refresh_rounded),
+            icon: Icons.refresh_rounded,
             onPressed: tab != null && tab.ready ? () => _reload(tab) : null,
           ),
-          IconButton(
+          const SizedBox(width: 6),
+          WebViewBarAction(
             key: const ValueKey<String>('windows-webview-fill-login'),
             tooltip: '填充登录信息',
-            icon: const Icon(Icons.key_rounded),
+            icon: Icons.key_rounded,
             onPressed: tab != null && tab.ready ? () => _fillLogin(tab) : null,
           ),
-          IconButton(
+          const SizedBox(width: 6),
+          WebViewBarAction(
             key: const ValueKey<String>('windows-webview-more'),
             tooltip: '更多',
-            icon: const Icon(Icons.more_horiz_rounded),
+            icon: Icons.more_horiz_rounded,
             onPressed: tab != null ? () => _showMore(tab) : null,
           ),
-          IconButton(
+          const SizedBox(width: 6),
+          WebViewBarAction(
             key: const ValueKey<String>('windows-webview-service-switch'),
             tooltip: '切换服务',
-            icon: const Icon(Icons.swap_horiz_rounded),
+            icon: Icons.swap_horiz_rounded,
             onPressed: service == null ? null : _openServiceSwitcher,
           ),
+          const SizedBox(width: 12),
         ],
       ),
       body: _buildBody(tab),

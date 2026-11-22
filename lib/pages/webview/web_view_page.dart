@@ -25,6 +25,7 @@ import '../../services/web_password_fill.dart';
 import 'widgets/download_confirm_dialog.dart';
 import 'widgets/http_auth_dialog.dart';
 import 'widgets/more_actions_sheet.dart';
+import 'widgets/webview_bar_action.dart';
 import 'widgets/service_switcher_sheet.dart';
 import '../../models/service_mode.dart';
 import '../service/service_viewer_page.dart';
@@ -383,8 +384,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (!mounted || controller == null || current == null) {
       return;
     }
-    final Service service =
-        _repository?.serviceById(current.id) ?? current;
+    final Service service = _repository?.serviceById(current.id) ?? current;
     final PasswordFillMode mode = service.passwordFillMode;
     if (mode == PasswordFillMode.off) {
       return;
@@ -454,8 +454,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (!mounted || current == null || _passwordPromptOpen) {
       return;
     }
-    final Service service =
-        _repository?.serviceById(current.id) ?? current;
+    final Service service = _repository?.serviceById(current.id) ?? current;
     if (service.passwordFillMode != PasswordFillMode.ask) {
       return;
     }
@@ -468,11 +467,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     }
     try {
       final List<HttpCredential> accounts = await HttpCredentialStore.instance
-          .accountsFor(
-            service.id,
-            host: host,
-            realm: WebPasswordFill.webRealm,
-          );
+          .accountsFor(service.id, host: host, realm: WebPasswordFill.webRealm);
       if (accounts.isEmpty || !mounted) {
         return;
       }
@@ -555,12 +550,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (!mounted || service == null || _passwordPromptOpen) {
       return;
     }
-    final List<HttpCredential> savedAccounts =
-        await HttpCredentialStore.instance.accountsFor(
-          service.id,
-          host: host,
-          realm: WebPasswordFill.webRealm,
-        );
+    final List<HttpCredential> savedAccounts = await HttpCredentialStore
+        .instance
+        .accountsFor(service.id, host: host, realm: WebPasswordFill.webRealm);
     if (!mounted) {
       return;
     }
@@ -1705,57 +1697,72 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
 
   PreferredSizeWidget _buildAppBar(Service service) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
     final NativeModule? module = NativeModuleRegistry.instance.linkedModule(
       service,
     );
     final Uri? uri = Uri.tryParse(service.url);
-    return AppBar(
-      leading: IconButton(
+    return webViewerAppBar(
+      surface: scheme.surfaceContainer,
+      leading: WebViewBarAction(
         key: const Key('webview-exit'),
         tooltip: '退出',
-        icon: const Icon(Icons.arrow_back_rounded),
+        icon: Icons.arrow_back_rounded,
         onPressed: _exitViewer,
       ),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Text(service.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(
+            service.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 15.5,
+            ),
+          ),
           Text(
             module?.name ?? uri?.host ?? service.address,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 11.5,
+              color: scheme.onSurfaceVariant,
             ),
           ),
         ],
       ),
       actions: <Widget>[
-        IconButton(
+        WebViewBarAction(
           key: const Key('webview-back'),
           tooltip: '后退',
+          icon: Icons.undo_rounded,
           onPressed: _nativeWebView && _canGoBack ? _goBack : null,
-          icon: const Icon(Icons.undo_rounded),
         ),
-        IconButton(
+        const SizedBox(width: 6),
+        WebViewBarAction(
           key: const Key('webview-forward'),
           tooltip: '前进',
+          icon: Icons.redo_rounded,
           onPressed: _nativeWebView && _canGoForward ? _goForward : null,
-          icon: const Icon(Icons.redo_rounded),
         ),
-        IconButton(
+        const SizedBox(width: 6),
+        WebViewBarAction(
           key: const Key('webview-more'),
           tooltip: '更多',
+          icon: Icons.more_horiz_rounded,
           onPressed: _openMore,
-          icon: const Icon(Icons.more_horiz_rounded),
         ),
-        IconButton(
+        const SizedBox(width: 6),
+        WebViewBarAction(
           key: const Key('webview-service-switch'),
           tooltip: '切换服务',
+          icon: Icons.swap_horiz_rounded,
           onPressed: _openServiceSwitcher,
-          icon: const Icon(Icons.swap_horiz_rounded),
         ),
+        const SizedBox(width: 12),
       ],
     );
   }
