@@ -28,6 +28,5 @@ BoxDecoration appCardDecoration({Color? color, Color? borderColor}) {
   return BoxDecoration(
     color: color ?? AppColors.surface,
     borderRadius: BorderRadius.circular(18),
-    border: Border.all(color: borderColor ?? AppColors.border),
   );
 }
