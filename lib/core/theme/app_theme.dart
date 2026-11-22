@@ -20,6 +20,7 @@ abstract final class AppTheme {
 
   static ThemeData _build(ColorScheme scheme) {
     final Brightness brightness = scheme.brightness;
+    final bool isLight = brightness == Brightness.light;
     // Desktop windows already draw their own 44px title bar, so the page app
     // bar shrinks to a compact strip instead of stacking a second 64px row.
     final bool desktopChrome =
@@ -31,8 +32,13 @@ abstract final class AppTheme {
       useMaterial3: true,
       brightness: brightness,
       colorScheme: scheme,
-      scaffoldBackgroundColor: scheme.surface,
-      canvasColor: scheme.surface,
+      // Light themes read best as a tinted page with white cards; dark themes
+      // keep the page dark and lift the cards one container step, so content
+      // floats without any drop shadow.
+      scaffoldBackgroundColor: isLight
+          ? scheme.surfaceContainerLow
+          : scheme.surface,
+      canvasColor: isLight ? scheme.surfaceContainerLow : scheme.surface,
       splashFactory: InkSparkle.splashFactory,
       fontFamilyFallback: const <String>[
         'Noto Sans SC',
@@ -65,7 +71,9 @@ abstract final class AppTheme {
     return base.copyWith(
       textTheme: textTheme,
       appBarTheme: AppBarTheme(
-        backgroundColor: scheme.surface,
+        backgroundColor: isLight
+            ? scheme.surfaceContainerLow
+            : scheme.surface,
         foregroundColor: scheme.onSurface,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -78,11 +86,10 @@ abstract final class AppTheme {
           fontSize: desktopChrome ? 16 : null,
         ),
       ),
-      // Material 3 filled card: a tonal container step, no drop shadow. The
-      // old elevation-1 shadow drew a hard offset ring on iOS and read as a
-      // duplicate card rather than elevation.
+      // Cards are flat tonal containers: white on the tinted light page and
+      // one step above the dark page. No elevation shadow, no outline.
       cardTheme: CardThemeData(
-        color: scheme.surfaceContainerHighest,
+        color: isLight ? scheme.surface : scheme.surfaceContainerLow,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         margin: EdgeInsets.zero,
