@@ -114,7 +114,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final LanDeckRepository repository = AppScope.of(context);
-    final bool wide = AdaptiveLayout.usesSideNavigation(context);
+    final bool wide = AdaptiveLayout.usesWideHome(context);
 
     return Scaffold(
       appBar: AppBar(

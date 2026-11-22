@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:landeck/app.dart';
 import 'package:landeck/repositories/service_repository.dart';
@@ -66,6 +67,42 @@ void main() {
       find.byKey(const ValueKey<String>('main-navigation-rail')),
       findsNothing,
     );
+  });
+
+  testWidgets('desktop windows use the narrow icon rail', (
+    WidgetTester tester,
+  ) async {
+    useSurface(tester, const Size(1024, 768));
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+    await tester.pumpWidget(LanDeckApp(repository: repository));
+    await tester.pumpAndSettle();
+
+    final Finder rail = find.byType(NavigationRail);
+    expect(rail, findsOneWidget);
+    expect(tester.getSize(rail).width, lessThanOrEqualTo(100));
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.text('收藏'), findsOneWidget);
+    expect(find.text('全部服务'), findsOneWidget);
+  });
+
+  testWidgets('narrow desktop windows fall back to one column', (
+    WidgetTester tester,
+  ) async {
+    useSurface(tester, const Size(760, 700));
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+    await tester.pumpWidget(LanDeckApp(repository: repository));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NavigationRail), findsOneWidget);
+    // Favorites and services are stacked, not side by side, so their left
+    // edges line up.
+    final double favoritesLeft = tester.getTopLeft(find.text('收藏')).dx;
+    final double servicesLeft = tester.getTopLeft(find.text('全部服务')).dx;
+    expect(servicesLeft, moreOrLessEquals(favoritesLeft, epsilon: 1));
   });
 
   testWidgets('the rail switches tabs on a tablet', (WidgetTester tester) async {

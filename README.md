@@ -396,7 +396,7 @@ Service.protocol = http, port = 8096, path = /web
 - 当前只在 Android 模拟器验证，未在物理手机/真实家庭网络测试。
 - mDNS/SSDP 在模拟器网络中未返回结果（0 条），端口扫描正常；真实网络可能不同。
 - 模拟器虚拟网络 `10.0.2.3` 对所有端口都有响应，导致扫描结果数量偏多；App 只如实记录 HTTP 响应，不伪造结果。
-- 当前交付目标为 Android；未提供 Web 构建。代码中的非 Android WebView 分支只显示平台不支持提示，不加载演示页面。
+- 交付目标为 Android、iOS 与 Windows 桌面；未提供 Web 构建。没有系统 WebView 的平台（Web、Windows）只显示平台不支持提示，不加载演示页面。
 - 在线/离线指示已从界面移除（扫描与页面加载结果不足以代表真实在线状态）；状态字段仅保留在数据层。切换服务列表的绿点表示「有后台页面」，不是网络状态。
 - 设备删除只解绑服务；暂不提供批量重新分配。
 - 扫描结果只能关联已存在设备，暂不提供「从扫描结果一键新建设备」的独立表单；可先新建设备再重试添加。
@@ -426,3 +426,14 @@ iOS 端当前直接复用与 Android 相同的 Material 3 页面、主题和业�
 - iOS 下载：新增 Swift `URLSession` 下载桥接，文件保存到「文件 App / LANDeck / Downloads」，支持取消、打开和分享；Basic Auth、Cookie 和私有网段自签名证书沿用 WebView 会话。
 - 已接入：Bonjour/mDNS 发现、iOS 本地网络权限处理、单设备端口扫描、FTP 备份/恢复。
 - 当前限制：签名 IPA/TestFlight 仍需 Apple Developer 账号。
+
+## Windows 桌面
+
+Windows 与 Android/iOS 共用同一套 Material 3 页面，桌面窗口在布局上单独适配。
+
+- 平台目录 `windows/`（`flutter create --platforms=windows` 生成），窗口标题 `LANDeck`，初始 1280×800。
+- 侧栏：96pt 窄栏（图标 + 小字竖排），背景使用 `surfaceContainerLow` 与内容区区分、上下铺满；桌面不显示底部导航。
+- 首页：窗口宽 ≥ 860 时两列（左「收藏 + 设备」、右「全部服务」），更窄的窗口回退为单列；其余页面保持 520pt 限宽居中。
+- 多窗口：计划中，当前为单窗口。
+- 已知限制：`webview_flutter` 没有 Windows 实现，桌面打开网页会显示「此环境不支持内嵌网页」；内嵌浏览需要后续接入 `webview_windows` 或改用系统浏览器降级。
+- 构建：Linux 不能编译 Windows；`.github/workflows/windows.yml` 在 `windows-latest` 上执行 analyze/test 并构建 `LANDeck-windows-x64`。

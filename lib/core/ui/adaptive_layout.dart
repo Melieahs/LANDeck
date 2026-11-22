@@ -1,11 +1,11 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 /// Width-based layout rules shared by the phone-first Material UI.
 ///
-/// The side navigation appears on tablets: iPads in portrait start at 744 pt,
-/// while even the widest iPhones stay below 500 pt in their shortest side, so
-/// a landscape phone keeps the compact layout. The 800×600 test surface also
-/// stays compact because the shortest side must be *greater* than 600.
+/// Tablets get the extended navigation rail and a two-column home. Desktop
+/// windows (Windows/macOS/Linux) get a narrower icon rail and use the full
+/// window width for content. Phones keep the bottom navigation.
 abstract final class AdaptiveLayout {
   static const double sideNavigationMinWidth = 700;
   static const double tabletMinShortestSide = 600;
@@ -13,11 +13,39 @@ abstract final class AdaptiveLayout {
   /// The expanded navigation rail on the left of the tablet layout.
   static const double railWidth = 232;
 
-  /// Home content may use the extra width on a tablet.
+  /// The narrow icon rail used by desktop windows.
+  static const double compactRailWidth = 96;
+
+  /// Home content may use the extra width on a tablet or a desktop window.
   static const double wideHomeMaxWidth = 1160;
 
+  /// Below this window width the desktop home falls back to one column so
+  /// the two-column layout never squeezes.
+  static const double wideHomeMinWidth = 860;
+
+  static bool get isDesktop =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.windows ||
+          defaultTargetPlatform == TargetPlatform.macOS ||
+          defaultTargetPlatform == TargetPlatform.linux);
+
+  /// Desktop windows always use the narrow rail; there is no bottom bar.
+  static bool usesCompactRail(BuildContext context) => isDesktop;
+
   static bool usesSideNavigation(BuildContext context) {
+    if (usesCompactRail(context)) {
+      return true;
+    }
     final Size size = MediaQuery.sizeOf(context);
+    return size.width >= sideNavigationMinWidth &&
+        size.shortestSide > tabletMinShortestSide;
+  }
+
+  static bool usesWideHome(BuildContext context) {
+    final Size size = MediaQuery.sizeOf(context);
+    if (usesCompactRail(context)) {
+      return size.width >= wideHomeMinWidth;
+    }
     return size.width >= sideNavigationMinWidth &&
         size.shortestSide > tabletMinShortestSide;
   }

@@ -25,7 +25,7 @@ LANDeck 是一个 Flutter 的局域网服务启动器：
 当前验证结果：
 
 - `flutter analyze`：通过，`No issues found!`
-- `flutter test`：**92 个测试全部通过**
+- `flutter test`：**94 个测试全部通过**
 - Android release APK：`dist/LANDeck-0.9.3.apk`，58,748,385 字节（约 56 MB），
   SHA-256 `8881b49816bb22dbd46cea412efd1ba5307f7d76d7630160a22abb7c44c50396`
 - iOS：CI 生成 **unsigned IPA**（不能直接安装）；本轮 `d522c33` 的 CI run 见 §11。
@@ -151,7 +151,7 @@ lib/
 ├── routes/                     # AppRouter
 ├── services/                   # 扫描、下载、FTP、密码填充等业务服务
 ├── widgets/                    # 通用 M3 组件
-└── core/ui/                    # 自适应布局（AdaptiveLayout）
+└── core/ui/                    # 自适应布局（AdaptiveLayout，平板/桌面）
 ```
 
 iOS 与 Android **共用同一套 Material 3 UI**（`lib/app.dart` 没有 iOS 分支）。
@@ -354,6 +354,19 @@ examples/native-modules/index.json
 - 其余二级页面仍用 `kMaxAppWidth = 520` 居中，避免在平板上被拉成超长行。
 - 测试：`test/adaptive_layout_test.dart` 覆盖平板 rail/两列、手机底栏、横屏手机保持紧凑、rail 切 tab。
 
+### 7.10 Windows 桌面
+
+- 平台目录：`windows/`（`flutter create --platforms=windows` 生成；runner 标题 `LANDeck`，初始 1280×800）。
+- 布局：`AdaptiveLayout.usesCompactRail` 在桌面平台恒为真，`MainShell` 用 96pt 窄侧栏
+  （`NavigationRail(extended: false, labelType: all)`，图标 + 小字），无底部导航；
+  侧栏背景 `surfaceContainerLow`，Container 铺满全高，只有内容受 SafeArea 约束。
+- 首页：`usesWideHome` 在桌面窗口宽 ≥ 860 时两列，否则单列；其余页面仍 520pt 限宽居中。
+- WebView：`webview_flutter` 没有 Windows 实现，`webview_flutter` 的 plugin 不会注册，
+  `_nativeWebView` 为 false，页面显示平台不支持提示；**不要声称桌面端可内嵌浏览**。
+- 多窗口：计划中（`desktop_multi_window` 或每窗口独立 engine + 独立入口），当前单窗口。
+- CI：`.github/workflows/windows.yml` 在 `windows-latest` 跑 analyze/test + `flutter build windows --release`，
+  artifact `LANDeck-windows-x64`。
+
 ---
 
 ## 8. 构建 / 测试 / 运行
@@ -553,9 +566,11 @@ PS5 Web File Manager：`192.168.1.50:8888`。
    双模式开关、Padavan 插件入口不崩溃。
 4. **继续 iOS 功能补齐**：iPad 适配已实现（rail + 两列首页，待真机验收），
    剩余原生分享/文件打开体验、发现页细节；注意 iOS 仍复用 Material 3。
-5. **目录上传**：若用户坚持 PS5 目录上传，需要研究 WKWebView/Android WebView 是否能在
+5. **Windows 桌面**：窄侧栏与两列首页已实现，待 Windows 实机/CI 验证；
+   下一步接多窗口（`desktop_multi_window`）与 Windows 内嵌 WebView（`webview_windows` 或系统浏览器降级）。
+6. **目录上传**：若用户坚持 PS5 目录上传，需要研究 WKWebView/Android WebView 是否能在
    `onShowFileSelector` 之外保留相对路径；当前结论是做不到，需要明确告知限制，不能伪造。
-6. **FTP**：用真实 NAS 再测根目录/子目录/FTPS；当前只做配置备份恢复。
+7. **FTP**：用真实 NAS 再测根目录/子目录/FTPS；当前只做配置备份恢复。
 
 ---
 

@@ -66,6 +66,7 @@ class _MainShellState extends State<MainShell> {
     }
 
     final ColorScheme colors = Theme.of(context).colorScheme;
+    final bool compactRail = AdaptiveLayout.usesCompactRail(context);
 
     return Scaffold(
       // The rail background runs edge to edge like a desktop sidebar; only
@@ -74,12 +75,15 @@ class _MainShellState extends State<MainShell> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Container(
-            width: AdaptiveLayout.railWidth,
+            width: compactRail
+                ? AdaptiveLayout.compactRailWidth
+                : AdaptiveLayout.railWidth,
             color: colors.surfaceContainerLow,
             child: SafeArea(
               right: false,
               bottom: false,
               child: _MainRail(
+                compact: compactRail,
                 currentIndex: _currentIndex,
                 onChanged: _selectTab,
               ),
@@ -93,8 +97,13 @@ class _MainShellState extends State<MainShell> {
 }
 
 class _MainRail extends StatelessWidget {
-  const _MainRail({required this.currentIndex, required this.onChanged});
+  const _MainRail({
+    required this.compact,
+    required this.currentIndex,
+    required this.onChanged,
+  });
 
+  final bool compact;
   final int currentIndex;
   final ValueChanged<int> onChanged;
 
@@ -103,38 +112,46 @@ class _MainRail extends StatelessWidget {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final TextTheme text = Theme.of(context).textTheme;
 
+    final Widget brand = Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        color: colors.primaryContainer,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Icon(
+        Icons.router_outlined,
+        size: 20,
+        color: colors.onPrimaryContainer,
+      ),
+    );
+
     return NavigationRail(
       key: const ValueKey<String>('main-navigation-rail'),
-      extended: true,
-      minExtendedWidth: AdaptiveLayout.railWidth,
+      extended: !compact,
+      minExtendedWidth: compact ? null : AdaptiveLayout.railWidth,
+      minWidth: compact ? AdaptiveLayout.compactRailWidth : null,
+      labelType: compact ? NavigationRailLabelType.all : null,
       backgroundColor: Colors.transparent,
       groupAlignment: -1,
       selectedIndex: currentIndex,
       onDestinationSelected: onChanged,
       leading: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 20, 12, 24),
-        child: Row(
-          children: <Widget>[
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: colors.primaryContainer,
-                borderRadius: BorderRadius.circular(10),
+        padding: compact
+            ? const EdgeInsets.only(top: 20, bottom: 20)
+            : const EdgeInsets.fromLTRB(12, 20, 12, 24),
+        child: compact
+            ? brand
+            : Row(
+                children: <Widget>[
+                  brand,
+                  const SizedBox(width: 10),
+                  Text(
+                    'LANDeck',
+                    style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ],
               ),
-              child: Icon(
-                Icons.router_outlined,
-                size: 20,
-                color: colors.onPrimaryContainer,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              'LANDeck',
-              style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
       ),
       destinations: <NavigationRailDestination>[
         for (int index = 0; index < navDestinations.length; index++)
