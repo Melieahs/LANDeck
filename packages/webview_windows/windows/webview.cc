@@ -421,8 +421,11 @@ void Webview::RespondBasicAuth(int64_t id, const std::wstring& username,
   if (cancel) {
     args->put_Cancel(TRUE);
   } else {
-    args->put_UserName(username.c_str());
-    args->put_Password(password.c_str());
+    wil::com_ptr<ICoreWebView2BasicAuthenticationResponse> response;
+    if (SUCCEEDED(args->get_Response(response.put()))) {
+      response->put_UserName(username.c_str());
+      response->put_Password(password.c_str());
+    }
   }
 
   deferral->Complete();

@@ -8,6 +8,12 @@ message(VERBOSE "CMake system version is ${CMAKE_SYSTEM_VERSION} (using SDK ${CM
 
 project(${PROJECT_NAME} LANGUAGES CXX)
 
+# The nuget install step below passes DEPENDS to add_custom_command(TARGET),
+# which newer CMake rejects by default; keep the old behaviour.
+if(POLICY CMP0175)
+  cmake_policy(SET CMP0175 OLD)
+endif()
+
 # This value is used when generating builds using this plugin, so it must
 # not be changed
 set(PLUGIN_NAME "webview_windows_plugin")
@@ -97,9 +103,6 @@ set(webview_windows_bundled_libraries
 # The plugin still uses the legacy /await coroutine machinery that Visual
 # Studio 2026 (MSVC 14.52) rejects by default. Silence the static assertion
 # until the code is migrated to C++20 coroutines.
-if(POLICY CMP0175)
-  cmake_policy(SET CMP0175 OLD)
-endif()
 if(TARGET webview_windows_plugin)
   target_compile_definitions(webview_windows_plugin PRIVATE
     _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
