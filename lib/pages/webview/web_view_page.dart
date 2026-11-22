@@ -377,8 +377,14 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
 
   Future<void> _autoFillSavedLogin(String url) async {
     final WebViewController? controller = _controller;
-    final Service? service = _service;
-    if (!mounted || controller == null || service == null) {
+    final Service? current = _service;
+    if (!mounted || controller == null || current == null) {
+      return;
+    }
+    final Service service =
+        _repository?.serviceById(current.id) ?? current;
+    final PasswordFillMode mode = service.passwordFillMode;
+    if (mode == PasswordFillMode.off) {
       return;
     }
     final Uri? pageUri = Uri.tryParse(url);
@@ -392,18 +398,38 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       return;
     }
     try {
-      final List<HttpCredential> credentials = await HttpCredentialStore
-          .instance
-          .credentialsFor(service.id);
-      HttpCredential? saved;
-      for (final HttpCredential credential in credentials) {
-        if (credential.realm == WebPasswordFill.webRealm &&
-            credential.matches(scope, WebPasswordFill.webRealm)) {
-          saved = credential;
-          break;
-        }
+      final List<HttpCredential> accounts = await HttpCredentialStore.instance
+          .accountsFor(
+            service.id,
+            host: scope,
+            realm: WebPasswordFill.webRealm,
+          );
+      if (accounts.isEmpty || !mounted) {
+        return;
       }
-      if (saved == null || !mounted) {
+      HttpCredential? saved;
+      if (mode == PasswordFillMode.auto) {
+        saved = _preferredAccount(
+          accounts,
+          service.defaultCredentialUsername,
+        );
+      } else {
+        if (_passwordPromptOpen) {
+          return;
+        }
+        _passwordPromptOpen = true;
+        final HttpCredential? chosen = await showCredentialPicker(
+          context,
+          credentials: accounts,
+          defaultUsername: service.defaultCredentialUsername,
+        );
+        _passwordPromptOpen = false;
+        if (!mounted || chosen == null) {
+          return;
+        }
+        saved = chosen;
+      }
+      if (saved == null) {
         return;
       }
       await controller.runJavaScript(
@@ -415,6 +441,23 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     } on Object {
       // Auto-fill is opportunistic; never interrupt page loading.
     }
+  }
+
+  HttpCredential? _preferredAccount(
+    List<HttpCredential> accounts,
+    String? preferredUsername,
+  ) {
+    if (accounts.isEmpty) {
+      return null;
+    }
+    if (preferredUsername != null) {
+      for (final HttpCredential account in accounts) {
+        if (account.username == preferredUsername) {
+          return account;
+        }
+      }
+    }
+    return accounts.first;
   }
 
   void _onPasswordBridgeMessage(JavaScriptMessage message) {
@@ -460,17 +503,23 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (!mounted || service == null || _passwordPromptOpen) {
       return;
     }
-    final HttpCredential? existing = await HttpCredentialStore.instance.find(
-      service.id,
-      host: host,
-      realm: WebPasswordFill.webRealm,
-    );
+    final List<HttpCredential> savedAccounts =
+        await HttpCredentialStore.instance.accountsFor(
+          service.id,
+          host: host,
+          realm: WebPasswordFill.webRealm,
+        );
     if (!mounted) {
       return;
     }
-    if (existing != null &&
-        existing.username == username &&
-        existing.password == password) {
+    HttpCredential? existing;
+    for (final HttpCredential account in savedAccounts) {
+      if (account.username == username) {
+        existing = account;
+        break;
+      }
+    }
+    if (existing != null && existing.password == password) {
       return;
     }
     _passwordPromptOpen = true;
@@ -728,14 +777,16 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       service.id,
       host: host,
       realm: realm,
+      preferUsername: service.defaultCredentialUsername,
     );
     if (stale != null) {
       // The saved credential was already tried by DownloadRequestHeaders and
-      // rejected; remove it so a wrong password is not retried forever.
-      await HttpCredentialStore.instance.deleteScope(
+      // rejected; remove only that account so other saved accounts survive.
+      await HttpCredentialStore.instance.deleteCredential(
         service.id,
         host: host,
         realm: realm,
+        username: stale.username,
       );
     }
     if (!mounted) {
@@ -1024,6 +1075,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       service.id,
       host: requestHost,
       realm: realm,
+      preferUsername: service.defaultCredentialUsername,
     );
     if (!mounted) {
       request.onCancel();
@@ -1049,11 +1101,15 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       // The automatically tried credential was rejected. Remove it so a bad
       // password is not kept and retried on every future page load.
       try {
-        await HttpCredentialStore.instance.deleteScope(
-          service.id,
-          host: requestHost,
-          realm: realm,
-        );
+        final HttpCredential? tried = credential;
+        if (tried != null) {
+          await HttpCredentialStore.instance.deleteCredential(
+            service.id,
+            host: requestHost,
+            realm: realm,
+            username: tried.username,
+          );
+        }
       } on Object {
         // Secure-storage cleanup is best effort; the dialog still opens.
       }
@@ -1361,11 +1417,18 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       showAppSnackBar(context, '没有找到该服务的已保存登录信息');
       return;
     }
-    HttpCredential selected = matching.first;
+    final Service? latest = _repository?.serviceById(service.id);
+    final String? preferredUsername = latest?.defaultCredentialUsername;
+    final HttpCredential? preferred = _preferredAccount(
+      matching,
+      preferredUsername,
+    );
+    HttpCredential selected = preferred ?? matching.first;
     if (matching.length > 1) {
       final HttpCredential? chosen = await showCredentialPicker(
         context,
         credentials: matching,
+        defaultUsername: preferredUsername,
       );
       if (chosen == null || !mounted) {
         return;

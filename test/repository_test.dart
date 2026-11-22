@@ -23,6 +23,29 @@ void main() {
   });
 
 
+  test('service persists password fill settings', () async {
+    final LanDeckRepository repository = await createTestRepository();
+    final Service service = await repository.addService(
+      name: 'A 服务',
+      customUrl: 'http://192.168.1.21',
+    );
+    expect(service.passwordFillMode, PasswordFillMode.auto);
+    expect(service.defaultCredentialUsername, isNull);
+
+    final Service saved = service.copyWith(
+      passwordFillMode: PasswordFillMode.ask,
+      defaultCredentialUsername: () => 'alice',
+    );
+    final Service decoded = Service.fromMap(saved.toMap());
+    expect(decoded.passwordFillMode, PasswordFillMode.ask);
+    expect(decoded.defaultCredentialUsername, 'alice');
+
+    final Service cleared = decoded.copyWith(
+      defaultCredentialUsername: () => null,
+    );
+    expect(cleared.defaultCredentialUsername, isNull);
+  });
+
   test('favorites keep a manual order', () async {
     final LanDeckRepository repository = await createTestRepository();
     final Service first = await repository.addService(

@@ -105,6 +105,66 @@ void main() {
     );
   });
 
+  test('store keeps multiple accounts for the same scope', () async {
+    final HttpCredentialStore store = HttpCredentialStore();
+    await store.save(credential(username: 'alice', password: 'one'));
+    await store.save(credential(username: 'bob', password: 'two'));
+    final List<HttpCredential> accounts = await store.accountsFor(
+      'service-1',
+      host: '192.168.1.1',
+      realm: 'Padavan',
+    );
+    expect(
+      accounts.map((HttpCredential item) => item.username),
+      <String>['bob', 'alice'],
+    );
+    expect(
+      (await store.find(
+        'service-1',
+        host: '192.168.1.1',
+        realm: 'Padavan',
+        preferUsername: 'alice',
+      ))?.password,
+      'one',
+    );
+  });
+
+  test('store overwrites the same account and deletes one account', () async {
+    final HttpCredentialStore store = HttpCredentialStore();
+    await store.save(credential(username: 'alice', password: 'old'));
+    await store.save(credential(username: 'bob', password: 'two'));
+    await store.save(credential(username: 'alice', password: 'new'));
+
+    final List<HttpCredential> afterSave = await store.accountsFor(
+      'service-1',
+      host: '192.168.1.1',
+      realm: 'Padavan',
+    );
+    expect(afterSave.length, 2);
+    expect(
+      afterSave.singleWhere(
+        (HttpCredential item) => item.username == 'alice',
+      ).password,
+      'new',
+    );
+
+    await store.deleteCredential(
+      'service-1',
+      host: '192.168.1.1',
+      realm: 'Padavan',
+      username: 'alice',
+    );
+    final List<HttpCredential> afterDelete = await store.accountsFor(
+      'service-1',
+      host: '192.168.1.1',
+      realm: 'Padavan',
+    );
+    expect(
+      afterDelete.map((HttpCredential item) => item.username),
+      <String>['bob'],
+    );
+  });
+
   test('store can delete one scope and all service credentials', () async {
     final HttpCredentialStore store = HttpCredentialStore();
     await store.save(credential());

@@ -84,6 +84,8 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
   String? _formError;
   List<HttpCredential> _credentials = const <HttpCredential>[];
   bool _credentialsLoading = false;
+  PasswordFillMode _passwordFillMode = PasswordFillMode.auto;
+  String? _defaultCredentialUsername;
 
   static const String _noneValue = '__none__';
 
@@ -131,6 +133,8 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
     if (_deviceId != null) {
       _useCustomUrl = service?.hasCustomUrl ?? false;
     }
+    _passwordFillMode = service?.passwordFillMode ?? PasswordFillMode.auto;
+    _defaultCredentialUsername = service?.defaultCredentialUsername;
     if (widget.isEditing) {
       unawaited(_loadCredentials());
     }
@@ -179,15 +183,24 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
     if (confirmed != true || widget.service == null) {
       return;
     }
-    await HttpCredentialStore.instance.deleteScope(
+    await HttpCredentialStore.instance.deleteCredential(
       widget.service!.id,
       host: credential.host,
       realm: credential.realm,
+      username: credential.username,
     );
     await _loadCredentials();
-    if (mounted) {
-      showAppSnackBar(context, '已删除保存的登录凭据');
+    if (!mounted) {
+      return;
     }
+    if (_defaultCredentialUsername == credential.username &&
+        !_credentials.any(
+          (HttpCredential item) =>
+              item.username == _defaultCredentialUsername,
+        )) {
+      setState(() => _defaultCredentialUsername = null);
+    }
+    showAppSnackBar(context, '已删除保存的登录凭据');
   }
 
   String? _candidatePath(Uri? uri) {
@@ -277,6 +290,13 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
         : null;
     final DateTime? scannedAt = scannedStatus == null ? null : DateTime.now();
 
+    if (_defaultCredentialUsername != null &&
+        !_credentials.any(
+          (HttpCredential item) => item.username == _defaultCredentialUsername,
+        )) {
+      _defaultCredentialUsername = null;
+    }
+
     final bool nativeAvailable = _nativeModuleId != null &&
         _compatibleModules().any(
           (NativeModule module) => module.id == _nativeModuleId,
@@ -303,6 +323,8 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
             isFavorite: _favorite,
             nativeModuleId: () => _nativeModuleId,
             defaultMode: defaultMode,
+            passwordFillMode: _passwordFillMode,
+            defaultCredentialUsername: () => _defaultCredentialUsername,
             lastStatus: () => scannedStatus ?? widget.service!.lastStatus,
             lastCheckedAt: () => scannedAt ?? widget.service!.lastCheckedAt,
           ),
@@ -672,7 +694,13 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
                     _SavedCredentialsCard(
                       credentials: _credentials,
                       loading: _credentialsLoading,
+                      fillMode: _passwordFillMode,
+                      defaultUsername: _defaultCredentialUsername,
                       onDelete: _deleteCredential,
+                      onFillModeChanged: (PasswordFillMode value) =>
+                          setState(() => _passwordFillMode = value),
+                      onDefaultChanged: (String? value) =>
+                          setState(() => _defaultCredentialUsername = value),
                     ),
                   ],
                   if (_formError != null) ...<Widget>[
@@ -785,16 +813,43 @@ class _SavedCredentialsCard extends StatelessWidget {
   const _SavedCredentialsCard({
     required this.credentials,
     required this.loading,
+    required this.fillMode,
+    required this.defaultUsername,
     required this.onDelete,
+    required this.onFillModeChanged,
+    required this.onDefaultChanged,
   });
 
   final List<HttpCredential> credentials;
   final bool loading;
+  final PasswordFillMode fillMode;
+  final String? defaultUsername;
   final ValueChanged<HttpCredential> onDelete;
+  final ValueChanged<PasswordFillMode> onFillModeChanged;
+  final ValueChanged<String?> onDefaultChanged;
+
+  List<HttpCredential> get _webAccounts => credentials
+      .where((HttpCredential item) => item.realm == 'web-form')
+      .toList(growable: false);
+
+  List<String> get _webUsernames {
+    final List<String> names = <String>[];
+    for (final HttpCredential credential in _webAccounts) {
+      if (!names.contains(credential.username)) {
+        names.add(credential.username);
+      }
+    }
+    return names;
+  }
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
+    final TextTheme text = Theme.of(context).textTheme;
+    final List<String> usernames = _webUsernames;
+    final String? selectedDefault = usernames.contains(defaultUsername)
+        ? defaultUsername
+        : null;
     return Card.outlined(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 8, 12),
@@ -805,46 +860,154 @@ class _SavedCredentialsCard extends StatelessWidget {
               children: <Widget>[
                 Icon(Icons.key_rounded, size: 18, color: scheme.primary),
                 const SizedBox(width: 8),
-                Text(
-                  'HTTP 登录凭据',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
+                Text('HTTP 登录凭据', style: text.titleSmall),
               ],
             ),
             const SizedBox(height: 6),
             Text(
               '仅在 WebView 中主动勾选「记住登录信息」时保存。'
-              '凭据使用系统安全存储加密，并按服务、主机和端口（网页登录域）分别绑定。',
-              style: Theme.of(context).textTheme.bodySmall
-                  ?.copyWith(color: scheme.onSurfaceVariant),
+              '同一服务、主机和端口下可以保存多个账号。',
+              style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
             if (loading) ...<Widget>[
               const SizedBox(height: 10),
               const LinearProgressIndicator(minHeight: 2),
             ] else if (credentials.isEmpty) ...<Widget>[
               const SizedBox(height: 8),
-              Text('尚未保存凭据。', style: Theme.of(context).textTheme.bodySmall),
+              Text('尚未保存凭据。', style: text.bodySmall),
             ] else ...<Widget>[
               const SizedBox(height: 4),
               ...credentials.asMap().entries.map(
-                (MapEntry<int, HttpCredential> entry) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  leading: const Icon(Icons.person_outline_rounded),
-                  title: Text(entry.value.username),
-                  subtitle: Text(
-                    '${entry.value.host} · ${entry.value.scopeLabel}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: IconButton(
-                    key: ValueKey<String>('delete-credential-${entry.key}'),
-                    tooltip: '删除凭据',
-                    onPressed: () => onDelete(entry.value),
-                    icon: const Icon(Icons.delete_outline_rounded),
-                  ),
-                ),
+                (MapEntry<int, HttpCredential> entry) {
+                  final HttpCredential credential = entry.value;
+                  final bool isDefault =
+                      credential.realm == 'web-form' &&
+                      credential.username == selectedDefault;
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    leading: const Icon(Icons.person_outline_rounded),
+                    title: Row(
+                      children: <Widget>[
+                        Flexible(child: Text(credential.username)),
+                        if (isDefault) ...<Widget>[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: scheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '默认',
+                              style: text.labelSmall?.copyWith(
+                                color: scheme.onPrimaryContainer,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    subtitle: Text(
+                      '${credential.host} · ${credential.scopeLabel}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        if (credential.realm == 'web-form')
+                          IconButton(
+                            key: ValueKey<String>(
+                              'default-credential-${entry.key}',
+                            ),
+                            tooltip: isDefault ? '取消默认账号' : '设为默认填充账号',
+                            onPressed: () => onDefaultChanged(
+                              isDefault ? null : credential.username,
+                            ),
+                            icon: Icon(
+                              isDefault
+                                  ? Icons.star_rounded
+                                  : Icons.star_border_rounded,
+                            ),
+                          ),
+                        IconButton(
+                          key: ValueKey<String>('delete-credential-${entry.key}'),
+                          tooltip: '删除凭据',
+                          onPressed: () => onDelete(credential),
+                          icon: const Icon(Icons.delete_outline_rounded),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
+            ],
+            const Divider(height: 20),
+            Text('填充方式', style: text.titleSmall),
+            const SizedBox(height: 8),
+            SegmentedButton<PasswordFillMode>(
+              key: const ValueKey<String>('password-fill-mode'),
+              showSelectedIcon: false,
+              segments: const <ButtonSegment<PasswordFillMode>>[
+                ButtonSegment<PasswordFillMode>(
+                  value: PasswordFillMode.auto,
+                  label: Text('自动'),
+                ),
+                ButtonSegment<PasswordFillMode>(
+                  value: PasswordFillMode.ask,
+                  label: Text('先选择'),
+                ),
+                ButtonSegment<PasswordFillMode>(
+                  value: PasswordFillMode.off,
+                  label: Text('不填充'),
+                ),
+              ],
+              selected: <PasswordFillMode>{fillMode},
+              onSelectionChanged: (Set<PasswordFillMode> values) =>
+                  onFillModeChanged(values.first),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              fillMode.description,
+              style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+            if (fillMode == PasswordFillMode.auto) ...<Widget>[
+              const SizedBox(height: 10),
+              Text('默认账号', style: text.labelLarge),
+              const SizedBox(height: 6),
+              if (usernames.isEmpty)
+                Text(
+                  '保存网页登录信息后即可选择默认账号。',
+                  style: text.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                )
+              else
+                DropdownButtonFormField<String>(
+                  key: const ValueKey<String>('default-credential-select'),
+                  initialValue: selectedDefault ?? '',
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    border: OutlineInputBorder(),
+                  ),
+                  items: <DropdownMenuItem<String>>[
+                    const DropdownMenuItem<String>(
+                      value: '',
+                      child: Text('最近保存的账号'),
+                    ),
+                    for (final String username in usernames)
+                      DropdownMenuItem<String>(
+                        value: username,
+                        child: Text(username),
+                      ),
+                  ],
+                  onChanged: (String? value) =>
+                      onDefaultChanged((value ?? '').isEmpty ? null : value),
+                ),
             ],
           ],
         ),

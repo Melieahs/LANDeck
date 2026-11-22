@@ -62,14 +62,33 @@ class HttpCredentialStore {
     String serviceId, {
     required String host,
     required String realm,
+    String? preferUsername,
   }) async {
     final List<HttpCredential> credentials = await credentialsFor(serviceId);
+    HttpCredential? fallback;
     for (final HttpCredential credential in credentials) {
-      if (credential.matches(host, realm)) {
+      if (!credential.matches(host, realm)) {
+        continue;
+      }
+      if (preferUsername != null && credential.username == preferUsername) {
         return credential;
       }
+      fallback ??= credential;
     }
-    return null;
+    return fallback;
+  }
+
+  /// All accounts saved for one authentication scope, newest first.
+  Future<List<HttpCredential>> accountsFor(
+    String serviceId, {
+    required String host,
+    required String realm,
+  }) async {
+    final List<HttpCredential> credentials = await credentialsFor(serviceId);
+    final List<HttpCredential> matching = credentials
+        .where((HttpCredential credential) => credential.matches(host, realm))
+        .toList(growable: false);
+    return matching.reversed.toList(growable: false);
   }
 
   Future<void> save(HttpCredential credential) async {
@@ -78,10 +97,31 @@ class HttpCredentialStore {
     );
     credentials.removeWhere(
       (HttpCredential existing) =>
-          existing.matches(credential.host, credential.realm),
+          existing.matches(credential.host, credential.realm) &&
+          existing.username == credential.username,
     );
     credentials.add(credential);
     await _write(credential.serviceId, credentials);
+  }
+
+  Future<void> deleteCredential(
+    String serviceId, {
+    required String host,
+    required String realm,
+    required String username,
+  }) async {
+    final List<HttpCredential> credentials = List<HttpCredential>.of(
+      await credentialsFor(serviceId),
+    );
+    credentials.removeWhere(
+      (HttpCredential existing) =>
+          existing.matches(host, realm) && existing.username == username,
+    );
+    if (credentials.isEmpty) {
+      await _storage.delete(key: _keyFor(serviceId));
+      return;
+    }
+    await _write(serviceId, credentials);
   }
 
   Future<void> deleteScope(

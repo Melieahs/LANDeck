@@ -77,10 +77,11 @@ class _CredentialManagerPageState extends State<CredentialManagerPage> {
     if (confirmed != true || !mounted) {
       return;
     }
-    await _store.deleteScope(
+    await _store.deleteCredential(
       row.service.id,
       host: row.credential.host,
       realm: row.credential.realm,
+      username: row.credential.username,
     );
     if (!mounted) {
       return;

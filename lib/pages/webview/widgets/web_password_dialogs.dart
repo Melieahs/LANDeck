@@ -5,12 +5,22 @@ import '../../../models/http_credential.dart';
 Future<HttpCredential?> showCredentialPicker(
   BuildContext context, {
   required List<HttpCredential> credentials,
+  String? defaultUsername,
 }) {
+  final List<HttpCredential> ordered = <HttpCredential>[
+    ...credentials.where(
+      (HttpCredential item) => item.username == defaultUsername,
+    ),
+    ...credentials.where(
+      (HttpCredential item) => item.username != defaultUsername,
+    ),
+  ];
   return showModalBottomSheet<HttpCredential>(
     context: context,
     useSafeArea: true,
     showDragHandle: true,
     builder: (BuildContext context) {
+      final ThemeData theme = Theme.of(context);
       return SafeArea(
         top: false,
         child: Column(
@@ -21,16 +31,39 @@ Future<HttpCredential?> showCredentialPicker(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
               child: Text(
                 '选择要填充的账号',
-                style: Theme.of(context).textTheme.titleMedium,
+                style: theme.textTheme.titleMedium,
               ),
             ),
-            for (int i = 0; i < credentials.length; i++)
+            for (int i = 0; i < ordered.length; i++)
               ListTile(
                 key: ValueKey<String>('fill-credential-$i'),
                 leading: const Icon(Icons.key_rounded),
-                title: Text(credentials[i].username),
-                subtitle: Text(credentials[i].scopeLabel),
-                onTap: () => Navigator.of(context).pop(credentials[i]),
+                title: Row(
+                  children: <Widget>[
+                    Flexible(child: Text(ordered[i].username)),
+                    if (ordered[i].username == defaultUsername) ...<Widget>[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 1,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '默认',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                subtitle: Text(ordered[i].scopeLabel),
+                onTap: () => Navigator.of(context).pop(ordered[i]),
               ),
             const SizedBox(height: 8),
           ],

@@ -5,6 +5,32 @@ import 'service_mode.dart';
 /// Availability of a service as reported by the last real check.
 enum ServiceStatus { online, offline }
 
+/// How saved web credentials are used when a login page appears.
+enum PasswordFillMode {
+  /// Fill the default account without asking.
+  auto,
+
+  /// Ask which saved account to fill before touching the form.
+  ask,
+
+  /// Never fill automatically; the user can still fill from the menu.
+  off,
+}
+
+extension PasswordFillModeLabel on PasswordFillMode {
+  String get label => switch (this) {
+    PasswordFillMode.auto => '自动填充',
+    PasswordFillMode.ask => '填充前先选择',
+    PasswordFillMode.off => '不自动填充',
+  };
+
+  String get description => switch (this) {
+    PasswordFillMode.auto => '页面出现登录表单时，直接用默认账号填写。',
+    PasswordFillMode.ask => '每次出现登录表单时，先让你选择要用的账号。',
+    PasswordFillMode.off => '不自动填写，仍可在服务更多菜单里手动填充。',
+  };
+}
+
 /// Visual glyph families used by the shared service icon widget.
 ///
 /// Kept free of Flutter imports so the data layer stays presentation agnostic.
@@ -42,6 +68,8 @@ class Service {
     this.lastOpenedAt,
     this.nativeModuleId,
     this.defaultMode = ServiceMode.web,
+    this.passwordFillMode = PasswordFillMode.auto,
+    this.defaultCredentialUsername,
   });
 
   final String id;
@@ -85,6 +113,14 @@ class Service {
   /// Changing mode inside a viewer is temporary; this value is only changed
   /// from the service settings so opening behaviour stays predictable.
   final ServiceMode defaultMode;
+
+  /// Whether and how saved web credentials are filled automatically.
+  final PasswordFillMode passwordFillMode;
+
+  /// Username whose saved password is filled in [PasswordFillMode.auto].
+  ///
+  /// Null means "use the most recently saved web account".
+  final String? defaultCredentialUsername;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -167,6 +203,8 @@ class Service {
     DateTime? Function()? lastOpenedAt,
     String? Function()? nativeModuleId,
     ServiceMode? defaultMode,
+    PasswordFillMode? passwordFillMode,
+    String? Function()? defaultCredentialUsername,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -198,6 +236,10 @@ class Service {
           ? this.nativeModuleId
           : nativeModuleId(),
       defaultMode: defaultMode ?? this.defaultMode,
+      passwordFillMode: passwordFillMode ?? this.passwordFillMode,
+      defaultCredentialUsername: defaultCredentialUsername == null
+          ? this.defaultCredentialUsername
+          : defaultCredentialUsername(),
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -223,6 +265,8 @@ class Service {
       'lastOpenedAt': lastOpenedAt?.toIso8601String(),
       'nativeModuleId': nativeModuleId,
       'defaultMode': defaultMode.name,
+      'passwordFillMode': passwordFillMode.name,
+      'defaultCredentialUsername': defaultCredentialUsername,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -275,6 +319,12 @@ class Service {
         'native' => ServiceMode.native,
         _ => ServiceMode.web,
       },
+      passwordFillMode: switch (map['passwordFillMode'] as String?) {
+        'ask' => PasswordFillMode.ask,
+        'off' => PasswordFillMode.off,
+        _ => PasswordFillMode.auto,
+      },
+      defaultCredentialUsername: map['defaultCredentialUsername'] as String?,
       createdAt:
           DateTime.tryParse(map['createdAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
