@@ -364,7 +364,13 @@ examples/native-modules/index.json
 - 内嵌 WebView：`webview_flutter` 没有 Windows 实现，桌面改用 `webview_windows`（WebView2）。
   `ServiceViewerPage` 在 Windows 上分发到 `lib/pages/webview/windows_web_view_page.dart`，
   支持加载、后退/前进/刷新、加载进度、切换服务；初始化失败时提供「用系统浏览器打开」兜底。
-  暂不支持：网页密码填充、下载拦截、HTTP Basic 自动认证、多标签保活（这些仍是 Android/iOS 能力）。
+- WebView2 fork：`packages/webview_windows/`（path 依赖，`dependency_overrides`）在原 0.4.0 基础上补了
+  `ICoreWebView2_10::BasicAuthenticationRequested` 拦截（C++ deferral + `respondBasicAuth`）和 Dart
+  `basicAuthRequested` 流，用于复用 `showHttpAuthDialog` 自制认证框与 `HttpCredentialStore` 保存的账号。
+  该 fork 同时包含 VS2026 协程弃用抑制（`_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS`、`/WX-`、`CMP0175 OLD`）。
+- Windows 密码能力：HTTP Basic 自动/手动认证、网页登录表单自动填充与保存（与移动端同一套
+  `WebPasswordFill` 脚本，通过 `window.chrome.webview.postMessage` 桥接）。
+  暂不支持：下载拦截、多标签保活（仍是 Android/iOS 能力）。
   **不要声称桌面端与移动端 WebView 功能完全一致**。
 - 多窗口：计划中（`desktop_multi_window` 或每窗口独立 engine + 独立入口），当前单窗口。
 - CI：`.github/workflows/windows.yml` 在 `windows-latest` 跑 analyze/test + `flutter build windows --release`，
