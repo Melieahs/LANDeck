@@ -1,7 +1,7 @@
 name: Windows build
 
 permissions:
-  contents: read
+  contents: write
 
 on:
   push:
@@ -57,3 +57,15 @@ jobs:
           name: LANDeck-windows-x64
           path: build/windows/x64/runner/Release/
           if-no-files-found: error
+
+      - name: Publish build log
+        if: failure()
+        shell: bash
+        run: |
+          set -e
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          blob=$(git hash-object -w build-windows.log)
+          tree=$(printf '100644 blob %s\twindows-build.log\n' "$blob" | git mktree)
+          commit=$(git commit-tree "$tree" -m "windows build log ${GITHUB_SHA}")
+          git push -f origin "$commit:refs/heads/ci-logs/windows"
