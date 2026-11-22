@@ -1741,28 +1741,28 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           icon: Icons.undo_rounded,
           onPressed: _nativeWebView && _canGoBack ? _goBack : null,
         ),
-        const SizedBox(width: 2),
+        const SizedBox(width: 4),
         WebViewBarAction(
           key: const Key('webview-forward'),
           tooltip: '前进',
           icon: Icons.redo_rounded,
           onPressed: _nativeWebView && _canGoForward ? _goForward : null,
         ),
-        const SizedBox(width: 2),
+        const SizedBox(width: 4),
         WebViewBarAction(
           key: const Key('webview-more'),
           tooltip: '更多',
           icon: Icons.more_horiz_rounded,
           onPressed: _openMore,
         ),
-        const SizedBox(width: 2),
+        const SizedBox(width: 4),
         WebViewBarAction(
           key: const Key('webview-service-switch'),
           tooltip: '切换服务',
           icon: Icons.swap_horiz_rounded,
           onPressed: _openServiceSwitcher,
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 8),
       ],
     );
   }
@@ -1940,7 +1940,7 @@ class _UnsupportedWebView extends StatelessWidget {
                     size: 17,
                     color: Theme.of(context).colorScheme.primary,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       service.name,

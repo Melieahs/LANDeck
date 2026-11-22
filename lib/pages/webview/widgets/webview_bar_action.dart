@@ -2,10 +2,11 @@ import 'package:material_ui/material_ui.dart';
 
 /// Compact action button for the web viewer top bar.
 ///
-/// The bar sits on `surfaceContainer`; each icon gets its own 40px tonal
-/// container one step lighter, so the actions read as controls instead of
-/// bare glyphs on a flat strip. The footprint matches the previous plain
-/// [IconButton] (40px visual, 48px tap target) and the bar height is untouched.
+/// A 40px circle on `surfaceContainerHighest`, one tonal step above the bar.
+/// The widget draws the circle itself instead of using [IconButton]: the
+/// framework's IconButton keeps a 48px footprint even with a 40px shape, which
+/// leaves a visible gap between neighbours. Drawing a tight 40px circle lets
+/// the actions sit edge to edge.
 class WebViewBarAction extends StatelessWidget {
   const WebViewBarAction({
     super.key,
@@ -21,21 +22,30 @@ class WebViewBarAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme scheme = Theme.of(context).colorScheme;
-    return IconButton(
-      tooltip: tooltip,
-      onPressed: onPressed,
-      icon: Icon(icon, size: 20),
-      style: IconButton.styleFrom(
-        backgroundColor: scheme.surfaceContainerHighest,
-        foregroundColor: scheme.onSurface,
-        disabledBackgroundColor: scheme.surfaceContainerHighest.withValues(
-          alpha: 0.4,
-        ),
-        disabledForegroundColor: scheme.onSurfaceVariant.withValues(alpha: 0.4),
-        minimumSize: const Size(40, 40),
-        maximumSize: const Size(40, 40),
-        padding: EdgeInsets.zero,
+    final bool enabled = onPressed != null;
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: enabled
+            ? scheme.surfaceContainerHighest
+            : scheme.surfaceContainerHighest.withValues(alpha: 0.4),
         shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onPressed,
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: Icon(
+              icon,
+              size: 20,
+              color: enabled
+                  ? scheme.onSurface
+                  : scheme.onSurfaceVariant.withValues(alpha: 0.4),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -57,8 +67,14 @@ AppBar webViewerAppBar({
     surfaceTintColor: Colors.transparent,
     elevation: 0,
     scrolledUnderElevation: 0,
-    leadingWidth: 56,
-    leading: leading,
+    leadingWidth: 48,
+    // AppBar hands the leading slot a tight 56×toolbar constraint; a fixed
+    // 40px box keeps the exit button the same size as the actions.
+    leading: SizedBox(
+      width: 48,
+      height: 40,
+      child: Center(child: leading),
+    ),
     title: title,
     actions: actions,
   );
