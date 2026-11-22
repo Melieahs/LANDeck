@@ -67,11 +67,15 @@ AppBar webViewerAppBar({
     surfaceTintColor: Colors.transparent,
     elevation: 0,
     scrolledUnderElevation: 0,
-    leadingWidth: 48,
+    leadingWidth: 56,
+    // Push the exit button in by 4px without moving the title: the bar used
+    // to spend 48 + 16 (default titleSpacing) on the leading slot, which is
+    // what 56 + 8 keeps exactly.
+    titleSpacing: 8,
     // AppBar hands the leading slot a tight 56×toolbar constraint; a fixed
     // 40px box keeps the exit button the same size as the actions.
     leading: SizedBox(
-      width: 48,
+      width: 56,
       height: 40,
       child: Center(child: leading),
     ),

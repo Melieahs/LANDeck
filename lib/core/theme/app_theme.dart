@@ -222,7 +222,7 @@ abstract final class AppTheme {
         surfaceTintColor: Colors.transparent,
         modalBackgroundColor: scheme.surfaceContainerLow,
         modalBarrierColor: scheme.scrim.withValues(alpha: 0.42),
-        showDragHandle: true,
+        showDragHandle: false,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
@@ -297,8 +297,8 @@ abstract final class AppTheme {
     return scheme.copyWith(
       primary: const Color(0xFF4C8DFF),
       onPrimary: const Color(0xFFFFFFFF),
-      primaryContainer: const Color(0xFF1F3A66),
-      onPrimaryContainer: const Color(0xFFD9E4FF),
+      primaryContainer: const Color(0xFF9CBEFF),
+      onPrimaryContainer: const Color(0xFF0A2A5C),
       surfaceTint: const Color(0xFF4C8DFF),
     );
   }
@@ -340,7 +340,15 @@ abstract final class AppTheme {
     // Dark mode follows the neutral charcoal scale used by the Windows
     // reference: a near-black page, cards one step lighter. Surface roles are
     // pinned to neutral greys while the accent stays derived from the seed.
+    final Color container = Color.lerp(base.primary, Colors.white, 0.38)!;
+    final Color onContainer = Color.lerp(base.primary, Colors.black, 0.55)!;
     return base.copyWith(
+      primaryContainer: container,
+      onPrimaryContainer: onContainer,
+      secondaryContainer: Color.lerp(base.secondary, Colors.white, 0.34)!,
+      onSecondaryContainer: Color.lerp(base.secondary, Colors.black, 0.5)!,
+      tertiaryContainer: Color.lerp(base.tertiary, Colors.white, 0.34)!,
+      onTertiaryContainer: Color.lerp(base.tertiary, Colors.black, 0.5)!,
       surface: const Color(0xFF1B1B1D),
       surfaceContainerLowest: const Color(0xFF141416),
       surfaceContainerLow: const Color(0xFF262628),
