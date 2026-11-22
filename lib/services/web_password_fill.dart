@@ -216,6 +216,37 @@ abstract final class WebPasswordFill {
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') send(event.target);
   }, true);
+  const loginContext = (el) => {
+    if (!el || !el.matches) return false;
+    if (el.matches('input[type="password"]')) return true;
+    if (!el.matches('input[type="text"], input[type="email"], input:not([type])')) return false;
+    let node = el;
+    for (let depth = 0; depth < 8 && node; depth += 1, node = node.parentElement) {
+      try {
+        if (node.querySelector && node.querySelector('input[type="password"]')) return true;
+      } catch (e) {}
+    }
+    return false;
+  };
+  // The account picker should appear only when the user actually focuses a
+  // login field, never on page load.
+  const focusedInput = (event) => {
+    const path = event.composedPath ? event.composedPath() : [event.target];
+    for (const node of path) {
+      if (node && node.matches && node.matches('input')) return node;
+    }
+    return event.target;
+  };
+  document.addEventListener('focusin', (event) => {
+    const el = focusedInput(event);
+    if (!loginContext(el)) return;
+    const channel = bridge();
+    if (!channel) return;
+    channel.postMessage(JSON.stringify({
+      type: 'login-focus',
+      host: location.hostname.toLowerCase() + ':' + (location.port || (location.protocol === 'https:' ? '443' : '80'))
+    }));
+  }, true);
 })();
 ''';
 

@@ -288,7 +288,7 @@ device.primaryAddress + protocol + port + path
 - `lib/services/web_password_fill.dart`
 - `lib/pages/webview/widgets/web_password_dialogs.dart`
 - 按 **host:port** 隔离账号（同一 IP 不同端口不共享），同一 scope 可保存多个用户名
-- 每个服务有 `Service.passwordFillMode`（auto/ask/off）与 `Service.defaultCredentialUsername`：auto 直接填默认账号（未设置时用最近保存），ask 先弹账号选择，off 只保留手动入口
+- 每个服务有 `Service.passwordFillMode`（auto/ask/off）与 `Service.defaultCredentialUsername`：auto 直接填默认账号（未设置时用最近保存）；ask 不随页面加载弹窗，而是页面脚本在登录输入框获得焦点时发 `login-focus` 消息，由 `_promptFillOnFocus` 弹账号选择（每页最多一次，支持 shadow DOM composedPath）；off 只保留手动入口
 - 保存/删除按 username 精确到单个账号；HTTP Basic 自动尝试也优先默认账号，失败只删除被拒的那个账号
 - 自动填充只填空密码框，不自动提交
 - 保存必须用户确认；加密存 `flutter_secure_storage`

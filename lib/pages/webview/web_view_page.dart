@@ -76,6 +76,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   final Set<String> _blockedHosts = <String>{};
   bool _authDialogOpen = false;
   bool _passwordPromptOpen = false;
+  final Set<String> _loginFocusPrompts = <String>{};
   int _authAttempts = 0;
   String? _pageScope;
   bool _downloadPromptOpen = false;
@@ -323,6 +324,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       _error = null;
     });
     _authAttempts = 0;
+    _loginFocusPrompts.clear();
     await _syncNavigationState();
     await _installDownloadIframeHook();
     await _installPasswordHooks();
@@ -404,31 +406,15 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
             host: scope,
             realm: WebPasswordFill.webRealm,
           );
-      if (accounts.isEmpty || !mounted) {
+      if (mode != PasswordFillMode.auto || accounts.isEmpty || !mounted) {
         return;
       }
-      HttpCredential? saved;
-      if (mode == PasswordFillMode.auto) {
-        saved = _preferredAccount(
-          accounts,
-          service.defaultCredentialUsername,
-        );
-      } else {
-        if (_passwordPromptOpen) {
-          return;
-        }
-        _passwordPromptOpen = true;
-        final HttpCredential? chosen = await showCredentialPicker(
-          context,
-          credentials: accounts,
-          defaultUsername: service.defaultCredentialUsername,
-        );
-        _passwordPromptOpen = false;
-        if (!mounted || chosen == null) {
-          return;
-        }
-        saved = chosen;
-      }
+      // In ask mode the account picker is triggered by focusing a login
+      // field (see _promptFillOnFocus) instead of on every page load.
+      final HttpCredential? saved = _preferredAccount(
+        accounts,
+        service.defaultCredentialUsername,
+      );
       if (saved == null) {
         return;
       }
@@ -460,13 +446,79 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     return accounts.first;
   }
 
+  /// Pops the account picker when the user focuses a login field on a page
+  /// whose service is configured with [PasswordFillMode.ask]. Each page is
+  /// asked at most once; navigating to another page resets the guard.
+  Future<void> _promptFillOnFocus(String host) async {
+    final Service? current = _service;
+    if (!mounted || current == null || _passwordPromptOpen) {
+      return;
+    }
+    final Service service =
+        _repository?.serviceById(current.id) ?? current;
+    if (service.passwordFillMode != PasswordFillMode.ask) {
+      return;
+    }
+    if (_pageScope == null || _pageScope != host) {
+      return;
+    }
+    final String pageKey = '${service.id}|${_pageScope!}';
+    if (_loginFocusPrompts.contains(pageKey)) {
+      return;
+    }
+    try {
+      final List<HttpCredential> accounts = await HttpCredentialStore.instance
+          .accountsFor(
+            service.id,
+            host: host,
+            realm: WebPasswordFill.webRealm,
+          );
+      if (accounts.isEmpty || !mounted) {
+        return;
+      }
+      _loginFocusPrompts.add(pageKey);
+      _passwordPromptOpen = true;
+      final HttpCredential? chosen = await showCredentialPicker(
+        context,
+        credentials: accounts,
+        defaultUsername: service.defaultCredentialUsername,
+      );
+      _passwordPromptOpen = false;
+      if (!mounted || chosen == null) {
+        return;
+      }
+      final Map<String, Object?>? result = await _runWebJson(
+        WebPasswordFill.fillScript(
+          username: chosen.username,
+          password: chosen.password,
+        ),
+      );
+      if (!mounted) {
+        return;
+      }
+      if (result?['ok'] == true) {
+        showAppSnackBar(context, '已填充 ${chosen.username} 的登录信息');
+      }
+    } on Object {
+      _passwordPromptOpen = false;
+    }
+  }
+
   void _onPasswordBridgeMessage(JavaScriptMessage message) {
     try {
       final Object? decoded = jsonDecode(message.message);
       if (decoded is! Map) {
         return;
       }
-      if (decoded['type'] != 'credentials') {
+      final String? type = decoded['type'] as String?;
+      if (type == 'login-focus') {
+        final String host = (decoded['host'] as String? ?? '').trim();
+        if (host.isNotEmpty) {
+          unawaited(_promptFillOnFocus(host));
+        }
+        return;
+      }
+      if (type != 'credentials') {
         return;
       }
       final String username = (decoded['username'] as String? ?? '').trim();
