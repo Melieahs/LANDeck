@@ -57,6 +57,18 @@ add_subdirectory("runner")
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
+# webview_windows 0.4.0 still compiles with the legacy MSVC /await switch and
+# <experimental/coroutine>. MSVC 14.52 (Visual Studio 2026) turns that into a
+# hard error C2338 unless the deprecation is silenced explicitly.
+if(POLICY CMP0175)
+  cmake_policy(SET CMP0175 OLD)
+endif()
+if(TARGET webview_windows_plugin)
+  target_compile_definitions(webview_windows_plugin PRIVATE
+    _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+  target_compile_options(webview_windows_plugin PRIVATE /WX-)
+endif()
+
 
 # === Installation ===
 # Support files are copied into place next to the executable, so that it can
