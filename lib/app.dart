@@ -3,11 +3,13 @@ import 'package:material_ui/material_ui.dart';
 
 import 'core/app_scope.dart';
 import 'core/theme/app_colors.dart';
+import 'core/window/desktop_window.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'pages/main_shell.dart';
 import 'repositories/service_repository.dart';
 import 'routes/app_router.dart';
+import 'widgets/window_title_bar.dart';
 
 class LanDeckApp extends StatelessWidget {
   const LanDeckApp({super.key, required this.repository, this.themeController});
@@ -52,7 +54,16 @@ class LanDeckApp extends StatelessWidget {
                   builder: (BuildContext context, Widget? child) {
                     // Keep the small legacy palette in sync with the resolved theme.
                     AppColors.setBrightness(Theme.of(context).brightness);
-                    return child ?? const SizedBox.shrink();
+                    final Widget content = child ?? const SizedBox.shrink();
+                    if (!usesCustomWindowChrome) {
+                      return content;
+                    }
+                    return Column(
+                      children: <Widget>[
+                        const WindowTitleBar(),
+                        Expanded(child: content),
+                      ],
+                    );
                   },
                   home: const MainShell(),
                   onGenerateRoute: AppRouter.onGenerateRoute,

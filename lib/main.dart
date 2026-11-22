@@ -4,6 +4,7 @@ import 'app.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
+import 'core/window/desktop_window.dart';
 import 'data/database/app_database.dart';
 import 'repositories/service_repository.dart';
 import 'services/download_center.dart';
@@ -11,6 +12,11 @@ import 'native/plugin/imported_module_store.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await setupDesktopWindow();
+  } on Object catch (error) {
+    debugPrint('Desktop window setup failed: $error');
+  }
   try {
     final AppDatabase database = await AppDatabase.open();
     final LanDeckRepository repository = LanDeckRepository(database);
