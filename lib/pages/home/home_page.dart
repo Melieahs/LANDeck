@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../core/app_scope.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/ui/adaptive_layout.dart';
 import '../../core/utils/feedback.dart';
 import '../../models/device.dart';
 import '../../models/service.dart';
@@ -113,8 +114,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final LanDeckRepository repository = AppScope.of(context);
-    final List<Service> favorites = repository.favorites;
-    final List<Service> visible = repository.services;
+    final bool wide = AdaptiveLayout.usesSideNavigation(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -141,62 +141,124 @@ class _HomePageState extends State<HomePage> {
         child: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: kMaxAppWidth),
+            constraints: BoxConstraints(
+              maxWidth: wide
+                  ? AdaptiveLayout.wideHomeMaxWidth
+                  : kMaxAppWidth,
+            ),
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.page,
-                8,
-                AppSpacing.page,
-                120,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  HomeSearchField(
-                    controller: _searchController,
-                    onSubmitted: _submitSearch,
-                    onClear: _clearSearch,
-                  ),
-                  const SizedBox(height: 20),
-                  HomeHeader(
-                    serviceCount: repository.services.length,
-                    deviceCount: repository.devices.length,
-                    onOpenServices: _openServices,
-                    onOpenDevices: _openDevices,
-                  ),
-                  const SizedBox(height: 24),
-                  FavoritesSection(
-                    services: favorites,
-                    deviceNameFor: repository.deviceNameFor,
-                    onOpenService: _openService,
-                    onAddService: _handleAddService,
-                    onReorder: repository.reorderFavorites,
-                  ),
-                  const SizedBox(height: AppSpacing.sectionGap),
-                  DevicesSection(
-                    devices: repository.devices,
-                    serviceCountForDevice: (Device device) =>
-                        repository.serviceCountForDevice(device),
-                    onOpenDevice: _openDevice,
-                    onManage: _openDevices,
-                    onAddDevice: _handleAddDevice,
-                  ),
-                  const SizedBox(height: AppSpacing.sectionGap),
-                  AllServicesSection(
-                    services: visible,
-                    query: '',
-                    deviceNameFor: repository.deviceNameFor,
-                    onOpenService: _openService,
-                    onClearSearch: _clearSearch,
-                    onAddService: _handleAddService,
-                    onScan: widget.onOpenDiscover,
-                  ),
-                ],
-              ),
+              padding: wide
+                  ? const EdgeInsets.fromLTRB(28, 16, 28, 48)
+                  : const EdgeInsets.fromLTRB(
+                      AppSpacing.page,
+                      8,
+                      AppSpacing.page,
+                      120,
+                    ),
+              child: wide ? _buildWide(repository) : _buildCompact(repository),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCompact(LanDeckRepository repository) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _searchField(),
+        const SizedBox(height: 20),
+        _header(repository),
+        const SizedBox(height: 24),
+        _favorites(repository),
+        const SizedBox(height: AppSpacing.sectionGap),
+        _devices(repository),
+        const SizedBox(height: AppSpacing.sectionGap),
+        _services(repository),
+      ],
+    );
+  }
+
+  /// Tablet layout: favorites and devices in the left column, every service in
+  /// the right one, so the extra width is actually used.
+  Widget _buildWide(LanDeckRepository repository) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _searchField(),
+        const SizedBox(height: 20),
+        _header(repository),
+        const SizedBox(height: 26),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(
+              flex: 6,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  _favorites(repository),
+                  const SizedBox(height: AppSpacing.sectionGap),
+                  _devices(repository),
+                ],
+              ),
+            ),
+            const SizedBox(width: 32),
+            Expanded(flex: 5, child: _services(repository)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _searchField() {
+    return HomeSearchField(
+      controller: _searchController,
+      onSubmitted: _submitSearch,
+      onClear: _clearSearch,
+    );
+  }
+
+  Widget _header(LanDeckRepository repository) {
+    return HomeHeader(
+      serviceCount: repository.services.length,
+      deviceCount: repository.devices.length,
+      onOpenServices: _openServices,
+      onOpenDevices: _openDevices,
+    );
+  }
+
+  Widget _favorites(LanDeckRepository repository) {
+    return FavoritesSection(
+      services: repository.favorites,
+      deviceNameFor: repository.deviceNameFor,
+      onOpenService: _openService,
+      onAddService: _handleAddService,
+      onReorder: repository.reorderFavorites,
+    );
+  }
+
+  Widget _devices(LanDeckRepository repository) {
+    return DevicesSection(
+      devices: repository.devices,
+      serviceCountForDevice: (Device device) =>
+          repository.serviceCountForDevice(device),
+      onOpenDevice: _openDevice,
+      onManage: _openDevices,
+      onAddDevice: _handleAddDevice,
+    );
+  }
+
+  Widget _services(LanDeckRepository repository) {
+    return AllServicesSection(
+      services: repository.services,
+      query: '',
+      deviceNameFor: repository.deviceNameFor,
+      onOpenService: _openService,
+      onClearSearch: _clearSearch,
+      onAddService: _handleAddService,
+      onScan: widget.onOpenDiscover,
     );
   }
 }

@@ -20,12 +20,12 @@ LANDeck 是一个 Flutter 的局域网服务启动器：
 - UI 已统一为 **Material Design 3**，支持浅色/深色/跟随系统、Android Material You 动态取色。
 - 数据完全来自本地 Sembast，无账号、无云端、无 Demo 数据。
 - 服务以设备为中心：先建设备，再在设备下快速添加服务；设备地址变化时关联服务 URL 自动更新。
-- 已实现真实 WebView、HTTP Basic Auth、网页密码保存/自动填充、下载、上传、局域网两阶段发现、设备端口扫描、FTP 备份/恢复、原生模块双模式、声明式插件导入（Padavan 作为插件示例，不再内置），以及发现页的仓库插件源安装。
+- 已实现真实 WebView、HTTP Basic Auth、网页密码保存/自动填充、下载、上传、局域网两阶段发现、设备端口扫描、FTP 备份/恢复、原生模块双模式、声明式插件导入（Padavan 作为插件示例，不再内置），发现页的仓库插件源安装，以及平板（iPad）侧边栏与两列首页。
 
 当前验证结果：
 
 - `flutter analyze`：通过，`No issues found!`
-- `flutter test`：**83 个测试全部通过**
+- `flutter test`：**95 个测试全部通过**
 - Android release APK：`dist/LANDeck-0.9.3.apk`，58,748,385 字节（约 56 MB），
   SHA-256 `8881b49816bb22dbd46cea412efd1ba5307f7d76d7630160a22abb7c44c50396`
 - iOS：CI 生成 **unsigned IPA**（不能直接安装）；本轮 `d522c33` 的 CI run 见 §11。
@@ -342,6 +342,19 @@ lib/pages/settings/native_modules_page.dart
 examples/native-modules/index.json
 ```
 
+### 7.9 平板适配（iPad）
+
+- 入口仍是 `lib/app.dart` → `MainShell`（Material 3）；**iOS/Android 共用同一套 Material UI**。
+  `lib/ios/` 是停用的 Cupertino 实验，不要改它来做 iPad。
+- 断点：`lib/core/ui/adaptive_layout.dart` 的 `AdaptiveLayout.usesSideNavigation`
+  （宽 ≥ 700 且最短边 > 600）。iPad 竖屏 744pt 起触发；iPhone 横屏与 800×600 测试窗口保持紧凑布局。
+- 导航：`lib/pages/main_shell.dart` 宽屏用左侧 `NavigationRail`（extended，240pt 宽，含 LANDeck 品牌行），
+  隐藏底部导航栏；手机保持 `LanDeckNavBar`。
+- 首页：`lib/pages/home/home_page.dart` 宽屏切换为 `wideHomeMaxWidth = 1160`，
+  搜索框与统计行横跨两列，左列「收藏 + 设备」、右列「全部服务」。
+- 其余二级页面仍用 `kMaxAppWidth = 520` 居中，避免在平板上被拉成超长行。
+- 测试：`test/adaptive_layout_test.dart` 覆盖平板 rail/两列、手机底栏、横屏手机保持紧凑、rail 切 tab。
+
 ---
 
 ## 8. 构建 / 测试 / 运行
@@ -539,8 +552,8 @@ PS5 Web File Manager：`192.168.1.50:8888`。
 2. **检查 iOS CI `d522c33` 结果**，把 unsigned IPA 链接交给用户；不要在未验证时称“可安装”。
 3. **Android 0.9.3 冒烟**：安装 `dist/LANDeck-0.9.3.apk`，确认发现页插件源、导入插件列表、
    双模式开关、Padavan 插件入口不崩溃。
-4. **继续 iOS 功能补齐**：iPad 适配、原生分享/文件打开体验、发现页细节；
-   注意 iOS 仍复用 Material 3。
+4. **继续 iOS 功能补齐**：iPad 适配已实现（rail + 两列首页，待真机验收），
+   剩余原生分享/文件打开体验、发现页细节；注意 iOS 仍复用 Material 3。
 5. **目录上传**：若用户坚持 PS5 目录上传，需要研究 WKWebView/Android WebView 是否能在
    `onShowFileSelector` 之外保留相对路径；当前结论是做不到，需要明确告知限制，不能伪造。
 6. **FTP**：用真实 NAS 再测根目录/子目录/FTPS；当前只做配置备份恢复。
