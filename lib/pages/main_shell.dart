@@ -65,16 +65,24 @@ class _MainShellState extends State<MainShell> {
       );
     }
 
+    final ColorScheme colors = Theme.of(context).colorScheme;
+
     return Scaffold(
       body: SafeArea(
         right: false,
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            _MainRail(
-              currentIndex: _currentIndex,
-              onChanged: _selectTab,
+            // The rail sits on a distinct surface, like a desktop sidebar,
+            // instead of relying on a hairline divider.
+            Container(
+              width: AdaptiveLayout.railWidth,
+              color: colors.surfaceContainerLow,
+              child: _MainRail(
+                currentIndex: _currentIndex,
+                onChanged: _selectTab,
+              ),
             ),
-            const VerticalDivider(width: 1, thickness: 1),
             Expanded(child: _content()),
           ],
         ),
@@ -98,6 +106,7 @@ class _MainRail extends StatelessWidget {
       key: const ValueKey<String>('main-navigation-rail'),
       extended: true,
       minExtendedWidth: AdaptiveLayout.railWidth,
+      backgroundColor: Colors.transparent,
       groupAlignment: -1,
       selectedIndex: currentIndex,
       onDestinationSelected: onChanged,
