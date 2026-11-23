@@ -377,8 +377,10 @@ class _ServiceRow extends StatelessWidget {
         ? defaultMode
         : ServiceMode.web;
     return Material(
+      // A soft tint of the brand colour marks the active row without the
+      // violet cast that secondaryContainer gives in dark mode.
       color: selected
-          ? scheme.secondaryContainer.withValues(alpha: 0.55)
+          ? scheme.primary.withValues(alpha: 0.12)
           : Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(18)),
