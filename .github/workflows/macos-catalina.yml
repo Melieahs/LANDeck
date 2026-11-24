@@ -69,7 +69,13 @@ jobs:
       - name: Package app
         run: |
           cd build/macos/Build/Products/Release
-          ditto -c -k --keepParent landeck.app LANDeck-macos.zip
+          ls -la
+          app=$(ls -d *.app 2>/dev/null | head -1)
+          echo "app=$app"
+          if [ -z "$app" ]; then echo "no app produced"; exit 1; fi
+          du -sh "$app"
+          ls -la "$app/Contents/MacOS" || true
+          ditto -c -k --keepParent "$app" LANDeck-macos.zip
           ls -lh LANDeck-macos.zip
 
       - name: Upload build log
