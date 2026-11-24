@@ -7,7 +7,7 @@ import '../../models/service_mode.dart';
 import '../../native/native_module.dart';
 import '../../native/native_module_registry.dart';
 import '../../repositories/service_repository.dart';
-import '../webview/macos_web_view_page.dart';
+import '../webview/cef_web_view_page.dart';
 import '../webview/web_view_page.dart';
 import '../webview/windows_web_view_page.dart';
 import 'native_service_page.dart';
@@ -48,7 +48,7 @@ class ServiceViewerPage extends StatelessWidget {
       return WindowsWebViewPage(serviceId: service.id);
     }
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS) {
-      return MacosWebViewPage(serviceId: service.id);
+      return CefWebViewPage(serviceId: service.id);
     }
     return WebViewPage(serviceId: service.id);
   }

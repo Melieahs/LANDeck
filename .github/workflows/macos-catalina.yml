@@ -36,8 +36,18 @@ jobs:
       - name: Test
         run: flutter test
 
-      - name: Build macOS app
-        run: flutter build macos --release
+      - name: Build macOS app (x86_64, CEF 118)
+        env:
+          WEBVIEW_CEF_MACOS_ARCH: x86_64
+          CEF_WRAPPER_BUILD_TYPE: Release
+        run: |
+          flutter build macos --release --no-codesign --config-only
+          cd macos
+          pod install
+          xcodebuild -workspace Runner.xcworkspace -scheme Runner \
+            -configuration Release -arch x86_64 \
+            -derivedDataPath "$PWD/../build/macos" \
+            CODE_SIGNING_ALLOWED=NO build
 
       - name: Package app
         run: |

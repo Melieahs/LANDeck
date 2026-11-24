@@ -52,6 +52,7 @@ dependencies:
   http: ^1.2.2
   archive: ^3.6.1
   webview_windows: ^0.4.0
+  webview_cef: ^0.6.2
   window_manager: ^0.4.3
   package_info_plus: ^8.1.1
   flutter_inappwebview: ^6.1.5
@@ -114,3 +115,5 @@ dependency_overrides:
     path: packages/webview_windows
   flutter_inappwebview_macos:
     path: packages/flutter_inappwebview_macos
+  webview_cef:
+    path: packages/webview_cef
