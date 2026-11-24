@@ -65,6 +65,9 @@ Chromium off-screen and presents it inside a Flutter Texture.
     # via OnAcceleratedPaint instead of a software CPU buffer (OnPaint). The IME
     # and frame plumbing key off this define in the shared common/ sources.
     'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited) NDEBUG=1',
+    # The pod target itself links CEF (cef_bridge.o calls the C API), and
+    # CocoaPods does not add the renamed vendored framework here either.
+    'OTHER_LDFLAGS' => '$(inherited) -framework "ChromiumEmbeddedFramework"',
   }
   # The app target links the CEF framework/wrapper too, so it must drop the same
   # architecture or its slice fails to link.
