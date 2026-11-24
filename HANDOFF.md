@@ -423,6 +423,17 @@ examples/native-modules/index.json
   推到 `ci-logs/macos` 分支，artifact 为 `LANDeck-macos-10.15`（未签名 zip）。
 - 本地构建：用 `/home/cyu/development/flutter-3.24.5/bin/flutter`（Dart 3.5.4）；main 用
   `/home/cyu/development/flutter`（3.50）。改 macOS 相关代码后先跑 `flutter analyze` + `flutter test`。
+- 构建必须把 `WEBVIEW_CEF_MACOS_ARCH=x86_64` 传给 **每一个**会触发 pod install / prepare_command
+  的步骤（`flutter build --config-only`、`pod install`、`xcodebuild` 的 env 都要）。漏一处，
+  pod 里的 `download_cef.sh` 会按 host（arm64）重新准备 CEF，链接阶段 x86_64 找不到 arm64 的
+  `libcef_dll_wrapper.a` / framework 二进制（表现为 `found architecture 'arm64', required 'x86_64'`）。
+- 打包步骤不能写死 `landeck.app`：`flutter build --config-only` 会留下一个空壳，`xcodebuild` 的
+  真实产物在 `build/macos/Build/Products/Release/`；用 `ls -d *.app` 取实际产物并检查
+  `Contents/MacOS` 再 `ditto`，否则会得到 345 字节的空 zip。
+- 链接：CocoaPods 不会为改名后的 vendored framework 自动加 `-framework`，podspec 的
+  `pod_target_xcconfig` 与 `user_target_xcconfig` 都要显式写
+  `OTHER_LDFLAGS = $(inherited) -framework "ChromiumEmbeddedFramework"`（pod 自己的 dylib
+  与 app 都要链 CEF）。
 - 已知差异：两个 SDK 的 Material 默认渲染存在细微差别；本分支的 WebView 下载不带会话 Cookie；
   `LANDeck-macos-10.15` 未签名，首次运行需右键打开或 `xattr -dr com.apple.quarantine`。
 
