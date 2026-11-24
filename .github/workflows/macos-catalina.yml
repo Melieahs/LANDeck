@@ -10,12 +10,12 @@ on:
 
 concurrency:
   group: macos-catalina-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: macos-15
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,12 +29,6 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
-
-      - name: Analyze
-        run: flutter analyze
-
-      - name: Test
-        run: flutter test
 
       - name: Show build resources
         run: |
@@ -61,7 +55,6 @@ jobs:
           ls -la macos/Flutter/ephemeral/.symlinks/plugins/webview_cef/macos/third/cef >> build-macos.log 2>&1
           flutter build macos --release --config-only 2>&1 | tee -a build-macos.log
           cd macos
-          pod install 2>&1 | tee -a ../build-macos.log
           xcodebuild -workspace Runner.xcworkspace -scheme Runner \
             -configuration Release -arch x86_64 \
             -derivedDataPath "$PWD/../build/macos" \
@@ -99,3 +92,25 @@ jobs:
           path: build/macos/Build/Products/Release/LANDeck-macos.zip
           if-no-files-found: error
           retention-days: 14
+
+  test:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter 3.24
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: stable
+          cache: true
+
+      - name: Analyze
+        run: |
+          flutter pub get
+          flutter analyze
+
+      - name: Test
+        run: flutter test
