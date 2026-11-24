@@ -82,6 +82,27 @@ class _MacosWebViewPageState extends State<MacosWebViewPage> {
     return '已加载 · ${_currentUrl ?? service.url} · $probe';
   }
 
+  Future<void> _injectRenderProbe(InAppWebViewController controller) async {
+    try {
+      await controller.evaluateJavascript(
+        source: r'''
+        (function () {
+          try {
+            var host = document.body || document.documentElement;
+            if (!host) { return; }
+            var probe = document.createElement('div');
+            probe.textContent = 'RENDER OK';
+            probe.style.cssText = 'position:fixed;top:8px;right:8px;z-index:2147483647;' +
+              'background:#d32f2f;color:#fff;font:13px system-ui;padding:6px 10px;' +
+              'border-radius:6px;pointer-events:none';
+            host.appendChild(probe);
+          } catch (e) {}
+        })();
+        ''',
+      );
+    } catch (_) {}
+  }
+
   Future<void> _probeDom(InAppWebViewController controller) async {
     try {
       final result = await controller.evaluateJavascript(
@@ -89,11 +110,15 @@ class _MacosWebViewPageState extends State<MacosWebViewPage> {
         (function () {
           try {
             var b = document.body;
-            if (!b) { return 'nobody ready=' + document.readyState; }
-            var text = (b.innerText || '').length;
-            var bg = getComputedStyle(b).backgroundColor;
-            return 'ready=' + document.readyState + ' len=' + text +
-              ' w=' + window.innerWidth + ' h=' + window.innerHeight + ' bg=' + bg;
+            var doc = document.documentElement;
+            var html = doc ? (doc.outerHTML || '').length : -1;
+            var text = b ? (b.innerText || '').length : -1;
+            return 'ready=' + document.readyState +
+              ' loc=' + location.href +
+              ' title=' + (document.title || '') +
+              ' html=' + html + ' len=' + text +
+              ' scripts=' + document.scripts.length +
+              ' w=' + window.innerWidth + ' h=' + window.innerHeight;
           } catch (e) { return 'ERR ' + e; }
         })();
         ''',
@@ -250,6 +275,7 @@ class _MacosWebViewPageState extends State<MacosWebViewPage> {
                 });
                 await _syncHistory(controller);
                 await _probeDom(controller);
+                await _injectRenderProbe(controller);
                 await _autoFillSavedLogin(controller);
               },
               onProgressChanged: (
