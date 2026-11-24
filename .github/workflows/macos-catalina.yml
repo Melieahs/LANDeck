@@ -52,8 +52,9 @@ jobs:
           bash packages/webview_cef/macos/scripts/download_cef.sh 2>&1 | tee build-macos.log
           ls -la packages/webview_cef/macos/third/cef >> build-macos.log 2>&1
           ls -la packages/webview_cef/macos/third/cef/ChromiumEmbeddedFramework.framework >> build-macos.log 2>&1
-          ls -la macos/Flutter/ephemeral/.symlinks/plugins/webview_cef/macos/third/cef >> build-macos.log 2>&1
+          ls -la macos/Flutter/ephemeral/.symlinks/plugins/webview_cef/macos/third/cef >> build-macos.log 2>&1 || true
           flutter build macos --release --config-only 2>&1 | tee -a build-macos.log
+          ls -la macos/Flutter/ephemeral/.symlinks/plugins/webview_cef/macos/third/cef >> build-macos.log 2>&1 || true
           cd macos
           xcodebuild -workspace Runner.xcworkspace -scheme Runner \
             -configuration Release -arch x86_64 \
