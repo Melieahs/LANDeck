@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -65,6 +64,22 @@ class _MacosWebViewPageState extends State<MacosWebViewPage> {
     }
   }
 
+  String _statusLabel(Service service) {
+    if (_hasError) {
+      return '加载失败：${_error ?? '未知错误'}';
+    }
+    if (_loading) {
+      return _progress > 0 ? '加载中 ${(_progress * 100).round()}%' : '正在初始化 WebView';
+    }
+    if (_timedOut) {
+      return '加载超时';
+    }
+    return '已加载 · ${_currentUrl ?? service.url}';
+  }
+
+  // Kept for the password bridge; re-enable with initialUserScripts once the
+  // platform view renders on macOS.
+  // ignore: unused_element
   String get _bridgeShim =>
       'window.LandeckPasswordBridge = { postMessage: function (m) { '
       'window.flutter_inappwebview.callHandler("LandeckPasswordBridge", m); } };';
@@ -110,7 +125,7 @@ class _MacosWebViewPageState extends State<MacosWebViewPage> {
             ),
             const SizedBox(height: 1),
             Text(
-              service.address,
+              _statusLabel(service),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -153,14 +168,6 @@ class _MacosWebViewPageState extends State<MacosWebViewPage> {
         children: <Widget>[
           InAppWebView(
             initialUrlRequest: URLRequest(url: WebUri(service.url)),
-            initialUserScripts: UnmodifiableListView<UserScript>(
-              <UserScript>[
-                UserScript(
-                  source: '$_bridgeShim\n${WebPasswordFill.hookScript}',
-                  injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
-                ),
-              ],
-            ),
             initialSettings: InAppWebViewSettings(
               javaScriptEnabled: true,
               transparentBackground: false,
