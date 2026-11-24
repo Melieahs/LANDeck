@@ -166,94 +166,96 @@ class _MacosWebViewPageState extends State<MacosWebViewPage> {
       body: Stack(
         fit: StackFit.expand,
         children: <Widget>[
-          InAppWebView(
-            initialUrlRequest: URLRequest(url: WebUri(service.url)),
-            initialSettings: InAppWebViewSettings(
-              javaScriptEnabled: true,
-              transparentBackground: false,
-            ),
-            onWebViewCreated: (InAppWebViewController controller) {
-              _controller = controller;
-              controller.addJavaScriptHandler(
-                handlerName: 'LandeckPasswordBridge',
-                callback: (List<dynamic> args) {
-                  if (args.isNotEmpty) {
-                    _onBridgeMessage(args.first.toString());
+          Positioned.fill(
+            child: InAppWebView(
+              initialUrlRequest: URLRequest(url: WebUri(service.url)),
+              initialSettings: InAppWebViewSettings(
+                javaScriptEnabled: true,
+                transparentBackground: false,
+              ),
+              onWebViewCreated: (InAppWebViewController controller) {
+                _controller = controller;
+                controller.addJavaScriptHandler(
+                  handlerName: 'LandeckPasswordBridge',
+                  callback: (List<dynamic> args) {
+                    if (args.isNotEmpty) {
+                      _onBridgeMessage(args.first.toString());
+                    }
+                    return null;
+                  },
+                );
+              },
+              onLoadStart: (
+                InAppWebViewController controller,
+                WebUri? url,
+              ) {
+                _watchdog?.cancel();
+                _watchdog = Timer(const Duration(seconds: 10), () {
+                  if (mounted && _loading && !_hasError) {
+                    setState(() => _timedOut = true);
                   }
-                  return null;
-                },
-              );
-            },
-            onLoadStart: (
-              InAppWebViewController controller,
-              WebUri? url,
-            ) {
-              _watchdog?.cancel();
-              _watchdog = Timer(const Duration(seconds: 10), () {
-                if (mounted && _loading && !_hasError) {
-                  setState(() => _timedOut = true);
+                });
+                setState(() {
+                  _loading = true;
+                  _hasError = false;
+                  _timedOut = false;
+                  _error = null;
+                  _loginFocusPrompts.clear();
+                });
+              },
+              onLoadStop: (
+                InAppWebViewController controller,
+                WebUri? url,
+              ) async {
+                _watchdog?.cancel();
+                setState(() {
+                  _loading = false;
+                  _timedOut = false;
+                  _currentUrl = url?.toString();
+                });
+                await _syncHistory(controller);
+                await _autoFillSavedLogin(controller);
+              },
+              onProgressChanged: (
+                InAppWebViewController controller,
+                int progress,
+              ) {
+                setState(() => _progress = progress / 100);
+              },
+              onReceivedError: (
+                InAppWebViewController controller,
+                WebResourceRequest request,
+                WebResourceError error,
+              ) {
+                if (request.isForMainFrame != true) {
+                  return;
                 }
-              });
-              setState(() {
-                _loading = true;
-                _hasError = false;
-                _timedOut = false;
-                _error = null;
-                _loginFocusPrompts.clear();
-              });
-            },
-            onLoadStop: (
-              InAppWebViewController controller,
-              WebUri? url,
-            ) async {
-              _watchdog?.cancel();
-              setState(() {
-                _loading = false;
-                _timedOut = false;
-                _currentUrl = url?.toString();
-              });
-              await _syncHistory(controller);
-              await _autoFillSavedLogin(controller);
-            },
-            onProgressChanged: (
-              InAppWebViewController controller,
-              int progress,
-            ) {
-              setState(() => _progress = progress / 100);
-            },
-            onReceivedError: (
-              InAppWebViewController controller,
-              WebResourceRequest request,
-              WebResourceError error,
-            ) {
-              if (request.isForMainFrame != true) {
-                return;
-              }
-              _watchdog?.cancel();
-              setState(() {
-                _loading = false;
-                _hasError = true;
-                _timedOut = false;
-                _error = error.description;
-              });
-            },
-            onUpdateVisitedHistory: (
-              InAppWebViewController controller,
-              WebUri? url,
-              bool? isReload,
-            ) async {
-              setState(() => _currentUrl = url?.toString());
-              await _syncHistory(controller);
-            },
-            onReceivedHttpAuthRequest: (
-              InAppWebViewController controller,
-              URLAuthenticationChallenge challenge,
-            ) async {
-              if (challenge is! HttpAuthenticationChallenge) {
-                return HttpAuthResponse(action: HttpAuthResponseAction.CANCEL);
-              }
-              return _onBasicAuthChallenge(challenge);
-            },
+                _watchdog?.cancel();
+                setState(() {
+                  _loading = false;
+                  _hasError = true;
+                  _timedOut = false;
+                  _error = error.description;
+                });
+              },
+              onUpdateVisitedHistory: (
+                InAppWebViewController controller,
+                WebUri? url,
+                bool? isReload,
+              ) async {
+                setState(() => _currentUrl = url?.toString());
+                await _syncHistory(controller);
+              },
+              onReceivedHttpAuthRequest: (
+                InAppWebViewController controller,
+                URLAuthenticationChallenge challenge,
+              ) async {
+                if (challenge is! HttpAuthenticationChallenge) {
+                  return HttpAuthResponse(action: HttpAuthResponseAction.CANCEL);
+                }
+                return _onBasicAuthChallenge(challenge);
+              },
+            ),
           ),
           if (_loading && _progress > 0 && _progress < 1)
             Positioned(
