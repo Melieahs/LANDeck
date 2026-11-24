@@ -40,6 +40,7 @@ class _MacosWebViewPageState extends State<MacosWebViewPage> {
 
   bool _loading = true;
   double _progress = 0;
+  String? _domProbe;
   bool _hasError = false;
   bool _timedOut = false;
   String? _error;
@@ -74,7 +75,35 @@ class _MacosWebViewPageState extends State<MacosWebViewPage> {
     if (_timedOut) {
       return '加载超时';
     }
-    return '已加载 · ${_currentUrl ?? service.url}';
+    final probe = _domProbe;
+    if (probe == null) {
+      return '已加载 · ${_currentUrl ?? service.url} · 探测中';
+    }
+    return '已加载 · ${_currentUrl ?? service.url} · $probe';
+  }
+
+  Future<void> _probeDom(InAppWebViewController controller) async {
+    try {
+      final result = await controller.evaluateJavascript(
+        source: r'''
+        (function () {
+          try {
+            var b = document.body;
+            if (!b) { return 'nobody ready=' + document.readyState; }
+            var text = (b.innerText || '').length;
+            var bg = getComputedStyle(b).backgroundColor;
+            return 'ready=' + document.readyState + ' len=' + text +
+              ' w=' + window.innerWidth + ' h=' + window.innerHeight + ' bg=' + bg;
+          } catch (e) { return 'ERR ' + e; }
+        })();
+        ''',
+      );
+      if (!mounted) return;
+      setState(() => _domProbe = result?.toString() ?? 'empty');
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _domProbe = 'probe failed: $error');
+    }
   }
 
   // Kept for the password bridge; re-enable with initialUserScripts once the
@@ -166,6 +195,12 @@ class _MacosWebViewPageState extends State<MacosWebViewPage> {
       body: Stack(
         fit: StackFit.expand,
         children: <Widget>[
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SizedBox(height: 3, child: ColoredBox(color: Color(0xFFFF0000))),
+          ),
           Positioned.fill(
             child: InAppWebView(
               initialUrlRequest: URLRequest(url: WebUri(service.url)),
@@ -214,6 +249,7 @@ class _MacosWebViewPageState extends State<MacosWebViewPage> {
                   _currentUrl = url?.toString();
                 });
                 await _syncHistory(controller);
+                await _probeDom(controller);
                 await _autoFillSavedLogin(controller);
               },
               onProgressChanged: (
