@@ -83,7 +83,7 @@ bool WebviewHandler::OnProcessMessageReceived(
 	    }
 
         onJavaScriptChannelMessage(
-            fun_name,param,stringpatch::to_string(js_callback_id), browser->GetIdentifier(), frame->GetIdentifier().ToString(),
+            fun_name,param,stringpatch::to_string(js_callback_id), browser->GetIdentifier(), stringpatch::to_string(frame->GetIdentifier()),
             frame->GetURL().ToString(), frame->IsMain());
     }
     else if(message_name == kEvaluateCallbackMessage){
@@ -168,7 +168,6 @@ void WebviewHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
 
 bool WebviewHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser,
                                   CefRefPtr<CefFrame> frame,
-                                  int popup_id,
                                   const CefString& target_url,
                                   const CefString& target_frame_name,
                                   WindowOpenDisposition target_disposition,
@@ -689,7 +688,15 @@ void WebviewHandler::sendJavaScriptChannelCallBack(const bool error, const std::
         //
         // CefFrame::GetIdentifier() returns a string identifier in current CEF
         // (since CEF 122) on every platform, which is what frameId carries.
-        CefRefPtr<CefFrame> frame = bit->second.browser->GetFrameByIdentifier(frameId);
+        CefRefPtr<CefFrame> frame;
+        try {
+            frame = bit->second.browser->GetFrame(std::stoll(frameId));
+        } catch (...) {
+            frame = nullptr;
+        }
+        if (!frame) {
+            frame = bit->second.browser->GetMainFrame();
+        }
         if (frame)
         {
             frame->SendProcessMessage(PID_RENDERER, message);
@@ -765,36 +772,11 @@ void WebviewHandler::OnPaint(CefRefPtr<CefBrowser> browser, CefRenderHandler::Pa
 }
 
 void WebviewHandler::OnAcceleratedPaint(CefRefPtr<CefBrowser> browser, CefRenderHandler::PaintElementType type,
-                            const CefRenderHandler::RectList &dirtyRects, const CefAcceleratedPaintInfo &info) {
-#ifdef WEBVIEW_CEF_GPU_TEXTURE
-    if (!browser->IsPopup() && onAcceleratedPaintCallback != nullptr) {
-        received_accelerated_frame_ = true;
-        int w = 0, h = 0;
-        auto it = browser_map_.find(browser->GetIdentifier());
-        if (it != browser_map_.end()) {
-            w = it->second.width;
-            h = it->second.height;
-            // A produced frame means the browser is render/input-ready. With
-            // external_begin_frame a SetFocus issued right after creation can be
-            // dropped (the browser wasn't ready yet), which left the webview
-            // unable to receive keyboard input until the window was re-focused.
-            // Re-apply the requested focus once, now that frames are flowing.
-            if (it->second.wants_focus && !it->second.focus_reasserted) {
-                it->second.focus_reasserted = true;
-                it->second.browser->GetHost()->SetFocus(true);
-            }
-        }
-        // The shared texture is pool-owned and only valid for the duration of
-        // this callback. On Windows it is a HANDLE (open with
-        // ID3D11Device1::OpenSharedResource1); on macOS it is an IOSurfaceRef.
-        // The platform renderer wraps/copies it before returning.
-#ifdef __APPLE__
-        const void* sharedTexture = reinterpret_cast<const void*>(info.shared_texture_io_surface);
-#else
-        const void* sharedTexture = reinterpret_cast<const void*>(info.shared_texture_handle);
-#endif
-        onAcceleratedPaintCallback(browser->GetIdentifier(), sharedTexture,
-                                   w, h, static_cast<int>(info.format));
-    }
-#endif
+                            const CefRenderHandler::RectList &dirtyRects, void *sharedHandle) {
+    // CEF 118 only raises this on Windows and macOS has no shared-texture path
+    // in that release; the software OnPaint callback above drives the frame.
+    (void)browser;
+    (void)type;
+    (void)dirtyRects;
+    (void)sharedHandle;
 }

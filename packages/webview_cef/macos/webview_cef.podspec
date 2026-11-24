@@ -64,7 +64,7 @@ Chromium off-screen and presents it inside a Flutter Texture.
     # Zero-copy GPU rendering: CEF delivers frames as a shared-texture IOSurface
     # via OnAcceleratedPaint instead of a software CPU buffer (OnPaint). The IME
     # and frame plumbing key off this define in the shared common/ sources.
-    'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited) WEBVIEW_CEF_GPU_TEXTURE=1',
+    'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited)',
   }
   # The app target links the CEF framework/wrapper too, so it must drop the same
   # architecture or its slice fails to link.
