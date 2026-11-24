@@ -15,7 +15,7 @@ concurrency:
 jobs:
   build:
     runs-on: macos-15
-    timeout-minutes: 40
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,13 +41,33 @@ jobs:
           WEBVIEW_CEF_MACOS_ARCH: x86_64
           CEF_WRAPPER_BUILD_TYPE: Release
         run: |
-          flutter build macos --release --no-codesign --config-only
+          set -o pipefail
+          flutter build macos --release --no-codesign --config-only 2>&1 | tee build-macos.log
           cd macos
-          pod install
+          pod install 2>&1 | tee -a ../build-macos.log
           xcodebuild -workspace Runner.xcworkspace -scheme Runner \
             -configuration Release -arch x86_64 \
             -derivedDataPath "$PWD/../build/macos" \
-            CODE_SIGNING_ALLOWED=NO build
+            CODE_SIGNING_ALLOWED=NO build 2>&1 | tee -a ../build-macos.log
+          cd ..
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build-log
+          path: build-macos.log
+          if-no-files-found: ignore
+
+      - name: Publish build log
+        if: failure()
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          blob=$(git hash-object -w build-macos.log)
+          tree=$(printf '100644 blob %s\tmacos-build.log\n' "$blob" | git mktree)
+          commit=$(git commit-tree "$tree" -m "macos build log ${GITHUB_SHA}")
+          git push -f origin "$commit:refs/heads/ci-logs/macos"
 
       - name: Package app
         run: |
