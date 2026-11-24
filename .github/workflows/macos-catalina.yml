@@ -52,11 +52,17 @@ jobs:
           ls -la packages/webview_cef/macos/third/cef >> build-macos.log 2>&1 || true
 
       - name: Flutter config only
+        env:
+          WEBVIEW_CEF_MACOS_ARCH: x86_64
+          CEF_WRAPPER_BUILD_TYPE: Release
         run: |
           set -euo pipefail
           flutter build macos --release --config-only 2>&1 | tee -a build-macos.log
 
       - name: Pod install
+        env:
+          WEBVIEW_CEF_MACOS_ARCH: x86_64
+          CEF_WRAPPER_BUILD_TYPE: Release
         run: |
           set -euo pipefail
           cd macos
