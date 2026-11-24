@@ -42,25 +42,35 @@ jobs:
           path: packages/webview_cef/macos/third/cef
           key: cef-118.7.1-macos-x86_64-release-v2
 
-      - name: Build macOS app (x86_64, CEF 118)
+      - name: Prepare CEF 118
         env:
           WEBVIEW_CEF_MACOS_ARCH: x86_64
           CEF_WRAPPER_BUILD_TYPE: Release
         run: |
-          set -o pipefail
-          echo "==> preparing CEF 118"
+          echo "sha=$GITHUB_SHA"
           bash packages/webview_cef/macos/scripts/download_cef.sh 2>&1 | tee build-macos.log
-          ls -la packages/webview_cef/macos/third/cef >> build-macos.log 2>&1
-          ls -la packages/webview_cef/macos/third/cef/ChromiumEmbeddedFramework.framework >> build-macos.log 2>&1
-          ls -la macos/Flutter/ephemeral/.symlinks/plugins/webview_cef/macos/third/cef >> build-macos.log 2>&1 || true
-          flutter build macos --release --config-only 2>&1 | tee -a build-macos.log
-          ls -la macos/Flutter/ephemeral/.symlinks/plugins/webview_cef/macos/third/cef >> build-macos.log 2>&1 || true
+          ls -la packages/webview_cef/macos/third/cef >> build-macos.log 2>&1 || true
+
+      - name: Flutter config only
+        run: flutter build macos --release --config-only 2>&1 | tee -a build-macos.log
+
+      - name: Pod install
+        run: cd macos && pod install 2>&1 | tee -a ../build-macos.log
+
+      - name: Xcode build
+        run: |
           cd macos
           xcodebuild -workspace Runner.xcworkspace -scheme Runner \
             -configuration Release -arch x86_64 \
             -derivedDataPath "$PWD/../build/macos" \
             CODE_SIGNING_ALLOWED=NO build 2>&1 | tee -a ../build-macos.log
           cd ..
+
+      - name: Package app
+        run: |
+          cd build/macos/Build/Products/Release
+          ditto -c -k --keepParent landeck.app LANDeck-macos.zip
+          ls -lh LANDeck-macos.zip
 
       - name: Upload build log
         if: always()
@@ -79,12 +89,6 @@ jobs:
           tree=$(printf '100644 blob %s\tmacos-build.log\n' "$blob" | git mktree)
           commit=$(git commit-tree "$tree" -m "macos build log ${GITHUB_SHA}")
           git push -f origin "$commit:refs/heads/ci-logs/macos"
-
-      - name: Package app
-        run: |
-          cd build/macos/Build/Products/Release
-          ditto -c -k --keepParent landeck.app LANDeck-macos.zip
-          ls -lh LANDeck-macos.zip
 
       - name: Upload macOS app
         uses: actions/upload-artifact@v4
