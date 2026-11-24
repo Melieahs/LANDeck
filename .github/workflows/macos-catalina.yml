@@ -67,7 +67,7 @@ jobs:
           set -euo pipefail
           cd macos
           xcodebuild -workspace Runner.xcworkspace -scheme Runner \
-            -configuration Release -arch x86_64 \
+            -configuration Release ARCHS=x86_64 EXCLUDED_ARCHS= \
             -derivedDataPath "$PWD/../build/macos" \
             CODE_SIGNING_ALLOWED=NO build 2>&1 | tee -a ../build-macos.log
           cd ..
