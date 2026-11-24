@@ -399,11 +399,32 @@ examples/native-modules/index.json
     Dart 3.5 不允许重复 `_` 通配参数，写成 `__` / `___`。
   - `webview_flutter` 4.10 没有 `WebViewCookieManager.getCookies`，下载请求暂时不带 WebView 会话 Cookie。
 - macOS 平台：`flutter create --platforms=macos` 生成 `macos/`；`Release/DebugProfile.entitlements` 加
-  `com.apple.security.network.client`（沙盒内允许出站网络）。
-- CI：`.github/workflows/macos-catalina.yml`（`macos-14` + Flutter 3.24.5，analyze/test/
-  `flutter build macos --release`，artifact `LANDeck-macos-10.15`）。
-- 已知差异：两个 SDK 的 Material 默认渲染存在细微差别；本分支的 WebView 下载不带会话 Cookie。
-  改 UI 时先在 3.24.5 上 `flutter analyze` + `flutter test`，再提交。
+  `com.apple.security.network.client`（沙盒内允许出站网络）；`macos/Runner/Info.plist` 加
+  `NSAppTransportSecurity → NSAllowsLocalNetworking`（局域网明文 http 需要）。
+- WebView 内核：Catalina 上的系统 WebKit 太老（JS 引擎执行不了现代 SPA，页面白屏），所以
+  `feature/macos-catalina` 使用 fork 的 `packages/webview_cef/`（来自 webview_cef 0.6.2，锁定
+  **CEF 118.7.1**，`third/download.cmake` 的 `CEF_VERSION`，podspec `s.platform = :osx, '10.15'`）。
+  `lib/pages/webview/cef_web_view_page.dart` 用 `WebviewManager` + `WebViewController`
+  （Texture 渲染），顶栏与移动端一致，支持后退/前进/刷新/切换服务/更多菜单；下载、密码填充、
+  HTTP Basic 尚未接入 CEF（提示“未开放”）。
+- fork 的 CEF 适配点（CEF 149 → 118，勿丢）：`webview_handler` 的 `OnBeforePopup` 去掉 `popup_id`、
+  `OnAcceleratedPaint` 改 `void* sharedHandle` 空实现（118 的 macOS 无 GPU 加速绘制，走 CPU `OnPaint`，
+  podspec 去掉 `WEBVIEW_CEF_GPU_TEXTURE`）；`GetIdentifier()` 是 int64（用 `stringpatch::to_string`）；
+  没有 `GetFrameByIdentifier`，用 `GetFrame(stoll(id))` + main frame 兜底；helper 与 pod 源码都加
+  `NDEBUG`（Release wrapper 的 `~RefCountedThreadSafeBase` 只在该宏下定义），helper 加
+  `-DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -mmacosx-version-min=10.15`；framework 目录改名
+  `ChromiumEmbeddedFramework.framework`（CocoaPods 生成的 `-framework` 不加引号，带空格会断），
+  并在 framework 根加同名符号链接指向二进制（ld 按 `<Bundle>.framework/<Bundle>` 查找）。
+- CI：`.github/workflows/macos-catalina.yml`（`macos-15` + Flutter 3.24.5）。`build` 与 `test` 拆成两个
+  job（单 job 曾整段被取消），`concurrency.cancel-in-progress: false`；构建走
+  `flutter build macos --release --config-only` → `pod install` → `xcodebuild -arch x86_64
+  CODE_SIGNING_ALLOWED=NO`（runner 是 arm64，产物要 x86_64），`actions/cache` 缓存
+  `packages/webview_cef/macos/third/cef`（key 含 CEF 版本与架构）；失败时把 `build-macos.log`
+  推到 `ci-logs/macos` 分支，artifact 为 `LANDeck-macos-10.15`（未签名 zip）。
+- 本地构建：用 `/home/cyu/development/flutter-3.24.5/bin/flutter`（Dart 3.5.4）；main 用
+  `/home/cyu/development/flutter`（3.50）。改 macOS 相关代码后先跑 `flutter analyze` + `flutter test`。
+- 已知差异：两个 SDK 的 Material 默认渲染存在细微差别；本分支的 WebView 下载不带会话 Cookie；
+  `LANDeck-macos-10.15` 未签名，首次运行需右键打开或 `xattr -dr com.apple.quarantine`。
 
 ---
 
