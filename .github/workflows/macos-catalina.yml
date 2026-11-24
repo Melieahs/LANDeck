@@ -52,13 +52,19 @@ jobs:
           ls -la packages/webview_cef/macos/third/cef >> build-macos.log 2>&1 || true
 
       - name: Flutter config only
-        run: flutter build macos --release --config-only 2>&1 | tee -a build-macos.log
+        run: |
+          set -euo pipefail
+          flutter build macos --release --config-only 2>&1 | tee -a build-macos.log
 
       - name: Pod install
-        run: cd macos && pod install 2>&1 | tee -a ../build-macos.log
+        run: |
+          set -euo pipefail
+          cd macos
+          pod install 2>&1 | tee -a ../build-macos.log
 
       - name: Xcode build
         run: |
+          set -euo pipefail
           cd macos
           xcodebuild -workspace Runner.xcworkspace -scheme Runner \
             -configuration Release -arch x86_64 \
@@ -68,6 +74,7 @@ jobs:
 
       - name: Package app
         run: |
+          set -euo pipefail
           cd build/macos/Build/Products/Release
           ls -la
           app=$(ls -d *.app 2>/dev/null | head -1)
