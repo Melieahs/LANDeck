@@ -42,7 +42,9 @@ class _MacosWebViewPageState extends State<MacosWebViewPage> {
   bool _loading = true;
   double _progress = 0;
   bool _hasError = false;
+  bool _timedOut = false;
   String? _error;
+  Timer? _watchdog;
   bool _canGoBack = false;
   bool _canGoForward = false;
   String? _currentUrl;
@@ -66,6 +68,12 @@ class _MacosWebViewPageState extends State<MacosWebViewPage> {
   String get _bridgeShim =>
       'window.LandeckPasswordBridge = { postMessage: function (m) { '
       'window.flutter_inappwebview.callHandler("LandeckPasswordBridge", m); } };';
+
+  @override
+  void dispose() {
+    _watchdog?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -173,9 +181,16 @@ class _MacosWebViewPageState extends State<MacosWebViewPage> {
               InAppWebViewController controller,
               WebUri? url,
             ) {
+              _watchdog?.cancel();
+              _watchdog = Timer(const Duration(seconds: 10), () {
+                if (mounted && _loading && !_hasError) {
+                  setState(() => _timedOut = true);
+                }
+              });
               setState(() {
                 _loading = true;
                 _hasError = false;
+                _timedOut = false;
                 _error = null;
                 _loginFocusPrompts.clear();
               });
@@ -184,8 +199,10 @@ class _MacosWebViewPageState extends State<MacosWebViewPage> {
               InAppWebViewController controller,
               WebUri? url,
             ) async {
+              _watchdog?.cancel();
               setState(() {
                 _loading = false;
+                _timedOut = false;
                 _currentUrl = url?.toString();
               });
               await _syncHistory(controller);
@@ -205,9 +222,11 @@ class _MacosWebViewPageState extends State<MacosWebViewPage> {
               if (request.isForMainFrame != true) {
                 return;
               }
+              _watchdog?.cancel();
               setState(() {
                 _loading = false;
                 _hasError = true;
+                _timedOut = false;
                 _error = error.description;
               });
             },
@@ -235,6 +254,51 @@ class _MacosWebViewPageState extends State<MacosWebViewPage> {
               right: 0,
               top: 0,
               child: LinearProgressIndicator(value: _progress, minHeight: 2),
+            ),
+          if (_loading && _progress == 0 && !_hasError)
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: CircularProgressIndicator(strokeWidth: 3),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    '正在打开 ${service.url}',
+                    style: TextStyle(color: scheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+          if (_timedOut)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 16,
+              child: Material(
+                color: scheme.errorContainer,
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          '页面加载超时，可能是网络或系统安全策略限制。',
+                          style: TextStyle(color: scheme.onErrorContainer),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _retry,
+                        child: const Text('重试'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           if (_hasError)
             Positioned.fill(
