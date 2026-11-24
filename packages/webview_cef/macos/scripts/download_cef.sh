@@ -128,7 +128,7 @@ for arch in "${ARCHS[@]}"; do
   cmake -S "${WORK}/${pkg}" -B "${WORK}/${pkg}/build" -G "${GENERATOR}" \
     -DPROJECT_ARCH="${arch}" -DCMAKE_OSX_ARCHITECTURES="${arch}" \
     -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
-    -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 >/dev/null
+    -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 >/dev/null
   ( cd "${WORK}/${pkg}/build" && "${BUILD_TOOL[@]}" >/dev/null )
   [ -f "${WORK}/${pkg}/build/libcef_dll_wrapper/libcef_dll_wrapper.a" ] \
     || err "libcef_dll_wrapper.a was not produced for ${arch}"
@@ -208,7 +208,7 @@ arch_flags=()
 for arch in "${ARCHS[@]}"; do
   arch_flags+=(-arch "${arch}")
 done
-clang++ -std=c++20 -stdlib=libc++ -mmacosx-version-min=12.0 -w \
+clang++ -std=c++20 -stdlib=libc++ -mmacosx-version-min=10.15 -DNDEBUG -w \
   "${arch_flags[@]}" \
   -I "${DEST}" -I "${REPO_ROOT}/common" \
   "${MACOS_DIR}/helper/cef_helper_main.mm" \
