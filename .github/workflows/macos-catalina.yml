@@ -42,7 +42,7 @@ jobs:
           CEF_WRAPPER_BUILD_TYPE: Release
         run: |
           set -o pipefail
-          flutter build macos --release --no-codesign --config-only 2>&1 | tee build-macos.log
+          flutter build macos --release --config-only 2>&1 | tee build-macos.log
           cd macos
           pod install 2>&1 | tee -a ../build-macos.log
           xcodebuild -workspace Runner.xcworkspace -scheme Runner \
