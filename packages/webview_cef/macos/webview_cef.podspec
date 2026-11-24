@@ -68,6 +68,11 @@ Chromium off-screen and presents it inside a Flutter Texture.
   }
   # The app target links the CEF framework/wrapper too, so it must drop the same
   # architecture or its slice fails to link.
-  s.user_target_xcconfig = { "EXCLUDED_ARCHS[sdk=macosx*]" => excluded_archs }
+  s.user_target_xcconfig = {
+    "EXCLUDED_ARCHS[sdk=macosx*]" => excluded_archs,
+    # CocoaPods does not reliably turn the renamed bundle into `-framework`;
+    # link it explicitly so the CEF C API stays available to the app target.
+    "OTHER_LDFLAGS" => '$(inherited) -framework "ChromiumEmbeddedFramework"',
+  }
   s.swift_version = '5.0'
 end

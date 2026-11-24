@@ -66,6 +66,8 @@ jobs:
         run: |
           set -euo pipefail
           cd macos
+          echo "==> linker flags"
+          grep -i "OTHER_LDFLAGS" "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig" | tee -a ../build-macos.log || true
           xcodebuild -workspace Runner.xcworkspace -scheme Runner \
             -configuration Release ARCHS=x86_64 EXCLUDED_ARCHS= \
             -derivedDataPath "$PWD/../build/macos" \
