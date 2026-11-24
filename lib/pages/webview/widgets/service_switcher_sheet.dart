@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import '../../../models/service.dart';
 import '../../../models/service_mode.dart';
@@ -340,7 +340,7 @@ class _DragHandle extends StatelessWidget {
       width: 32,
       height: 4,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.4),
+        color: color.withOpacity(0.4),
         borderRadius: BorderRadius.circular(2),
       ),
     );
@@ -380,7 +380,7 @@ class _ServiceRow extends StatelessWidget {
       // A soft tint of the brand colour marks the active row without the
       // violet cast that secondaryContainer gives in dark mode.
       color: selected
-          ? scheme.primary.withValues(alpha: 0.12)
+          ? scheme.primary.withOpacity(0.12)
           : Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(18)),

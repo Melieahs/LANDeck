@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import '../../models/service.dart';
 import '../native_module.dart';

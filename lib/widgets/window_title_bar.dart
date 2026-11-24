@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
 /// Material 3 window title bar used on Windows in place of the system caption.
@@ -161,7 +161,7 @@ class _WindowActionButtonState extends State<_WindowActionButton> {
     final Color background = _hovered
         ? (widget.danger
               ? colors.error
-              : colors.onSurface.withValues(alpha: 0.08))
+              : colors.onSurface.withOpacity(0.08))
         : Colors.transparent;
     final Color foreground = _hovered && widget.danger
         ? colors.onError

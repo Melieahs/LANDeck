@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import '../../../models/device.dart';
 import '../../../widgets/section_header.dart';
@@ -75,7 +75,7 @@ class _DevicesSectionState extends State<DevicesSection> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.only(right: 4),
               itemCount: visible.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (BuildContext context, int index) {
                 final Device device = visible[index];
                 return SizedBox(

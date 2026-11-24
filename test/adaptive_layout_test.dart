@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:landeck/app.dart';
 import 'package:landeck/repositories/service_repository.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import 'test_helpers.dart';
 
@@ -85,6 +85,7 @@ void main() {
     expect(find.byType(NavigationBar), findsNothing);
     expect(find.text('收藏'), findsOneWidget);
     expect(find.text('全部服务'), findsOneWidget);
+    debugDefaultTargetPlatformOverride = null;
   });
 
   testWidgets('narrow desktop windows fall back to one column', (
@@ -103,6 +104,7 @@ void main() {
     final double favoritesLeft = tester.getTopLeft(find.text('收藏')).dx;
     final double servicesLeft = tester.getTopLeft(find.text('全部服务')).dx;
     expect(servicesLeft, moreOrLessEquals(favoritesLeft, epsilon: 1));
+    debugDefaultTargetPlatformOverride = null;
   });
 
   testWidgets('the rail switches tabs on a tablet', (WidgetTester tester) async {

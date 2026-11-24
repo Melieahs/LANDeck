@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import '../../../models/service.dart';
 import '../../../widgets/service_icon.dart';
@@ -210,7 +210,7 @@ class _MoreActionsSheet extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 11,
-                    color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                    color: scheme.onSurfaceVariant.withOpacity(0.8),
                   ),
                 ),
               ],
@@ -233,7 +233,7 @@ class _DragHandle extends StatelessWidget {
       width: 32,
       height: 4,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.4),
+        color: color.withOpacity(0.4),
         borderRadius: BorderRadius.circular(2),
       ),
     );
@@ -307,7 +307,7 @@ class _ActionRow extends StatelessWidget {
                   Icon(
                     Icons.chevron_right_rounded,
                     size: 20,
-                    color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                    color: scheme.onSurfaceVariant.withOpacity(0.7),
                   ),
             ],
           ),
@@ -485,7 +485,7 @@ class _PageInfoSheet extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     height: 1.5,
-                    color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                    color: scheme.onSurfaceVariant.withOpacity(0.8),
                   ),
                 ),
               ],
@@ -514,7 +514,7 @@ class _InfoRow extends StatelessWidget {
             ? null
             : Border(
                 bottom: BorderSide(
-                  color: scheme.outlineVariant.withValues(alpha: 0.5),
+                  color: scheme.outlineVariant.withOpacity(0.5),
                   width: 1,
                 ),
               ),

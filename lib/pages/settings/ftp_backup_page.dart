@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import '../../core/app_scope.dart';
 import '../../core/theme/app_spacing.dart';
@@ -248,7 +248,7 @@ class _FtpBackupPageState extends State<FtpBackupPage> {
                       flex: 3,
                       child: DropdownButtonFormField<FtpSecurity>(
                         key: const ValueKey<String>('ftp-security'),
-                        initialValue: _security,
+                        value: _security,
                         decoration: const InputDecoration(labelText: '连接方式'),
                         items: FtpSecurity.values
                             .map(

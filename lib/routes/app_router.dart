@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import '../models/device_category.dart';
 import '../pages/category/category_page.dart';

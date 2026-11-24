@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:landeck/app.dart';
 import 'package:landeck/models/service.dart';
 import 'package:landeck/repositories/service_repository.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import 'test_helpers.dart';
 

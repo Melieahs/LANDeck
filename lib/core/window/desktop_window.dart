@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
 /// The window chrome is only replaced on Windows: the custom Material title

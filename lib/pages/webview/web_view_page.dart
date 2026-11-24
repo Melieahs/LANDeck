@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
@@ -1849,7 +1849,7 @@ class _ProgressPaint extends StatelessWidget {
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: Theme.of(context).colorScheme.primary
-                .withValues(alpha: 0.55),
+                .withOpacity(0.55),
             blurRadius: 6,
           ),
         ],

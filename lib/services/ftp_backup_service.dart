@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -14,9 +15,9 @@ extension FtpSecurityLabel on FtpSecurity {
   };
 
   SecurityType get native => switch (this) {
-    FtpSecurity.ftp => SecurityType.ftp,
-    FtpSecurity.ftpes => SecurityType.ftpes,
-    FtpSecurity.ftps => SecurityType.ftps,
+    FtpSecurity.ftp => SecurityType.FTP,
+    FtpSecurity.ftpes => SecurityType.FTPES,
+    FtpSecurity.ftps => SecurityType.FTPS,
   };
 }
 
@@ -153,26 +154,47 @@ class FtpBackupService {
       utf8.encode(const JsonEncoder.withIndent('  ').convert(snapshot)),
     );
     await _withClient<void>(config, (FTPConnect client) async {
-      final bool uploaded = await client.uploadData(
-        bytes,
-        config.fileName.trim(),
+      final File temp = File(
+        '${Directory.systemTemp.path}/landeck-ftp-'
+        '${DateTime.now().microsecondsSinceEpoch}.json',
       );
-      if (!uploaded) {
-        throw const FtpBackupException('FTP 服务器没有接受备份文件');
+      try {
+        await temp.writeAsBytes(bytes, flush: true);
+        final bool uploaded = await client.uploadFile(temp, sRemoteName: config.fileName.trim());
+        if (!uploaded) {
+          throw const FtpBackupException('FTP 服务器没有接受备份文件');
+        }
+      } finally {
+        if (await temp.exists()) {
+          await temp.delete();
+        }
       }
     });
   }
 
   Future<Map<String, Object?>> downloadBackup(FtpConfig config) async {
     return _withClient<Map<String, Object?>>(config, (FTPConnect client) async {
-      final Uint8List bytes = await client.downloadToBytes(
-        config.fileName.trim(),
+      final File temp = File(
+        '${Directory.systemTemp.path}/landeck-ftp-'
+        '${DateTime.now().microsecondsSinceEpoch}.json',
       );
-      final Object? decoded = jsonDecode(utf8.decode(bytes));
-      if (decoded is! Map) {
-        throw const FtpBackupException('备份文件不是有效的 JSON 对象');
+      try {
+        final bool downloaded =
+            await client.downloadFile(config.fileName.trim(), temp);
+        if (!downloaded || !await temp.exists()) {
+          throw const FtpBackupException('无法下载 FTP 备份文件');
+        }
+        final Uint8List bytes = await temp.readAsBytes();
+        final Object? decoded = jsonDecode(utf8.decode(bytes));
+        if (decoded is! Map) {
+          throw const FtpBackupException('备份文件不是有效的 JSON 对象');
+        }
+        return Map<String, Object?>.from(decoded);
+      } finally {
+        if (await temp.exists()) {
+          await temp.delete();
+        }
       }
-      return Map<String, Object?>.from(decoded);
     });
   }
 

@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:landeck/models/service.dart';
 import 'package:landeck/native/native_module_registry.dart';
 import 'package:landeck/native/plugin/imported_module_store.dart';
@@ -170,7 +170,7 @@ function wanlink_dns() { return '10.0.0.1';}
     });
     final Archive archive = Archive()
       ..addFile(ArchiveFile.string('module/plugin.json', jsonEncode(sample)));
-    final Uint8List zip = ZipEncoder().encodeBytes(archive);
+    final Uint8List zip = ZipEncoder().encode(archive) as Uint8List;
     final ImportedPluginStore store = ImportedPluginStore(directory: dir);
     final ImportedNativeModule preview = await store.previewBytes(zip, fileName: 'demo.zip');
     expect(preview.id, 'plugin.demo-status');

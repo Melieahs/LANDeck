@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import '../../data/database/app_database.dart';
 
@@ -135,7 +135,7 @@ class ThemeController extends ChangeNotifier {
     if (color == null) {
       await _database?.writeSetting(seedColorKey, '');
     } else {
-      await _database?.writeSetting(seedColorKey, color.toARGB32().toString());
+      await _database?.writeSetting(seedColorKey, color.value.toString());
     }
   }
 

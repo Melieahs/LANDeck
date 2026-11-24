@@ -1,0 +1,54 @@
+name: macOS 10.15 build
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [feature/macos-catalina]
+  workflow_dispatch:
+
+concurrency:
+  group: macos-catalina-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter 3.24
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.5'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Build macOS app
+        run: flutter build macos --release
+
+      - name: Package app
+        run: |
+          cd build/macos/Build/Products/Release
+          ditto -c -k --keepParent landeck.app LANDeck-macos.zip
+          ls -lh LANDeck-macos.zip
+
+      - name: Upload macOS app
+        uses: actions/upload-artifact@v4
+        with:
+          name: LANDeck-macos-10.15
+          path: build/macos/Build/Products/Release/LANDeck-macos.zip
+          if-no-files-found: error
+          retention-days: 14

@@ -45,7 +45,7 @@ class DownloadProbe {
       ..connectionTimeout = timeout
       ..idleTimeout = const Duration(seconds: 2)
       ..userAgent = headers['User-Agent'];
-    client.badCertificateCallback = (_, _, _) => _isPrivateHost(uri.host);
+    client.badCertificateCallback = (_, __, ___) => _isPrivateHost(uri.host);
     try {
       final _ProbeHeaders? head = await _request(client, uri, method: 'HEAD');
       _ProbeHeaders? response = head;

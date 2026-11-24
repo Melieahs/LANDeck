@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'plugin_manifest.dart';
@@ -149,7 +149,8 @@ class ImportedPluginStore {
     if (manifest == null) {
       throw const PluginManifestException('插件包缺少 plugin.json');
     }
-    final Uint8List? content = manifest.readBytes();
+    final List<int>? raw = manifest.content;
+    final Uint8List? content = raw == null ? null : Uint8List.fromList(raw);
     if (content == null) {
       throw const PluginManifestException('无法读取插件清单');
     }

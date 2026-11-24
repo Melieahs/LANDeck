@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 /// Lightweight, non-blocking feedback used across Phase 1 placeholder actions.
 void showAppSnackBar(BuildContext context, String message) {

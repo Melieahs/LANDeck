@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 /// Material 3 theme for LANDeck.
 ///
@@ -109,7 +109,7 @@ abstract final class AppTheme {
       ),
       // Cards are flat tonal containers: white on the tinted light page and
       // one step above the dark page. No elevation shadow, no outline.
-      cardTheme: CardThemeData(
+      cardTheme: CardTheme(
         color: isLight ? _lightCard(scheme) : scheme.surfaceContainerLow,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -221,13 +221,13 @@ abstract final class AppTheme {
         backgroundColor: scheme.surfaceContainerLow,
         surfaceTintColor: Colors.transparent,
         modalBackgroundColor: scheme.surfaceContainerLow,
-        modalBarrierColor: scheme.scrim.withValues(alpha: 0.42),
+        modalBarrierColor: scheme.scrim.withOpacity(0.42),
         showDragHandle: false,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
       ),
-      dialogTheme: DialogThemeData(
+      dialogTheme: DialogTheme(
         backgroundColor: scheme.surfaceContainerHigh,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
@@ -263,10 +263,10 @@ abstract final class AppTheme {
       ),
       pageTransitionsTheme: PageTransitionsTheme(
         builders: <TargetPlatform, PageTransitionsBuilder>{
-          TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
-          TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
-          TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
-          TargetPlatform.macOS: FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.android: _FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.linux: _FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.windows: _FadeForwardsPageTransitionsBuilder(),
+          TargetPlatform.macOS: _FadeForwardsPageTransitionsBuilder(),
         },
       ),
     );
@@ -307,12 +307,12 @@ abstract final class AppTheme {
   /// primary colour, so a blue theme gets a blue-white card and a green theme
   /// gets a green-white card.
   static Color _lightCard(ColorScheme scheme) =>
-      Color.alphaBlend(scheme.primary.withValues(alpha: 0.12), Colors.white);
+      Color.alphaBlend(scheme.primary.withOpacity(0.12), Colors.white);
 
   /// Slightly deepened page tint: white cards get a little more separation
   /// than the raw surfaceContainerLow without turning the page grey.
   static Color _lightPage(ColorScheme scheme) => Color.alphaBlend(
-    scheme.onSurface.withValues(alpha: 0.09),
+    scheme.onSurface.withOpacity(0.09),
     scheme.surfaceContainerLow,
   );
 
@@ -375,4 +375,34 @@ abstract final class AppTheme {
     outline: const Color(0xFF6A6A70),
     outlineVariant: const Color(0xFF2A2A2D),
   );
+}
+
+/// Flutter 3.27 added [FadeForwardsPageTransitionsBuilder]; this keeps the
+/// same fade-through-slide feel on the 3.24 SDK used by the Catalina build.
+class _FadeForwardsPageTransitionsBuilder extends PageTransitionsBuilder {
+  const _FadeForwardsPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final CurvedAnimation curve = CurvedAnimation(
+      parent: animation,
+      curve: Curves.fastOutSlowIn,
+    );
+    return FadeTransition(
+      opacity: curve,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0.08, 0),
+          end: Offset.zero,
+        ).animate(curve),
+        child: child,
+      ),
+    );
+  }
 }

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import '../../core/app_scope.dart';
 import '../../core/utils/feedback.dart';

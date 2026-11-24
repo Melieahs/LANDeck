@@ -4,7 +4,7 @@ import 'package:landeck/core/theme/theme_controller.dart';
 import 'package:landeck/models/device.dart';
 import 'package:landeck/models/service.dart';
 import 'package:landeck/repositories/service_repository.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import 'test_helpers.dart';
 

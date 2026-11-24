@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import '../../core/app_scope.dart';
 import '../../core/theme/app_spacing.dart';
@@ -56,7 +56,7 @@ class ServicesPage extends StatelessWidget {
                 : ListView.separated(
                     padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
                     itemCount: services.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (BuildContext context, int index) {
                       final Service service = services[index];
                       return Card.outlined(

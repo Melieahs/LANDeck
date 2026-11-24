@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import '../../core/app_scope.dart';
 import '../../core/theme/app_spacing.dart';
@@ -57,7 +57,7 @@ class DevicesPage extends StatelessWidget {
                       100,
                     ),
                     itemCount: devices.length + 1,
-                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (BuildContext context, int index) {
                       if (index == 0) {
                         return Padding(

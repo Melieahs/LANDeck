@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import '../core/ui/adaptive_layout.dart';
 import '../widgets/bottom_nav_bar.dart';

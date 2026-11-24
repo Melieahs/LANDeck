@@ -7,7 +7,7 @@ import 'package:landeck/native/plugin/imported_module_store.dart';
 import 'package:landeck/native/plugin/plugin_catalog.dart';
 import 'package:landeck/native/plugin/plugin_manifest.dart';
 import 'package:landeck/pages/discover/plugin_market_section.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 class _FakeStore extends ImportedPluginStore {
   @override

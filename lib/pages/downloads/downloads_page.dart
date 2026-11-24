@@ -1,5 +1,5 @@
 import 'package:flutter/services.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import '../../core/app_scope.dart';
 import '../../core/utils/feedback.dart';
@@ -49,7 +49,7 @@ class DownloadsPage extends StatelessWidget {
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
             itemCount: tasks.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
             itemBuilder: (BuildContext context, int index) {
               return _DownloadTile(
                 key: ValueKey<String>('download-task-${tasks[index].id}'),
@@ -370,7 +370,7 @@ class _StatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(

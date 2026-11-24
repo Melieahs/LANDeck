@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import '../../core/app_scope.dart';
 import '../../core/theme/app_spacing.dart';
@@ -426,7 +426,7 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
                       key: ValueKey<String>(
                         'service-device-field-${_deviceId ?? 'none'}-${repository.devices.length}',
                       ),
-                      initialValue: _deviceId ?? _noneValue,
+                      value: _deviceId ?? _noneValue,
                       decoration: const InputDecoration(labelText: '所属设备'),
                       items: <DropdownMenuItem<String>>[
                         const DropdownMenuItem<String>(
@@ -599,7 +599,7 @@ class _ServiceEditorPageState extends State<ServiceEditorPage> {
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     key: const ValueKey<String>('service-category-field'),
-                    initialValue: _category?.name ?? _noneValue,
+                    value: _category?.name ?? _noneValue,
                     decoration: const InputDecoration(labelText: '服务分类'),
                     items: <DropdownMenuItem<String>>[
                       const DropdownMenuItem<String>(
@@ -990,7 +990,7 @@ class _SavedCredentialsCard extends StatelessWidget {
               else
                 DropdownButtonFormField<String>(
                   key: const ValueKey<String>('default-credential-select'),
-                  initialValue: selectedDefault ?? '',
+                  value: selectedDefault ?? '',
                   decoration: const InputDecoration(
                     isDense: true,
                     border: OutlineInputBorder(),
@@ -1176,7 +1176,7 @@ class _NativeModuleCard extends StatelessWidget {
             ),
             DropdownButtonFormField<String>(
               key: const ValueKey<String>('service-native-module-field'),
-              initialValue: selected,
+              value: selected,
               decoration: const InputDecoration(labelText: '原生模块'),
               items: <DropdownMenuItem<String>>[
                 const DropdownMenuItem<String>(

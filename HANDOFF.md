@@ -381,6 +381,30 @@ examples/native-modules/index.json
 - CI：`.github/workflows/windows.yml` 在 `windows-latest` 跑 analyze/test + `flutter build windows --release`，
   artifact `LANDeck-windows-x64`。
 
+### 7.11 macOS（10.15 Catalina 分支）
+
+- 分支：`feature/macos-catalina`。main 要求 Flutter 3.50（macOS 最低 12.0），本分支改用
+  **Flutter 3.24.5 / Dart 3.5.4**，`macos/Runner.xcodeproj` 的 `MACOSX_DEPLOYMENT_TARGET = 10.15`，
+  这样 2015–2019 年的 Catalina 机器也能运行。
+- 与 main 的代码差异（两边不自动同步，合并前先看本节）：
+  - 依赖回到 2024-11 版本：`webview_flutter` 4.10、`permission_handler` 11.3、`network_info_plus` 6.1、
+    `file_picker` 8.1、`share_plus` 10.1、`archive` 3.6、`ftpconnect` 2.0.7、`file_picker` 8、
+    `flutter_secure_storage` 9.2、`window_manager` 0.4、`package_info_plus` 8.1；
+    `dynamic_color` **精确锁 1.7.0**（1.9.0 用了 3.27+ 的 `toARGB32`）。
+  - 移除 `material_ui` / `cupertino_ui`，全部 import 改回 `package:flutter/material.dart`。
+  - API 回迁：`withValues(alpha:)`→`withOpacity()`、`CardThemeData`→`CardTheme`、`DialogThemeData`→`DialogTheme`、
+    `color.toARGB32()`→`color.value`、`ArchiveFile.readBytes()`→`content`、`DropdownButtonFormField.initialValue`→`value`、
+    `FilePicker.pickFile`→`FilePicker.platform.pickFiles`、`SharePlus.instance.share`→`Share.shareXFiles`；
+    `FadeForwardsPageTransitionsBuilder` 在 3.24 不存在，用私有 `_FadeForwardsPageTransitionsBuilder` 近似；
+    Dart 3.5 不允许重复 `_` 通配参数，写成 `__` / `___`。
+  - `webview_flutter` 4.10 没有 `WebViewCookieManager.getCookies`，下载请求暂时不带 WebView 会话 Cookie。
+- macOS 平台：`flutter create --platforms=macos` 生成 `macos/`；`Release/DebugProfile.entitlements` 加
+  `com.apple.security.network.client`（沙盒内允许出站网络）。
+- CI：`.github/workflows/macos-catalina.yml`（`macos-14` + Flutter 3.24.5，analyze/test/
+  `flutter build macos --release`，artifact `LANDeck-macos-10.15`）。
+- 已知差异：两个 SDK 的 Material 默认渲染存在细微差别；本分支的 WebView 下载不带会话 Cookie。
+  改 UI 时先在 3.24.5 上 `flutter analyze` + `flutter test`，再提交。
+
 ---
 
 ## 8. 构建 / 测试 / 运行

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -43,12 +43,10 @@ class _StoragePageState extends State<StoragePage> {
       if (!mounted) {
         return;
       }
-      await SharePlus.instance.share(
-        ShareParams(
-          title: 'LANDeck 配置备份',
-          text: '设备与服务配置备份（不含密码和下载记录）',
-          files: <XFile>[XFile(file.path, mimeType: 'application/json')],
-        ),
+      await Share.shareXFiles(
+        <XFile>[XFile(file.path, mimeType: 'application/json')],
+        subject: 'LANDeck 配置备份',
+        text: '设备与服务配置备份（不含密码和下载记录）',
       );
       if (mounted) {
         showAppSnackBar(context, '备份已生成：${file.path.split('/').last}');
@@ -71,11 +69,12 @@ class _StoragePageState extends State<StoragePage> {
     final LanDeckRepository repository = AppScope.of(context);
     final PlatformFile? picked;
     try {
-      picked = await FilePicker.pickFile(
+      final FilePickerResult? result = await FilePicker.platform.pickFiles(
         dialogTitle: '选择 LANDeck 备份',
         type: FileType.custom,
         allowedExtensions: <String>['json'],
       );
+      picked = result?.files.single;
     } on Object catch (error) {
       if (mounted) {
         showAppSnackBar(context, '无法打开文件选择器：$error');
@@ -108,7 +107,7 @@ class _StoragePageState extends State<StoragePage> {
     }
     setState(() => _busy = true);
     try {
-      final String content = utf8.decode(await picked.readAsBytes());
+      final String content = utf8.decode(picked.bytes!);
       final Object? decoded = jsonDecode(content);
       if (decoded is! Map) {
         throw const FormatException('备份内容不是 JSON 对象');

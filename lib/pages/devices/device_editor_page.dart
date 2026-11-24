@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import '../../core/app_scope.dart';
 import '../../core/theme/app_spacing.dart';
@@ -186,7 +186,7 @@ class _DeviceEditorPageState extends State<DeviceEditorPage> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<DeviceType>(
-                    initialValue: _type,
+                    value: _type,
                     decoration: const InputDecoration(labelText: '设备类型'),
                     items: DeviceType.values
                         .map(

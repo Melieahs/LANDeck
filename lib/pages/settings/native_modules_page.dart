@@ -1,5 +1,5 @@
 import 'package:file_picker/file_picker.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import '../../core/utils/feedback.dart';
 import '../../native/native_module.dart';
@@ -27,10 +27,11 @@ class _NativeModulesPageState extends State<NativeModulesPage> {
     }
     final PlatformFile? picked;
     try {
-      picked = await FilePicker.pickFile(
+      final FilePickerResult? result = await FilePicker.platform.pickFiles(
         dialogTitle: '选择模块插件（.json / .zip）',
         type: FileType.any,
       );
+      picked = result?.files.single;
     } on Object catch (error) {
       if (mounted) {
         showAppSnackBar(context, '无法打开文件选择器：$error');

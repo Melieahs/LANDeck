@@ -10,7 +10,7 @@ import 'package:landeck/pages/services/service_editor_page.dart';
 import 'package:landeck/pages/service/service_viewer_page.dart';
 import 'package:landeck/pages/webview/widgets/service_switcher_sheet.dart';
 import 'package:landeck/repositories/service_repository.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 import 'test_helpers.dart';
 

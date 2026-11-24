@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 
 /// Compact action button for the web viewer top bar.
 ///
@@ -28,7 +28,7 @@ class WebViewBarAction extends StatelessWidget {
       child: Material(
         color: enabled
             ? scheme.surfaceContainerHighest
-            : scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+            : scheme.surfaceContainerHighest.withOpacity(0.4),
         shape: const CircleBorder(),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -42,7 +42,7 @@ class WebViewBarAction extends StatelessWidget {
               size: 20,
               color: enabled
                   ? scheme.onSurface
-                  : scheme.onSurfaceVariant.withValues(alpha: 0.4),
+                  : scheme.onSurfaceVariant.withOpacity(0.4),
             ),
           ),
         ),

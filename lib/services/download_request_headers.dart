@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:webview_flutter/webview_flutter.dart';
-
 import '../models/http_credential.dart';
 import '../models/service.dart';
 import 'http_credential_store.dart';
@@ -26,17 +24,9 @@ class DownloadRequestHeaders {
     final Uri? uri = Uri.tryParse(url);
     final String host = _normalizeHost(uri?.host ?? '');
 
-    try {
-      final List<WebViewCookie> cookies = await WebViewCookieManager()
-          .getCookies(domain: uri ?? Uri.parse(service.url));
-      if (cookies.isNotEmpty) {
-        headers['Cookie'] = cookies
-            .map((WebViewCookie cookie) => '${cookie.name}=${cookie.value}')
-            .join('; ');
-      }
-    } on Object {
-      // Cookies are best effort; the download can still work anonymously.
-    }
+    // webview_flutter 4.10 (used by the Catalina build) has no cookie read
+    // API. Downloads still work, just without the WebView session cookies;
+    // the current SDK build keeps the full behaviour.
 
     HttpCredential? credential = sessionCredential;
     if (credential == null || !credential.matches(host, credential.realm)) {

@@ -37,9 +37,10 @@
 
 ## 技术栈
 
-- Flutter 3.50.0 / Dart 3.14.0
-- Material 3（`material_ui`）
-- `webview_flutter` 4.14.1
+- Flutter 3.50.0 / Dart 3.14.0（main）。`feature/macos-catalina` 分支为支持 macOS 10.15，
+  改用 Flutter 3.24.5 / Dart 3.5.4，依赖与少量 API 有回迁差异，见 [HANDOFF.md](HANDOFF.md) 7.11
+- Material 3（`material_ui`；Catalina 分支用 `package:flutter/material.dart`）
+- `webview_flutter` 4.14.1（Catalina 分支 4.10.0）
 - `dynamic_color` 2.1.0（Material You 动态取色）
 - `flutter_secure_storage` 11.2.0（Android Keystore + AES-GCM）
 - `sembast` 3.10.1 + `sembast_web` 2.4.7

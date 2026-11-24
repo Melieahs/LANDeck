@@ -13,9 +13,7 @@ class HttpCredentialStore {
   HttpCredentialStore({FlutterSecureStorage? storage})
     : _storage =
           storage ??
-          const FlutterSecureStorage(
-            aOptions: AndroidOptions(storageNamespace: 'landeck_http_auth'),
-          );
+          const FlutterSecureStorage();
 
   static final HttpCredentialStore instance = HttpCredentialStore();
 
