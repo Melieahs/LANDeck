@@ -93,7 +93,7 @@ WANT="${CEF_VERSION}_${ARCH_TAG}_${BUILD_TYPE}"
 if [ -f "${STAMP}" ] && [ "$(cat "${STAMP}" 2>/dev/null)" = "${WANT}" ] \
    && [ -f "${DEST}/libcef_dll_wrapper.a" ] \
    && [ -f "${DEST}/cef_helper" ] \
-   && [ -e "${DEST}/Chromium Embedded Framework.framework/Resources/Info.plist" ] \
+   && [ -e "${DEST}/ChromiumEmbeddedFramework.framework/Resources/Info.plist" ] \
    && [ -f "${DEST}/include/cef_version.h" ]; then
   echo "CEF ${WANT} already prepared in ${DEST} — nothing to do."
   exit 0
@@ -137,7 +137,7 @@ done
 PRIMARY="${WORK}/$(cef_package "${ARCHS[0]}")"
 
 echo "==> Installing into ${DEST}"
-rm -rf "${DEST}/include" "${DEST}/Chromium Embedded Framework.framework" \
+rm -rf "${DEST}/include" "${DEST}/ChromiumEmbeddedFramework.framework" "${DEST}/Chromium Embedded Framework.framework" \
        "${DEST}/libcef_dll_wrapper.a" "${DEST}/cef_helper" "${STAMP}"
 mkdir -p "${DEST}"
 # Headers are identical across the per-arch distributions.
@@ -157,7 +157,7 @@ verify_archs "${DEST}/libcef_dll_wrapper.a"
 # (locales, .pak/.dat blobs) are architecture independent, so they are taken from
 # the primary distribution; the Mach-O parts and the V8 snapshot are merged.
 FW_SRC="${PRIMARY}/Release/Chromium Embedded Framework.framework"
-FW_DST="${DEST}/Chromium Embedded Framework.framework"
+FW_DST="${DEST}/ChromiumEmbeddedFramework.framework"
 mkdir -p "${FW_DST}/Versions/A"
 cp -R "${FW_SRC}/Chromium Embedded Framework" "${FW_DST}/Versions/A/"
 cp -R "${FW_SRC}/Libraries" "${FW_DST}/Versions/A/"
@@ -197,6 +197,12 @@ if [ "${#ARCHS[@]}" -gt 1 ]; then
     merge_into_framework "Libraries/$(basename "${lib}")"
   done
 fi
+# CocoaPods writes `-framework <name>` without quotes, so a bundled
+# framework whose name contains a space breaks the app link with
+# "no such file or directory: Embedded". Keep the CEF binary name (CEF looks it
+# up internally) but drop the space from the bundle directory.
+install_name_tool -id "@rpath/ChromiumEmbeddedFramework.framework/Versions/A/Chromium Embedded Framework" \
+  "${FW_DST}/Versions/A/Chromium Embedded Framework"
 verify_archs "${FW_DST}/Versions/A/Chromium Embedded Framework"
 
 # Build the standalone CEF helper executable used by the multi-process helper

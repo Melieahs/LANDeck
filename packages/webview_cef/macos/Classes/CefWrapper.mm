@@ -390,7 +390,7 @@ private:
             NSString* helperName = [exeName stringByAppendingString:@" Helper"];
             NSString* frameworksDir = [bundlePath stringByAppendingPathComponent:@"Contents/Frameworks"];
             NSString* subprocessPath = [NSString stringWithFormat:@"%@/%@.app/Contents/MacOS/%@", frameworksDir, helperName, helperName];
-            NSString* frameworkDir = [frameworksDir stringByAppendingPathComponent:@"Chromium Embedded Framework.framework"];
+            NSString* frameworkDir = [frameworksDir stringByAppendingPathComponent:@"ChromiumEmbeddedFramework.framework"];
             // Only run multi-process if the bundled helper actually exists.
             // Apps that embed webview_cef but haven't added the helper target
             // fall back to single-process (handled in initCEFProcesses).

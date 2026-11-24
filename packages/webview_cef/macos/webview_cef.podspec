@@ -32,7 +32,7 @@ Chromium off-screen and presents it inside a Flutter Texture.
   # pinned version is present. Override build type via CEF_WRAPPER_BUILD_TYPE.
   s.prepare_command = 'bash scripts/download_cef.sh'
 
-  s.vendored_frameworks = 'third/cef/Chromium Embedded Framework.framework'
+  s.vendored_frameworks = 'third/cef/ChromiumEmbeddedFramework.framework'
   s.vendored_libraries = 'third/cef/libcef_dll_wrapper.a'
 
   $dir = File.dirname(__FILE__)
