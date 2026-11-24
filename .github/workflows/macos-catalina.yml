@@ -56,9 +56,9 @@ jobs:
           set -o pipefail
           echo "==> preparing CEF 118"
           bash packages/webview_cef/macos/scripts/download_cef.sh 2>&1 | tee build-macos.log
-          ls -la packages/webview_cef/macos/third/cef | head -20
-          ls -la packages/webview_cef/macos/third/cef/ChromiumEmbeddedFramework.framework 2>&1 | head -10
-          ls -la macos/Flutter/ephemeral/.symlinks/plugins/webview_cef/macos/third/cef 2>&1 | head -10
+          ls -la packages/webview_cef/macos/third/cef >> build-macos.log 2>&1
+          ls -la packages/webview_cef/macos/third/cef/ChromiumEmbeddedFramework.framework >> build-macos.log 2>&1
+          ls -la macos/Flutter/ephemeral/.symlinks/plugins/webview_cef/macos/third/cef >> build-macos.log 2>&1
           flutter build macos --release --config-only 2>&1 | tee -a build-macos.log
           cd macos
           pod install 2>&1 | tee -a ../build-macos.log

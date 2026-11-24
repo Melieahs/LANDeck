@@ -164,6 +164,10 @@ cp -R "${FW_SRC}/Libraries" "${FW_DST}/Versions/A/"
 cp -R "${FW_SRC}/Resources" "${FW_DST}/Versions/A/"
 ln -sfn A "${FW_DST}/Versions/Current"
 ln -sfn "Versions/Current/Chromium Embedded Framework" "${FW_DST}/Chromium Embedded Framework"
+# ld looks the framework binary up as <Bundle>.framework/<Bundle>; the CEF
+# binary keeps its original name inside Versions/A, so expose it under the
+# space-free bundle name too.
+ln -sfn "Versions/Current/Chromium Embedded Framework" "${FW_DST}/ChromiumEmbeddedFramework"
 ln -sfn Versions/Current/Libraries "${FW_DST}/Libraries"
 ln -sfn Versions/Current/Resources "${FW_DST}/Resources"
 
