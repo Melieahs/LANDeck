@@ -36,6 +36,18 @@ jobs:
       - name: Test
         run: flutter test
 
+      - name: Show build resources
+        run: |
+          df -h /
+          sysctl -n hw.memsize
+          sw_vers
+
+      - name: Cache CEF
+        uses: actions/cache@v4
+        with:
+          path: packages/webview_cef/macos/third/cef
+          key: cef-118.7.1-macos-x86_64-release-v1
+
       - name: Build macOS app (x86_64, CEF 118)
         env:
           WEBVIEW_CEF_MACOS_ARCH: x86_64
