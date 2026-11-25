@@ -408,6 +408,11 @@ examples/native-modules/index.json
   则尊重其选择。
 - 调试入口：`--dart-define=LANDECK_AUTO_OPEN=first`（或服务 id）会在首帧后自动打开该服务，
   用于远程/无鼠标环境下检查 WebView，不影响正式构建。
+- 为什么不在 Wayland 下做 overlay 修复：已 fork `webview_all_linux` 实测——给 WebView 容器画红色
+  背景、对 bin window / viewport window 调用 `gdk_window_raise` 都无效，红色背景本身也完全不可见。
+  说明 WebView 的 GdkWindow 被 Flutter 直接绘制的 EGL surface 整体盖住，不是 WebKit 绘制问题；
+  Wayland 下要让页面可见只能把 WebKit 改成离屏渲染再贴图（等于自写渲染桥），成本远高于切到
+  XWayland。因此当前实现固定优先 X11 后端。
 - 运行时依赖：系统需要 `webkit2gtk-4.1`（Arch：`sudo pacman -S webkit2gtk-4.1`，会一并带上
   `libmanette` 等依赖）。构建时 `pkg-config` 必须能找到 `webkit2gtk-4.1`；若解包在 `~/tools`，
   需把 `~/tools/usr/lib/pkgconfig/webkit2gtk-4.1.pc` 的 `prefix` 改到该目录并设置
