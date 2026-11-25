@@ -7,6 +7,7 @@ arch=('x86_64')
 url="https://github.com/Melieahs/LANDeck"
 license=('unknown')
 depends=('gtk3' 'webkit2gtk-4.1')
+optdepends=('xclip: paste inside the embedded WebView')
 source=("LANDeck-linux-x64-${pkgver}.tar.xz")
 sha256sums=('66221ad8fda1333f243b28d59dcce0021cb277ef0762973cd3b9417eee9cb350')
 
