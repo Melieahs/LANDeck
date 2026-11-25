@@ -383,6 +383,29 @@ examples/native-modules/index.json
 
 ---
 
+### 7.11 Linux 桌面
+
+- 平台目录：`flutter create --platforms=linux` 生成 `linux/`；GTK3 桌面，沿用 Material 3 与桌面紧凑侧栏
+  （`AdaptiveLayout.compactRailWidth`），窗口用系统标题栏（自绘标题栏只用于 Windows）。
+- 构建依赖：Arch/CachyOS 默认没有 `cmake`/`ninja`。本机把它们解包在 `~/tools/usr/bin`，构建前执行：
+
+  ```bash
+  export PATH=/home/cyu/tools/usr/bin:$PATH
+  export LD_LIBRARY_PATH=/home/cyu/tools/usr/lib:$LD_LIBRARY_PATH
+  flutter build linux --release
+  ```
+
+  第一次构建会由 `webview_cef` 下载 CEF 149 linux64（约 250MB）到
+  `linux/flutter/ephemeral/.plugin_symlinks/webview_cef/third/cef`，之后复用。
+- WebView：`webview_cef: ^0.6.2`（Chromium 149 / CEF），页面为
+  `lib/pages/webview/cef_web_view_page.dart`（Texture 渲染，不使用 GTK 平台视图）；
+  `service_viewer_page.dart` 在 Linux 上返回该页面。CEF 运行时资源（`libcef.so`、`icudtl.dat`、
+  `locales/`）由构建拷贝到 `build/linux/x64/release/bundle/lib/`。
+- 运行：`build/linux/x64/release/bundle/landeck`。中文输入/粘贴依赖系统 `xclip`（缺失时 CMake
+  会给 author warning，WebView 内粘贴不可用）。
+- 与 macOS 版的区别：Linux 没有 10.15 的内核限制，直接用 pub 版 `webview_cef 0.6.2`，不需要
+  fork、不需要降 CEF、也不需要 x86_64 交叉构建。
+
 ## 8. 构建 / 测试 / 运行
 
 ### 8.1 日常检查
