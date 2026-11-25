@@ -1,0 +1,26 @@
+# Maintainer: LANDeck
+pkgname=landeck
+pkgver=0.9.26
+pkgrel=1
+pkgdesc="LAN device and service manager with an embedded WebKitGTK viewer"
+arch=('x86_64')
+url="https://github.com/Melieahs/LANDeck"
+license=('unknown')
+depends=('gtk3' 'webkit2gtk-4.1')
+source=("LANDeck-linux-x64-${pkgver}.tar.xz")
+sha256sums=('66221ad8fda1333f243b28d59dcce0021cb277ef0762973cd3b9417eee9cb350')
+
+package() {
+  install -d "$pkgdir/usr/lib/landeck"
+  cp -a "$srcdir/bundle/." "$pkgdir/usr/lib/landeck/"
+
+  install -Dm755 /dev/stdin "$pkgdir/usr/bin/landeck" <<'LAUNCHER'
+#!/bin/sh
+exec /usr/lib/landeck/landeck "$@"
+LAUNCHER
+
+  install -Dm644 "$startdir/landeck.desktop" \
+    "$pkgdir/usr/share/applications/landeck.desktop"
+  install -Dm644 "$startdir/landeck.png" \
+    "$pkgdir/usr/share/icons/hicolor/512x512/apps/landeck.png"
+}

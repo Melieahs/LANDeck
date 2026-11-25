@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=LANDeck
+Comment=Manage LAN devices, services and their web pages
+Exec=landeck
+Icon=landeck
+Type=Application
+Terminal=false
+Categories=Network;Utility;
+StartupWMClass=landeck

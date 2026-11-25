@@ -50,3 +50,10 @@ app.*.map.json
 # Local deliverables
 /dist/
 /screenshots/
+
+# Arch packaging build outputs
+packaging/arch/src/
+packaging/arch/pkg/
+packaging/arch/*.pkg.tar.zst
+packaging/arch/*.tar.xz
+packaging/arch/*.tar.zst
