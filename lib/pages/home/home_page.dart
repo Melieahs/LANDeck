@@ -35,7 +35,32 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  /// Debug helper: `--dart-define=LANDECK_AUTO_OPEN=first` (or a service id)
+  /// opens the viewer right after the first frame. Used to inspect the Linux
+  /// WebView without tapping through the UI over a remote session.
+  static const String _autoOpen = String.fromEnvironment('LANDECK_AUTO_OPEN');
+
   final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (_autoOpen.isEmpty) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final List<Service> services = AppScope.of(context).services;
+      final Service? service = _autoOpen == 'first'
+          ? (services.isEmpty ? null : services.first)
+          : services.where((Service item) => item.id == _autoOpen).firstOrNull;
+      if (service != null) {
+        _openService(service);
+      }
+    });
+  }
 
   @override
   void dispose() {

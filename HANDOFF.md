@@ -395,12 +395,19 @@ examples/native-modules/index.json
   flutter build linux --release
   ```
 
-  第一次构建会由 `webview_cef` 下载 CEF 149 linux64（约 250MB）到
-  `linux/flutter/ephemeral/.plugin_symlinks/webview_cef/third/cef`，之后复用。
+  WebView 使用系统 WebKitGTK 4.1：构建时 `pkg-config` 必须能找到 `webkit2gtk-4.1`
+  （本机解包在 `~/tools` 时需设置 `PKG_CONFIG_PATH=/home/cyu/tools/usr/lib/pkgconfig`）。
 - WebView：`webview_all: ^1.5.2`（API 兼容 `webview_flutter`），Linux 端由 `webview_all_linux`
   用系统 WebKitGTK 4.1 渲染；页面为 `lib/pages/webview/linux_web_view_page.dart`（GTK 平台视图，
   与移动端相同的顶栏、更多菜单、密码填充与 HTTP Basic 认证）。
   `service_viewer_page.dart` 在 Linux 上返回该页面。
+- **后端必须用 X11**：`webview_all_linux` 通过 `GtkOverlay` 把 WebKit 视图叠在 Flutter 的 GL
+  surface 上；Wayland 后端会把该 overlay 合成到 GL surface 之下，页面看起来纯黑（WebKit 进程
+  正常、顶栏副标题显示已加载）。`linux/runner/main.cc` 在 `GDK_BACKEND` 未设置且存在 `DISPLAY`
+  时自动切到 `GDK_BACKEND=x11`（KDE/GNOME 的 XWayland 都可用）。若用户显式设置了 `GDK_BACKEND`
+  则尊重其选择。
+- 调试入口：`--dart-define=LANDECK_AUTO_OPEN=first`（或服务 id）会在首帧后自动打开该服务，
+  用于远程/无鼠标环境下检查 WebView，不影响正式构建。
 - 运行时依赖：系统需要 `webkit2gtk-4.1`（Arch：`sudo pacman -S webkit2gtk-4.1`，会一并带上
   `libmanette` 等依赖）。构建时 `pkg-config` 必须能找到 `webkit2gtk-4.1`；若解包在 `~/tools`，
   需把 `~/tools/usr/lib/pkgconfig/webkit2gtk-4.1.pc` 的 `prefix` 改到该目录并设置
