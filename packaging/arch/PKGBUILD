@@ -1,6 +1,6 @@
 # Maintainer: LANDeck
 pkgname=landeck
-pkgver=0.9.28
+pkgver=0.9.29
 pkgrel=1
 pkgdesc="LAN device and service manager with an embedded WebKitGTK viewer"
 arch=('x86_64')
@@ -9,7 +9,7 @@ license=('unknown')
 depends=('gtk3' 'webkit2gtk-4.1')
 optdepends=('xclip: paste inside the embedded WebView')
 source=("LANDeck-linux-x64-${pkgver}.tar.xz")
-sha256sums=('9b3dba328a23e396ecc1cdbec69bb0b0ee939dfdeae65e8055db7278e8258a86')
+sha256sums=('fdfa1f9a8672ff8b0566ba12339d23732d5aa70a4d70f574fca4fc8cd7a3f70c')
 
 package() {
   install -d "$pkgdir/usr/lib/landeck"

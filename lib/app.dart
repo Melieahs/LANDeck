@@ -11,6 +11,15 @@ import 'repositories/service_repository.dart';
 import 'routes/app_router.dart';
 import 'widgets/window_title_bar.dart';
 
+EdgeInsets _scaleInsets(EdgeInsets insets, double factor) {
+  return EdgeInsets.fromLTRB(
+    insets.left * factor,
+    insets.top * factor,
+    insets.right * factor,
+    insets.bottom * factor,
+  );
+}
+
 class LanDeckApp extends StatelessWidget {
   const LanDeckApp({super.key, required this.repository, this.themeController});
 
@@ -71,6 +80,25 @@ class LanDeckApp extends StatelessWidget {
                           textScaler: TextScaler.linear(controller.textScale),
                         ),
                         child: content,
+                      );
+                    }
+                    final double uiScale = controller.effectiveUiScale;
+                    if (uiScale != 1) {
+                      final MediaQueryData mq = MediaQuery.of(context);
+                      final double inverse = 1 / uiScale;
+                      content = MediaQuery(
+                        data: mq.copyWith(
+                          size: mq.size * inverse,
+                          devicePixelRatio: mq.devicePixelRatio * uiScale,
+                          padding: _scaleInsets(mq.padding, inverse),
+                          viewPadding: _scaleInsets(mq.viewPadding, inverse),
+                          viewInsets: _scaleInsets(mq.viewInsets, inverse),
+                        ),
+                        child: Transform.scale(
+                          scale: uiScale,
+                          alignment: Alignment.topLeft,
+                          child: content,
+                        ),
                       );
                     }
                     if (!usesCustomWindowChrome) {

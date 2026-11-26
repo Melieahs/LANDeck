@@ -1,4 +1,5 @@
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/theme/app_spacing.dart';
@@ -138,6 +139,37 @@ class AppearancePage extends StatelessWidget {
                       onChanged: controller.setAmoled,
                     ),
                     const Divider(height: 1),
+                    if (_isDesktop) ...<Widget>[
+                      ListTile(
+                        key: const ValueKey<String>('ui-scale-row'),
+                        leading: const Icon(Icons.fit_screen_rounded),
+                        title: const Text('界面缩放'),
+                        subtitle: Text(
+                          '${(controller.effectiveUiScale * 100).round()}% · 桌面默认 '
+                          '${(ThemeController.desktopDefaultUiScale * 100).round()}%',
+                        ),
+                        trailing: controller.uiScale == null
+                            ? null
+                            : TextButton(
+                                onPressed: () => controller.setUiScale(null),
+                                child: const Text('默认'),
+                              ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                        child: Slider(
+                          key: const ValueKey<String>('ui-scale-slider'),
+                          min: ThemeController.minUiScale,
+                          max: ThemeController.maxUiScale,
+                          divisions: 16,
+                          value: controller.effectiveUiScale,
+                          label:
+                              '${(controller.effectiveUiScale * 100).round()}%',
+                          onChanged: controller.setUiScale,
+                        ),
+                      ),
+                      const Divider(height: 1),
+                    ],
                     SwitchListTile(
                       key: const ValueKey<String>('text-scale-switch'),
                       secondary: const Icon(Icons.format_size_rounded),
@@ -339,4 +371,14 @@ class _QuadrantPainter extends CustomPainter {
   @override
   bool shouldRepaint(_QuadrantPainter oldDelegate) =>
       oldDelegate.colors != colors;
+}
+
+bool get _isDesktop {
+  if (kIsWeb) {
+    return false;
+  }
+  final TargetPlatform platform = defaultTargetPlatform;
+  return platform == TargetPlatform.windows ||
+      platform == TargetPlatform.linux ||
+      platform == TargetPlatform.macOS;
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../data/database/app_database.dart';
@@ -20,6 +21,7 @@ class ThemeController extends ChangeNotifier {
     Color? seedColor,
     bool amoled = false,
     double textScale = 1,
+    double? uiScale,
   }) : _database = null,
        _mode = ThemeMode.system,
        // ignore: prefer_initializing_formals
@@ -29,13 +31,16 @@ class ThemeController extends ChangeNotifier {
        // ignore: prefer_initializing_formals
        _amoled = amoled,
        // ignore: prefer_initializing_formals
-       _textScale = textScale;
+       _textScale = textScale,
+       // ignore: prefer_initializing_formals
+       _uiScale = uiScale;
 
   static const String settingKey = 'theme_mode';
   static const String dynamicColorKey = 'dynamic_color';
   static const String seedColorKey = 'theme_seed';
   static const String amoledKey = 'amoled_black';
   static const String textScaleKey = 'text_scale';
+  static const String uiScaleKey = 'ui_scale';
 
   final AppDatabase? _database;
   ThemeMode _mode;
@@ -43,6 +48,7 @@ class ThemeController extends ChangeNotifier {
   Color? _seedColor;
   bool _amoled;
   double _textScale;
+  double? _uiScale;
 
   ThemeMode get mode => _mode;
 
@@ -62,12 +68,35 @@ class ThemeController extends ChangeNotifier {
   static const double minTextScale = 0.85;
   static const double maxTextScale = 1.3;
 
+  static const double minUiScale = 0.8;
+  static const double maxUiScale = 1.6;
+  static const double desktopDefaultUiScale = 1.25;
+
+  /// Whole-UI multiplier for desktop windows. Null means "use the platform
+  /// default": 1.25 on Windows, Linux and macOS, 1 on phones.
+  double? get uiScale => _uiScale;
+
+  /// Resolved scale used by the app shell.
+  double get effectiveUiScale {
+    final double? stored = _uiScale;
+    if (stored != null) {
+      return stored.clamp(minUiScale, maxUiScale);
+    }
+    final TargetPlatform platform = defaultTargetPlatform;
+    final bool desktop = !kIsWeb &&
+        (platform == TargetPlatform.windows ||
+            platform == TargetPlatform.linux ||
+            platform == TargetPlatform.macOS);
+    return desktop ? desktopDefaultUiScale : 1;
+  }
+
   static Future<ThemeController> load(AppDatabase database) async {
     ThemeMode mode = ThemeMode.system;
     bool dynamicColor = true;
     Color? seedColor;
     bool amoled = false;
     double textScale = 1;
+    double? uiScale;
     try {
       final String? stored = await database.readSetting(settingKey);
       mode = switch (stored) {
@@ -91,6 +120,11 @@ class ThemeController extends ChangeNotifier {
       if (scale != null) {
         textScale = scale.clamp(minTextScale, maxTextScale);
       }
+      final String? storedUiScale = await database.readSetting(uiScaleKey);
+      final double? ui = double.tryParse(storedUiScale ?? '');
+      if (ui != null) {
+        uiScale = ui.clamp(minUiScale, maxUiScale);
+      }
     } on Object {
       // A missing or unreadable preference simply falls back to defaults.
     }
@@ -101,7 +135,7 @@ class ThemeController extends ChangeNotifier {
       seedColor,
       amoled,
       textScale,
-    );
+    ).._uiScale = uiScale;
   }
 
   Future<void> setMode(ThemeMode mode) async {
@@ -146,6 +180,19 @@ class ThemeController extends ChangeNotifier {
     _amoled = enabled;
     notifyListeners();
     await _database?.writeSetting(amoledKey, enabled ? 'true' : 'false');
+  }
+
+  Future<void> setUiScale(double? scale) async {
+    final double? clamped = scale?.clamp(minUiScale, maxUiScale);
+    if (_uiScale == clamped) {
+      return;
+    }
+    _uiScale = clamped;
+    notifyListeners();
+    await _database?.writeSetting(
+      uiScaleKey,
+      clamped?.toStringAsFixed(2) ?? '',
+    );
   }
 
   Future<void> setTextScale(double scale) async {
