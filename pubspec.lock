@@ -1019,12 +1019,11 @@ packages:
     source: hosted
     version: "1.5.2"
   webview_all_linux:
-    dependency: transitive
+    dependency: "direct main"
     description:
-      name: webview_all_linux
-      sha256: "6bcf41a3c520b83fd37887a40a2740fbc50b250e5ae8f1f237fa0c5217a98b8b"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/webview_all_linux"
+      relative: true
+    source: path
     version: "1.5.2"
   webview_all_ohos:
     dependency: transitive

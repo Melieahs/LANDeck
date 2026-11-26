@@ -417,6 +417,14 @@ examples/native-modules/index.json
   `libmanette` 等依赖）。构建时 `pkg-config` 必须能找到 `webkit2gtk-4.1`；若解包在 `~/tools`，
   需把 `~/tools/usr/lib/pkgconfig/webkit2gtk-4.1.pc` 的 `prefix` 改到该目录并设置
   `PKG_CONFIG_PATH`/`LD_LIBRARY_PATH`。
+- **Flutter 弹层要临时隐藏内嵌 WebView**：GTK 的 WebKit 是系统子窗口，永远绘制在 Flutter
+  画布之上，`showModalBottomSheet`/`showDialog` 会被它整个盖住（用户只看到遮罩变暗）。fork 的
+  `webview_all_linux` 增加了 `setVisible(bool)`（C++ `hidden` 标志 + `gtk_widget_show/hide`），
+  `linux_web_view_page.dart` 用 `_withEmbeddedHidden` 在打开更多/切换服务/认证/账号选择/保存
+  登录浮层期间隐藏 WebView，关闭后恢复。
+- **不要给 overlay 容器设置 input shape**：X11 下 `gtk_widget_input_shape_combine_region` 会让
+  overlay 的辅助窗口占据工具栏一整条，吞掉顶栏点击；只保留 visual shape，配合插件原有的
+  `pass_through` 挖洞即可让页面与顶栏都可点。
 - 产物不再携带浏览器内核：`build/linux/x64/release/bundle` 约 28MB（CEF 方案是 1.5GB）。
 - 运行：`build/linux/x64/release/bundle/landeck`，运行前设置
   `LD_LIBRARY_PATH=/home/cyu/tools/usr/lib`（仅本机用解包库时需要；装了系统包则不需要）。

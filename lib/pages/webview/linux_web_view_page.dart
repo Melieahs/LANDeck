@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_all/webview_all.dart';
+import 'package:webview_all_linux/webview_all_linux.dart';
 
 import '../../core/app_scope.dart';
 import '../../core/utils/feedback.dart';
@@ -196,15 +197,35 @@ class _LinuxWebViewPageState extends State<LinuxWebViewPage> {
     Navigator.of(context).maybePop();
   }
 
+  Future<void> _setEmbeddedVisible(bool visible) async {
+    final Object? platform = _controller?.platform;
+    if (platform is LinuxWebViewController) {
+      await platform.setVisible(visible);
+    }
+  }
+
+  /// Hides the embedded GTK widget while a Flutter sheet or dialog is on
+  /// screen. Without this the native child keeps painting above the overlay.
+  Future<T> _withEmbeddedHidden<T>(Future<T> Function() show) async {
+    await _setEmbeddedVisible(false);
+    try {
+      return await show();
+    } finally {
+      await _setEmbeddedVisible(true);
+    }
+  }
+
   Future<void> _openServiceSwitcher(Service service) async {
     final LanDeckRepository repository = AppScope.of(context);
-    final ServiceSelection? selection = await showServiceSwitcherSheet(
-      context,
-      services: repository.services,
-      current: service,
-      currentMode: ServiceMode.web,
-      deviceNameFor: repository.deviceNameFor,
-      openServiceIds: const <String>{},
+    final ServiceSelection? selection = await _withEmbeddedHidden(
+      () => showServiceSwitcherSheet(
+        context,
+        services: repository.services,
+        current: service,
+        currentMode: ServiceMode.web,
+        deviceNameFor: repository.deviceNameFor,
+        openServiceIds: const <String>{},
+      ),
     );
     if (!mounted || selection == null || selection.service.id == service.id) {
       return;
@@ -230,15 +251,17 @@ class _LinuxWebViewPageState extends State<LinuxWebViewPage> {
   Future<void> _showMore(Service service) async {
     final LanDeckRepository repository = AppScope.of(context);
     final String deviceName = repository.deviceNameFor(service);
-    final MoreAction? action = await showMoreActionsSheet(
-      context,
-      service: service,
-      deviceName: deviceName,
-      immersive: false,
-      nativeWebView: false,
-      canGoForward: _canGoForward,
-      currentUrl: _currentUrl,
-      includeImmersive: false,
+    final MoreAction? action = await _withEmbeddedHidden(
+      () => showMoreActionsSheet(
+        context,
+        service: service,
+        deviceName: deviceName,
+        immersive: false,
+        nativeWebView: false,
+        canGoForward: _canGoForward,
+        currentUrl: _currentUrl,
+        includeImmersive: false,
+      ),
     );
     if (!mounted || action == null) {
       return;
@@ -388,10 +411,12 @@ class _LinuxWebViewPageState extends State<LinuxWebViewPage> {
       }
       _loginFocusPrompts.add(pageKey);
       _passwordPromptOpen = true;
-      final HttpCredential? chosen = await showCredentialPicker(
-        context,
-        credentials: accounts,
-        defaultUsername: service.defaultCredentialUsername,
+      final HttpCredential? chosen = await _withEmbeddedHidden(
+        () => showCredentialPicker(
+          context,
+          credentials: accounts,
+          defaultUsername: service.defaultCredentialUsername,
+        ),
       );
       _passwordPromptOpen = false;
       if (!mounted || chosen == null) {
@@ -429,10 +454,12 @@ class _LinuxWebViewPageState extends State<LinuxWebViewPage> {
       showAppSnackBar(context, '没有保存的登录信息');
       return;
     }
-    final HttpCredential? chosen = await showCredentialPicker(
-      context,
-      credentials: accounts,
-      defaultUsername: service.defaultCredentialUsername,
+    final HttpCredential? chosen = await _withEmbeddedHidden(
+      () => showCredentialPicker(
+        context,
+        credentials: accounts,
+        defaultUsername: service.defaultCredentialUsername,
+      ),
     );
     if (!mounted || chosen == null) {
       return;
@@ -553,11 +580,13 @@ class _LinuxWebViewPageState extends State<LinuxWebViewPage> {
       }
     }
     _passwordPromptOpen = true;
-    final bool confirmed = await showSaveWebPasswordDialog(
-      context,
-      serviceName: service.name,
-      host: host,
-      username: username,
+    final bool confirmed = await _withEmbeddedHidden(
+      () => showSaveWebPasswordDialog(
+        context,
+        serviceName: service.name,
+        host: host,
+        username: username,
+      ),
     );
     _passwordPromptOpen = false;
     if (!mounted || !confirmed) {
@@ -644,14 +673,16 @@ class _LinuxWebViewPageState extends State<LinuxWebViewPage> {
       return;
     }
     _authDialogOpen = true;
-    final HttpAuthResult? result = await showHttpAuthDialog(
-      context,
-      serviceName: service.name,
-      address: service.address,
-      host: requestHost,
-      realm: realm,
-      initialUsername: credential?.username,
-      errorText: _authAttempts > 0 ? '认证失败，请检查用户名和密码' : null,
+    final HttpAuthResult? result = await _withEmbeddedHidden(
+      () => showHttpAuthDialog(
+        context,
+        serviceName: service.name,
+        address: service.address,
+        host: requestHost,
+        realm: realm,
+        initialUsername: credential?.username,
+        errorText: _authAttempts > 0 ? '认证失败，请检查用户名和密码' : null,
+      ),
     );
     _authDialogOpen = false;
     if (!mounted) {
